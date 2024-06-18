@@ -1,0 +1,15 @@
+.mainMenu li{ float:left}
+input[type="text"] {
+	height:20px; padding:8px 0 2px 0; 
+}
+.mainMenu li a {
+	margin:0 1.6em;
+}
+.mainMenu li a:hover {
+	margin:0 1.6em;
+}
+.breadcrumbs li {
+	float:left;
+	padding:0 5px;
+	text-align:right
+}

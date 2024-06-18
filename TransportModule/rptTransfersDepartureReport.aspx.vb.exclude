@@ -1,0 +1,945 @@
+Imports CrystalDecisions.CrystalReports.Engine
+Imports CrystalDecisions.CrystalReports
+Imports CrystalDecisions.Shared
+Imports CrystalDecisions.Web
+Imports CrystalDecisions.ReportSource
+#Region "Namespace"
+Imports System.Data
+Imports System.Data.SqlClient
+#End Region
+
+Partial Class NewclientsReport
+    Inherits System.Web.UI.Page
+    Dim rep As New ReportDocument
+    Dim rptcompanyname As String
+    Dim rptreportname As String
+    Dim objutils As New clsUtils
+
+    Dim SqlConn As SqlConnection
+    Dim myCommand As SqlCommand
+    Dim myDataAdapter As SqlDataAdapter
+
+
+    Dim catcode As String, citycode As String, ctrycode As String, sectorcode As String
+    Dim fromdate As String, todate As String, orderby As String
+    Dim repfilter As String, reportoption As String, reporttitle As String
+
+    Protected Sub Page_Init(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Init
+        ViewState.Add("Pageame", Request.QueryString("Pageame"))
+        ViewState.Add("BackPageName", Request.QueryString("BackPageName"))
+
+        If Not Session("CompanyName") Is Nothing Then
+            Me.Page.Title = CType(Session("CompanyName"), String)
+        End If
+
+        Try
+
+            If CType(ViewState("Pageame"), String) = "HotelVoucher" Or CType(ViewState("Pageame"), String) = "Noshow" Then
+
+                If Request.QueryString("fromdate") <> "" Then
+                    repfilter = "From Date:" & Format("U", CType(Request.QueryString("fromdate"), Date))
+                    ViewState.Add("fromdate", Request.QueryString("fromdate"))
+                Else
+                    ViewState.Add("fromdate", String.Empty)
+                End If
+                If Request.QueryString("todate") <> "" Then
+                    repfilter = repfilter & ";To Date:" & Format("U", CType(Request.QueryString("todate"), Date))
+                    ViewState.Add("todate", Request.QueryString("todate"))
+                Else
+                    ViewState.Add("todate", String.Empty)
+                End If
+                If Request.QueryString("sellcodefrom") <> "" Then
+                    repfilter = repfilter & ",Selling Code from :" & Request.QueryString("sellcodefrom")
+                    ViewState.Add("sellcodefrom", Request.QueryString("sellcodefrom"))
+                Else
+                    ViewState.Add("sellcodefrom", String.Empty)
+                End If
+
+                If Request.QueryString("sellcodeto") <> "" Then
+                    repfilter = repfilter & ",Selling Code to :" & Request.QueryString("sellcodeto")
+                    ViewState.Add("sellcodeto", Request.QueryString("sellcodeto"))
+                Else
+                    ViewState.Add("sellcodeto", String.Empty)
+                End If
+
+
+                If Request.QueryString("strclientfrom") <> "" Then
+                    repfilter = repfilter & ",Client Code from :" & Request.QueryString("strclientfrom")
+                    ViewState.Add("strclientfrom", Request.QueryString("strclientfrom"))
+                Else
+                    ViewState.Add("strclientfrom", String.Empty)
+                End If
+
+                If Request.QueryString("strclientto") <> "" Then
+                    repfilter = repfilter & ",Client Code to :" & Request.QueryString("strclientto")
+                    ViewState.Add("strclientto", Request.QueryString("strclientto"))
+                Else
+                    ViewState.Add("strclientto", String.Empty)
+                End If
+
+                If Request.QueryString("strpartyfrom") <> "" Then
+                    repfilter = repfilter & ",Party Code from :" & Request.QueryString("strpartyfrom")
+                    ViewState.Add("strpartyfrom", Request.QueryString("strpartyfrom"))
+                Else
+                    ViewState.Add("strpartyfrom", String.Empty)
+                End If
+
+                If Request.QueryString("strpartyto") <> "" Then
+                    repfilter = repfilter & ",Party Code to :" & Request.QueryString("strpartyto")
+                    ViewState.Add("strpartyto", Request.QueryString("strpartyto"))
+                Else
+                    ViewState.Add("strpartyto", String.Empty)
+                End If
+
+                If Request.QueryString("repfilter") <> "" Then
+                    'repfilter = Request.QueryString("repfilter")
+                    ViewState.Add("repfilter", Request.QueryString("repfilter"))
+                Else
+                    ViewState.Add("repfilter", String.Empty)
+                End If
+                If Request.QueryString("reportoption") <> "" Then
+                    'reportoption = Request.QueryString("reportoption")
+                    ViewState.Add("reportoption", Request.QueryString("reportoption"))
+                Else
+                    ViewState.Add("reportoption", String.Empty)
+                End If
+                If Request.QueryString("reporttitle") <> "" Then
+                    'reporttitle = Request.QueryString("reporttitle")
+                    ViewState.Add("reporttitle", Request.QueryString("reporttitle"))
+                Else
+                    ViewState.Add("reporttitle", String.Empty)
+                End If
+
+
+                If Request.QueryString("RepMode") <> "" Then
+                    'reporttitle = Request.QueryString("reporttitle")
+                    If Request.QueryString("RepMode") = 1 Then
+                        ViewState.Add("RepMode", "WITHLOGO")
+                    Else
+                        ViewState.Add("RepMode", "WITHOUTLOGO")
+                    End If
+
+                Else
+                    ViewState.Add("RepMode", "WITHOUTLOGO")
+                End If
+            Else
+                If CType(ViewState("Pageame"), String) = "TranferPricelist" Then
+                    If Request.QueryString("considertodate").ToString = 1 Then
+                        If Request.QueryString("fromdate") <> "" Then
+                            repfilter = "From Date:" & Format("U", CType(Request.QueryString("fromdate"), Date))
+                            ViewState.Add("fromdate", Request.QueryString("fromdate"))
+                        Else
+                            ViewState.Add("fromdate", String.Empty)
+                        End If
+                        If Request.QueryString("todate") <> "" Then
+                            repfilter = repfilter & ";To Date:" & Format("U", CType(Request.QueryString("todate"), Date))
+                            ViewState.Add("todate", Request.QueryString("todate"))
+                        Else
+                            ViewState.Add("todate", String.Empty)
+                        End If
+                        If Request.QueryString("strbooktype") <> "" Then
+                            ViewState.Add("strbooktype", Request.QueryString("strbooktype"))
+                            If Request.QueryString("strbooktype") = "3" Then
+                                repfilter = repfilter & ", Meet & Assit Only"
+                            ElseIf Request.QueryString("strbooktype") = "2" Then
+                                repfilter = repfilter & ", Transfer Only"
+                            ElseIf Request.QueryString("strbooktype") = "1" Then
+                                repfilter = repfilter & ", Hotel with Transfer Only"
+                            End If
+                        End If
+                    Else
+                        repfilter = " Date:" & Format("U", CType(Request.QueryString("fromdate"), Date))
+                        ViewState.Add("fromdate", Request.QueryString("fromdate"))
+
+                        If Request.QueryString("strbooktype") <> "" Then
+                            ViewState.Add("strbooktype", Request.QueryString("strbooktype"))
+                            If Request.QueryString("strbooktype") = "3" Then
+                                repfilter = repfilter & ", Meet & Assit Only"
+                            ElseIf Request.QueryString("strbooktype") = "2" Then
+                                repfilter = repfilter & ", Transfer Only"
+                            ElseIf Request.QueryString("strbooktype") = "1" Then
+                                repfilter = repfilter & ", Hotel with Transfer Only"
+                            End If
+                        End If
+                    End If
+                ElseIf CType(ViewState("Pageame"), String) <> "TranferPricelist" Then
+
+                    If Request.QueryString("fromdate") <> "" Then
+                        repfilter = "From Date:" & Format("U", CType(Request.QueryString("fromdate"), Date))
+                        ViewState.Add("fromdate", Request.QueryString("fromdate"))
+                    Else
+                        ViewState.Add("fromdate", String.Empty)
+                    End If
+                    If Request.QueryString("todate") <> "" Then
+                        repfilter = repfilter & ";To Date:" & Format("U", CType(Request.QueryString("todate"), Date))
+                        ViewState.Add("todate", Request.QueryString("todate"))
+                    Else
+                        ViewState.Add("todate", String.Empty)
+                    End If
+
+                End If
+
+
+                If Request.QueryString("sellcodefrom") <> "" Then
+                    repfilter = repfilter & ",Selling Code from :" & Request.QueryString("sellcodefrom")
+                    ViewState.Add("sellcodefrom", Request.QueryString("sellcodefrom"))
+                Else
+                    ViewState.Add("sellcodefrom", String.Empty)
+                End If
+
+                If Request.QueryString("sellcodeto") <> "" Then
+                    repfilter = repfilter & ",Selling Code to :" & Request.QueryString("sellcodeto")
+                    ViewState.Add("sellcodeto", Request.QueryString("sellcodeto"))
+                Else
+                    ViewState.Add("sellcodeto", String.Empty)
+                End If
+
+
+                If Request.QueryString("strclientfrom") <> "" Then
+                    repfilter = repfilter & ",Client Code from :" & Request.QueryString("strclientfrom")
+                    ViewState.Add("strclientfrom", Request.QueryString("strclientfrom"))
+                Else
+                    ViewState.Add("strclientfrom", String.Empty)
+                End If
+
+                If Request.QueryString("strclientto") <> "" Then
+                    repfilter = repfilter & ",Client Code to :" & Request.QueryString("strclientto")
+                    ViewState.Add("strclientto", Request.QueryString("strclientto"))
+                Else
+                    ViewState.Add("strclientto", String.Empty)
+                End If
+
+                If Request.QueryString("strpartyfrom") <> "" Then
+                    repfilter = repfilter & ",Party Code from :" & Request.QueryString("strpartyfrom")
+                    ViewState.Add("strpartyfrom", Request.QueryString("strpartyfrom"))
+                Else
+                    ViewState.Add("strpartyfrom", String.Empty)
+                End If
+
+                If Request.QueryString("strpartyto") <> "" Then
+                    repfilter = repfilter & ",Party Code to :" & Request.QueryString("strpartyto")
+                    ViewState.Add("strpartyto", Request.QueryString("strpartyto"))
+                Else
+                    ViewState.Add("strpartyto", String.Empty)
+                End If
+                'airport
+                If Request.QueryString("strairportfrom") <> "" Then
+                    repfilter = repfilter & ",Airport Code from :" & Request.QueryString("strairportfrom")
+                    ViewState.Add("strairportfrom", Request.QueryString("strairportfrom"))
+                Else
+                    ViewState.Add("strairportfrom", String.Empty)
+                End If
+
+                If Request.QueryString("strairportto") <> "" Then
+                    repfilter = repfilter & ",Airport Code to :" & Request.QueryString("strairportto")
+                    ViewState.Add("strairportto", Request.QueryString("strairportto"))
+                Else
+                    ViewState.Add("strairportto", String.Empty)
+                End If
+
+                'airline
+                If Request.QueryString("strairlinefrom") <> "" Then
+                    repfilter = repfilter & ",Airline Code from :" & Request.QueryString("strairlinefrom")
+                    ViewState.Add("strairlinefrom", Request.QueryString("strairlinefrom"))
+                Else
+                    ViewState.Add("strairlinefrom", String.Empty)
+                End If
+
+                If Request.QueryString("strairlineto") <> "" Then
+                    repfilter = repfilter & ",Airline Code to :" & Request.QueryString("strairlineto")
+                    ViewState.Add("strairlineto", Request.QueryString("strairlineto"))
+                Else
+                    ViewState.Add("strairlineto", String.Empty)
+                End If
+
+                'flight
+                If Request.QueryString("strflightfrom") <> "" Then
+                    repfilter = repfilter & ",Flight Code from :" & Request.QueryString("strflightfrom")
+                    ViewState.Add("strflightfrom", Request.QueryString("strflightfrom"))
+                Else
+                    ViewState.Add("strflightfrom", String.Empty)
+                End If
+
+                If Request.QueryString("strflightto") <> "" Then
+                    repfilter = repfilter & ",Flight Code to :" & Request.QueryString("strflightto")
+                    ViewState.Add("strflightto", Request.QueryString("strflightto"))
+                Else
+                    ViewState.Add("strflightto", String.Empty)
+                End If
+
+                If Request.QueryString("strgroupby") <> "" Then
+                    If Request.QueryString("strgroupby") = "A" Then
+                        repfilter = repfilter & ",Group by : Pickup Time"
+                    ElseIf Request.QueryString("strgroupby") = "T" Then
+                        repfilter = repfilter & ",Group by : Departure Time"
+                    ElseIf Request.QueryString("strgroupby") = "D" Then
+                        repfilter = repfilter & ",Group by : Airport"
+                    ElseIf Request.QueryString("strgroupby") = "C" Then
+                        repfilter = repfilter & ",Group by : Client"
+                    ElseIf Request.QueryString("strgroupby") = "P" Then
+                        repfilter = repfilter & ",Group by : Hotel"
+                    ElseIf Request.QueryString("strgroupby") = "F" Then
+                        repfilter = repfilter & ",Group by : Flight No"
+                    End If
+
+                    ViewState.Add("strgroupby", Request.QueryString("strgroupby"))
+                Else
+                    ViewState.Add("strgroupby", String.Empty)
+                End If
+
+
+                If Request.QueryString("repfilter") <> "" Then
+                    'repfilter = Request.QueryString("repfilter")
+                    ViewState.Add("repfilter", Request.QueryString("repfilter"))
+                Else
+                    ViewState.Add("repfilter", String.Empty)
+                End If
+                If Request.QueryString("reportoption") <> "" Then
+                    'reportoption = Request.QueryString("reportoption")
+                    ViewState.Add("reportoption", Request.QueryString("reportoption"))
+                Else
+                    ViewState.Add("reportoption", String.Empty)
+                End If
+                If Request.QueryString("reporttitle") <> "" Then
+                    'reporttitle = Request.QueryString("reporttitle")
+                    ViewState.Add("reporttitle", Request.QueryString("reporttitle"))
+                Else
+                    ViewState.Add("reporttitle", String.Empty)
+                End If
+            End If
+            ViewState.Add("RepCalledFrom", 0)
+            btnBack.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to close report?')==false)return false;")
+            BindReport()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+
+
+        End Try
+    End Sub
+    '#Region "Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+
+        'Try
+        '    BindReport()
+        'Catch ex As Exception
+        '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+
+        'End Try
+    End Sub
+    '#End Region
+    'End Sub
+    Private Sub BindReport()
+        'If Session("Rep") Is Nothing Then
+        rptcompanyname = CType(objUtils.ExecuteQueryReturnSingleValuenew(Session("dbconnectionName"), "select conm from columbusmaster"), String)
+        rptreportname = "Report - New Clients"
+
+        Dim pnames As ParameterFieldDefinitions
+        Dim pname As ParameterFieldDefinition
+        Dim param As New ParameterValues
+        Dim paramvalue As New ParameterDiscreteValue
+        Dim ConnInfo As New ConnectionInfo
+        'With ConnInfo
+        '    .ServerName = ConfigurationManager.AppSettings("dbServerName")
+        '    .DatabaseName = ConfigurationManager.AppSettings("dbDatabaseName")
+        '    .UserID = ConfigurationManager.AppSettings("dbUserName")
+        '    .Password = ConfigurationManager.AppSettings("dbPassword")
+        'End With
+
+        With ConnInfo
+            .ServerName = Session("dbServerName")        'ConfigurationManager.AppSettings("dbServerName")
+            .DatabaseName = Session("dbDatabaseName")    'ConfigurationManager.AppSettings("dbDatabaseName")
+            .UserID = Session("dbUserName")              'ConfigurationManager.AppSettings("dbUserName")
+            .Password = Session("dbPassword")            'ConfigurationManager.AppSettings("dbPassword")
+        End With
+
+        'reportoption = Session("reportoption")
+
+        If CType(ViewState("Pageame"), String) = "TranferDepartureSlip" Then
+
+            Select Case Request.QueryString("language")
+                Case 0
+                    rep.Load(Server.MapPath("~\Report\trfdepartureslipallnew.rpt"))
+                Case 1
+                    rep.Load(Server.MapPath("~\Report\trfdepartureslipallnewfrench.rpt"))
+                Case 2
+                    rep.Load(Server.MapPath("~\Report\trfdepartureslipallnewgerman.rpt"))
+                Case 3
+                    rep.Load(Server.MapPath("~\Report\trfdepartureslipallnewrussian.rpt"))
+            End Select
+
+
+            'rep.Load(Server.MapPath("~\Report\trfdepartureslipallnew.rpt"))
+        ElseIf CType(ViewState("Pageame"), String) = "fochoteltransfer" Then
+            rep.Load(Server.MapPath("~\Report\fochoteltransfer.rpt"))
+        ElseIf CType(ViewState("Pageame"), String) = "HotelVoucher" Then
+            If Not ViewState("RepMode") Is Nothing Then
+                If ViewState("RepMode") = "WITHLOGO" Then
+                    rep.Load(Server.MapPath("~\Report\rpthotelvoucherall_logo.rpt"))
+                Else
+                    rep.Load(Server.MapPath("~\Report\rpthotelvoucherall.rpt"))
+                End If
+            End If
+
+        ElseIf CType(ViewState("Pageame"), String) = "HotelLabel" Then
+            ' rep.Load(Server.MapPath("~\Report\rptHotelLabelReport.rpt"))
+            If Request.QueryString("strlanguage") = 1 Then
+                rep.Load(Server.MapPath("~\Report\rptHotelLabelReportrussian.rpt"))
+            ElseIf Request.QueryString("strlanguage") = 2 Then
+                rep.Load(Server.MapPath("~\Report\rptHotelLabelReportfrench.rpt"))
+            ElseIf Request.QueryString("strlanguage") = 3 Then
+                rep.Load(Server.MapPath("~\Report\rptHotelLabelReportGerman.rpt"))
+            ElseIf Request.QueryString("strlanguage") = 4 Then
+                rep.Load(Server.MapPath("~\Report\rptHotelLabelReportCzech.rpt"))
+            Else
+                rep.Load(Server.MapPath("~\Report\rptHotelLabelReport.rpt"))
+            End If
+        ElseIf CType(ViewState("Pageame"), String) = "Noshow" Then
+            rep.Load(Server.MapPath("~\Report\rptnoshowtransfer.rpt"))
+
+        Else
+            rep.Load(Server.MapPath("~\Report\dgate_departure1new.rpt"))
+            '  rep.Load(Server.MapPath("~\Report\dgate_departure1.rpt"))
+        End If
+
+
+
+
+
+        Me.CRVNewClients.ReportSource = rep
+        Dim RepTbls As Tables = rep.Database.Tables
+
+        For Each RepTbl As Table In RepTbls
+            Dim RepTblLogonInfo As TableLogOnInfo = RepTbl.LogOnInfo
+            RepTblLogonInfo.ConnectionInfo = ConnInfo
+            RepTbl.ApplyLogOnInfo(RepTblLogonInfo)
+        Next
+
+        rep.SummaryInfo.ReportTitle = ViewState("reporttitle")
+
+        pnames = rep.DataDefinition.ParameterFields
+
+        pname = pnames.Item("Conm")
+        paramvalue.Value = rptcompanyname
+        param = pname.CurrentValues
+        param.Add(paramvalue)
+        pname.ApplyCurrentValues(param)
+
+        pname = pnames.Item("head")
+        paramvalue.Value = ViewState("reporttitle")
+        param = pname.CurrentValues
+        param.Add(paramvalue)
+        pname.ApplyCurrentValues(param)
+
+
+        pname = pnames.Item("filter")
+        'paramvalue.Value = Session("repfilter")
+        paramvalue.Value = repfilter
+        param = pname.CurrentValues
+        param.Add(paramvalue)
+        pname.ApplyCurrentValues(param)
+
+        Dim addr1 As String = String.Empty
+        Dim addr2 As String = String.Empty
+        Dim addr3 As String = String.Empty
+        Dim addr4 As String = String.Empty
+        Dim addr5 As String = String.Empty
+        Dim addresline1 As String = String.Empty
+        Dim addresline2 As String = String.Empty
+
+        If Not ViewState("RepMode") Is Nothing Then
+            If ViewState("RepMode") = "WITHLOGO" Then
+                Dim ds As DataSet = objutils.ExecuteQuerySqlnew(Session("dbconnectionName"), "SELECT option_selected FROM reservation_parameters where param_id IN (1053,1063,1064,1065,1066)")
+                addr1 = ds.Tables(0).Rows(0).Item("option_selected")
+                addr2 = ds.Tables(0).Rows(1).Item("option_selected")
+                addr3 = ds.Tables(0).Rows(2).Item("option_selected")
+                addr4 = ds.Tables(0).Rows(3).Item("option_selected")
+                addr5 = ds.Tables(0).Rows(4).Item("option_selected")
+                addresline1 = rptcompanyname + ", " + addr1 + ", " + addr2
+                addresline2 = addr3 + ", " + addr4 + ", " + addr5
+
+
+                pname = pnames.Item("addrline1")                
+                paramvalue.Value = addresline1
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("addrline2")
+                paramvalue.Value = addresline2
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+            End If
+        End If
+
+
+        If (CType(ViewState("Pageame"), String) = "TranferDepartureSlip" Or CType(ViewState("Pageame"), String) = "fochoteltransfer") Then
+
+            pname = pnames.Item("@departuredate")
+            'paramvalue.Value = Session("fromdate")
+            paramvalue.Value = Format(CType(ViewState("fromdate"), Date), "yyyy/MM/dd")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+
+
+
+            pname = pnames.Item("@pmktfrm")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("sellcodefrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pmktto")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("sellcodeto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pctfrm")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strclientfrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pctto")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strclientto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+
+            pname = pnames.Item("@pprofrm")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strpartyfrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pproto")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strpartyto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@orderby")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strgroupby")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pairpfrm")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strairportfrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pairpto")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strairportto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pflifrm")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strflightfrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pflito")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strflightto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            If CType(ViewState("Pageame"), String) = "fochoteltransfer" Then
+                pname = pnames.Item("@transfer")
+                'paramvalue.Value = Session("sectorcode")
+                paramvalue.Value = Val(Request.QueryString("strtransfer"))
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+            End If
+
+
+            'pname = pnames.Item("pairlfrm")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strairlinefrom")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("pairlto")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strairlineto")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+        ElseIf CType(ViewState("Pageame"), String) = "HotelVoucher" Or CType(ViewState("Pageame"), String) = "HotelLabel" Or CType(ViewState("Pageame"), String) = "Noshow" Then
+
+            pname = pnames.Item("@checkinfrmdate")
+            'paramvalue.Value = Session("fromdate")
+            paramvalue.Value = Format(CType(ViewState("fromdate"), Date), "yyyy/MM/dd")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@checkintodate")
+            'paramvalue.Value = Session("fromdate")
+            paramvalue.Value = Format(CType(ViewState("todate"), Date), "yyyy/MM/dd")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+
+
+
+            pname = pnames.Item("@pmktfrm")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("sellcodefrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pmktto")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("sellcodeto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pctfrm")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strclientfrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pctto")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strclientto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+
+            pname = pnames.Item("@pprofrm")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strpartyfrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pproto")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strpartyto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@orderby")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = ViewState("strgroupby")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            Dim ctry As String = ""
+            ctry = CType(objutils.ExecuteQueryReturnSingleValuenew(Session("dbconnectionName"), "select option_selected from reservation_parameters where param_id=459"), String)
+
+            If CType(ViewState("Pageame"), String) = "HotelLabel" And ctry = "UAE" Then
+                pname = pnames.Item("contactname")
+                paramvalue.Value = Request.QueryString("contactname")
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("contactno")
+                paramvalue.Value = "+" + LTrim(Request.QueryString("contactno"))
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+            End If
+
+        Else
+
+            pname = pnames.Item("@arrivaldate")
+            paramvalue.Value = Format(CType(ViewState("fromdate"), Date), "yyyy/MM/dd")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@constodate")
+            'paramvalue.Value = Session("fromdate")
+            paramvalue.Value = Val(Request.QueryString("considertodate").ToString)
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@booktype")
+            'paramvalue.Value = Session("sectorcode")
+            paramvalue.Value = CType(ViewState("strbooktype"), Integer)
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+
+
+            pname = pnames.Item("@pmktfrm")
+            paramvalue.Value = ViewState("sellcodefrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pmktto")
+            paramvalue.Value = ViewState("sellcodeto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pctfrm")
+            paramvalue.Value = ViewState("strclientfrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pctto")
+            paramvalue.Value = ViewState("strclientto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pprofrm")
+            paramvalue.Value = ViewState("strpartyfrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pproto")
+            paramvalue.Value = ViewState("strpartyto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("grpby")
+            paramvalue.Value = ViewState("strgroupby")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pairpfrm")
+            paramvalue.Value = ViewState("strairportfrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pairpto")
+            paramvalue.Value = ViewState("strairportto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pflightfrm")
+            paramvalue.Value = ViewState("strflightfrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pflightto")
+            paramvalue.Value = ViewState("strflightto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pairlinefrm")
+            paramvalue.Value = ViewState("strairlinefrom")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@pairlineto")
+            paramvalue.Value = ViewState("strairlineto")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("@deptoDate")
+            'paramvalue.Value = Session("fromdate")
+            paramvalue.Value = Format(CType(ViewState("todate"), Date), "yyyy/MM/dd")
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+
+
+            'pname = pnames.Item("ArrivalDate")
+            'paramvalue.Value = Format(CType(ViewState("fromdate"), Date), "yyyy/MM/dd")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+
+
+
+            'pname = pnames.Item("pmktfrm")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("sellcodefrom")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("pmktto")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("sellcodeto")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("pctfrm")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strclientfrom")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("pctto")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strclientto")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+
+            'pname = pnames.Item("pprofrm")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strpartyfrom")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("pproto")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strpartyto")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("grpby")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strgroupby")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("pairpfrm")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strairportfrom")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("pairpto")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strairportto")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("pflifrm")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strflightfrom")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("pflito")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strflightto")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("pairlfrm")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strairlinefrom")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("pairlto")
+            ''paramvalue.Value = Session("sectorcode")
+            'paramvalue.Value = ViewState("strairlineto")
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+        End If
+
+
+
+        ' Me.CRVNewClients.HasToggleGroupTreeButton = False
+
+        Me.CRVNewClients.ReportSource = rep
+        'If strSelectionFormula <> "" Then
+        '    CRVSupplierPolicies.SelectionFormula = strSelectionFormula
+        'End If
+        Me.CRVNewClients.DataBind()
+    End Sub
+
+    Protected Sub Page_Unload(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Unload
+        If ViewState("RepCalledFrom") <> 1 Then
+            rep.Close()
+            rep.Dispose()
+            ' Session("ColReportParams") = Nothing
+        End If
+    End Sub
+
+    Protected Sub btnBack_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnBack.Click
+        'Session("fromdate") = ""
+        'Session("todate") = ""
+        'Session("catcode") = ""
+        'Session("citycode") = ""
+        'Session("ctrycode") = ""
+        'Session("sectorcode") = ""
+
+        'Session("repfilter") = ""
+        'Session("reportoption") = ""
+        'Session("ReportTitle") = ""
+        ''Response.Redirect("NewclientsSearch.aspx", False)
+        'Response.Redirect("NewclientsSearch.aspx?catcode=" & catcode & "&citycode=" & citycode _
+        '& "&ctrycode=" & ctrycode & "&sectorcode=" & sectorcode & "&fromdate=" & fromdate & "&todate=" & todate _
+        '& "&orderby=" & orderby & "&repfilter=" & repfilter & "&reportoption=" & reportoption & "&reporttitle=" & reporttitle, False)
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+    End Sub
+
+    Protected Sub btnPrint_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnPrint.Click
+        Session.Add("ReportSource", rep)
+        ViewState.Add("RepCalledFrom", 1)
+        Dim strpop As String = ""
+        strpop = "window.open('RptPrintPage.aspx','PopUpGuestDetails','width=1010,height=650 left=0,top=0 scrollbars=yes,status=yes');"
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+    End Sub
+
+
+    Private Function GetScalarValue(ByVal dbconnection As String, ByVal strQry As String) As Object
+        Try
+            SqlConn = clsDBConnect.dbConnectionnew(dbconnection)
+            myCommand = New SqlCommand(strQry, SqlConn)
+            Return myCommand.ExecuteScalar()
+        Catch ex As Exception
+            Return ""
+        End Try
+    End Function
+
+End Class

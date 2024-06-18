@@ -1,0 +1,681 @@
+﻿#Region "Namespace"
+Imports System.Data
+Imports System.Data.SqlClient
+#End Region
+Partial Class TransportModule_TransfersRequestSearch
+    Inherits System.Web.UI.Page
+
+#Region "Global Declarations"
+    Dim objUtils As New clsUtils
+    Dim objUser As New clsUser
+    Dim objDateTime As New clsDateTime
+    Dim strSqlQry As String
+    Dim strWhereCond As String
+    Dim SqlConn As SqlConnection
+    Dim myCommand As SqlCommand
+    Dim sqlTrans As SqlTransaction
+    Dim myDataAdapter As SqlDataAdapter
+    Dim objDate As New clsDateTime
+    Dim ScriptOpenModalDialog As String = "OpenModalDialog('{0}','{1}');"
+
+#End Region
+
+#Region "Enum GridCol"
+    Enum GridCol
+        SectorCodeTCol = 0
+        SectorCode = 1
+        SectorName = 2
+        CountryCode = 3
+        CountryName = 4
+        CityCode = 5
+        CityName = 6
+        Active = 7
+        DateCreated = 8
+        UserCreated = 9
+        DateModified = 10
+        UserModified = 11
+        Edit = 12
+        View = 13
+        Delete = 14
+
+    End Enum
+#End Region
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        ViewState.Add("ReceiptsSearchRVPVTranType", Request.QueryString("tran_type"))
+        If Page.IsPostBack = False Then
+            Try
+
+                Dim AppId As HiddenField = CType(Master.FindControl("hdnAppId"), HiddenField)
+                Dim AppName As HiddenField = CType(Master.FindControl("hdnAppName"), HiddenField)
+                Dim strappid As String = ""
+                Dim strappname As String = ""
+                Dim frmdate As String = ""
+                Dim todate As String = ""
+
+                pnlSearch.Visible = False
+                If AppId Is Nothing = False Then
+                    strappid = AppId.Value
+                End If
+                If AppName Is Nothing = False Then
+                    strappname = AppName.Value
+                End If
+
+                ' txtconnection.Value = Session("dbconnectionName")
+
+                SetFocus(txtTranId)
+                If CType(Session("GlobalUserName"), String) = Nothing Or CType(Session("Userpwd"), String) = Nothing Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                Else
+                    objUser.CheckUserRight(Session("dbconnectionName"), CType(Session("GlobalUserName"), String), CType(Session("Userpwd"), String), _
+                                                        CType(strappname, String), "TransportModule\TransfersRequestSearch.aspx?appid=" + strappid, btnAddNew, btnExportToExcel, _
+                                                        btnPrint, gv_SearchResult, GridCol.Edit, GridCol.Delete, GridCol.View)
+                End If
+                btnPrint.Visible = False
+                btnExportToExcel.Visible = False
+
+                btnAddNew.Visible = False
+
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlCustomer, "agentname", "agentcode", "select agentname,agentcode from agentmast where active=1 order by agentname", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSupplier, "partyname", "partycode", "select partyname,partycode from partymast where active=1 order by partyname", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlUserCode, "UserCode", "UserName", "select UserName,UserCode from Usermaster where active=1 order by UserCode", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlUserName, "UserName", "UserCode", "select UserCode,UserName from Usermaster where active=1 order by UserName", True)
+
+                Session.Add("strsortExpression", "td.requestid")
+                Session.Add("strsortdirection", SortDirection.Ascending)
+                ddlrpttype.SelectedIndex = 3
+                fillorderby()
+                FillGrid("td.requestid")
+
+                divtransfer.Style("display") = "none"
+                divtransfer.Style("visibility") = "hidden"
+                btnCancel.Attributes.Add("onclick", "return hidediv()")
+
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("TransfersRequestSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+        Else
+
+
+        End If
+
+        btnClear.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to clear search criteria?')==false)return false;")
+        ClientScript.GetPostBackEventReference(Me, String.Empty)
+
+        If (Me.IsPostBack And Me.Request("__EVENTTARGET") = "TransfersWindowPostBack") Then
+            btnSearch_Click(sender, e)
+        End If
+        Dim typ As Type
+        typ = GetType(DropDownList)
+
+        If (Page.ClientScript.IsClientScriptIncludeRegistered(typ, "TADDScript.js")) = False Then
+            Page.ClientScript.RegisterClientScriptInclude(typ, "TADDScript.js", "TADDScript.js")
+
+            ddlCustomer.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            ddlSupplier.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+
+        End If
+    End Sub
+
+    Protected Sub btnAddNew_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnAddNew.Click
+        Dim strpop As String = ""
+        Dim actionstr As String = ""
+
+        actionstr = "New"
+        'strpop = "window.open('TransfersRequestEntry.aspx?State=" + CType(actionstr, String) + "&RefCode=" + CType("", String) + "&TransfersRequestEntry=" + CType(ViewState("TransfersRequestEntry"), String) + "','TransfersRequestEntry','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+        'strpop = "window.open('TransfersRequestEntry.aspx?State=AddRow','TransfersRequestEntry','width='+screen.availWidth+' height='+screen.availHeight+' left=0,top=0 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+        strpop = "window.open('TransfersRequestEntry.aspx?State=AddRow','TransfersRequestEntry');"
+
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+    End Sub
+
+
+#Region "Private Sub FillGrid(ByVal strorderby As String, Optional ByVal strsortorder As String = 'DESC')"
+    Private Sub FillGrid(ByVal strorderby As String, Optional ByVal strsortorder As String = "DESC")
+        Dim myDS As New DataSet
+        Dim strValue As String
+
+        gv_SearchResult.Visible = True
+        lblMsg.Visible = False
+
+        If gv_SearchResult.PageIndex < 0 Then
+            gv_SearchResult.PageIndex = 0
+        End If
+        strSqlQry = ""
+        Try
+
+            strSqlQry = "select top 100 td.requestid as requestid,th.requestdate as requestdate,td.transferdate as transferdate,a.agentname," & _
+                        "case(transfertype) when 0 then 'Arrival' when 1 then 'Departure' when 2 then 'Shifting' end as transfertype, " & _
+                        "v1.airportbordername as StartingPoint,v2.airportbordername as EndingPoint,c.othcatname as CarType,p.partyname as HotelName," & _
+                        "td.guestname as guestname,td.units as units,td.flightcode as flightcode,td.flighttime as flighttime, " & _
+                        "case when ISNULL(sd.transfermode,0)=1 then ISNULL(p1.partyname,'') else ISNULL(d1.drivername,'') end Driver, " & _
+                        "td.salecurrency as salecurrency," & _
+                        "td.salevalue as salevalue,th.adddate as adddate,th.adduser as adduser,th.moddate as moddate,th.moduser as moduser " & _
+                        "From transfers_booking_header(nolock) th,partymast p(nolock),agentmast a, view_airportsectormast v2(nolock), othcatmast  c(nolock)," & _
+                        " transfers_booking_detailnew td left join view_airportsectormast v1 on td.startingpoint=v1.airportbordercode  " & _
+                        " inner join transfer_booking_subdetail sd on sd.requestid =td.requestid and sd.tlineno =td.tlineno " & _
+                        " left join partymast p1  on p1.partycode =sd.suppliercode  left join drivermaster d1 on d1.drivercode =sd.drivercode " & _
+                        " where th.requestid=td.requestid " & _
+                        "and td.hotelcode=p.partycode   and a.agentcode=th.agentcode and td.endingpoint=v2.airportbordercode " & _
+                        "and c.othcatcode=td.cartype  and c.othgrpcode in (select option_selected from reservation_parameters where param_id=1001)"
+
+            strValue = Trim(BuildCondition())
+
+            If strValue <> "" Then
+                strSqlQry = strSqlQry & " and " & strValue & " ORDER BY " & strorderby & " " & strsortorder
+            Else
+                strSqlQry = strSqlQry & " ORDER BY " & strorderby & " " & strsortorder
+            End If
+
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            gv_SearchResult.DataSource = myDS
+
+            If myDS.Tables(0).Rows.Count > 0 Then
+                gv_SearchResult.DataBind()
+            Else
+                gv_SearchResult.PageIndex = 0
+                gv_SearchResult.DataBind()
+                lblMsg.Visible = True
+                lblMsg.Text = "Records not found, Please redefine search criteria."
+            End If
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("SectorSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            'clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            'clsDBConnect.dbConnectionClose(SqlConn)                          'Close connection
+        End Try
+
+    End Sub
+#End Region
+
+
+#Region "  Private Function BuildCondition() As String"
+
+
+    Private Function BuildCondition() As String
+        If validate_check() = False Then
+            Return False
+            Exit Function
+        End If
+
+        strWhereCond = ""
+        If txtTranId.Text.Trim <> "" Then
+            If Trim(strWhereCond) = "" Then
+
+                strWhereCond = " upper(td.requestid) LIKE '" & Trim(txtTranId.Text.Trim.ToUpper) & "%'"
+            Else
+                strWhereCond = strWhereCond & " AND upper(td.requestid) LIKE '" & Trim(txtTranId.Text.Trim.ToUpper) & "%'"
+            End If
+        End If
+
+        If txtClientRef.Text.Trim <> "" Then
+            If Trim(strWhereCond) = "" Then
+
+                strWhereCond = " upper(th.agentref) LIKE '" & Trim(txtClientRef.Text.Trim.ToUpper) & "%'"
+            Else
+                strWhereCond = strWhereCond & " AND upper(th.agentref) LIKE '" & Trim(txtClientRef.Text.Trim.ToUpper) & "%'"
+            End If
+        End If
+        If rbtnadsearch.Checked = True Then
+
+            'If validate_check() = False Then
+            '    Exit Function
+            'End If
+
+
+            If txtFromDate.Text <> "" And txtTodate.Text <> "" Then
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = "( (convert(varchar(10),td.requestdate,111) between convert(varchar(10), '" & Format(CType(txtFromDate.Text, Date), "yyyy/MM/dd") & "',111) " _
+                    & "  and  convert(varchar(10), '" & Format(CType(txtTodate.Text, Date), "yyyy/MM/dd") & "',111) ) " _
+                    & " or (convert(varchar(10),td.requestdate,111) < convert(varchar(10), '" & Format(CType(txtFromDate.Text, Date), "yyyy/MM/dd") & "',111) " _
+                    & "  and convert(varchar(10),td.requestdate,111) > convert(varchar(10), '" & Format(CType(txtTodate.Text, Date), "yyyy/MM/dd") & "',111)) )"
+                Else
+                    strWhereCond = strWhereCond & " and ( (convert(varchar(10),td.requestdate,111) between convert(varchar(10), '" & Format(CType(txtFromDate.Text, Date), "yyyy/MM/dd") & "',111) " _
+                    & "  and  convert(varchar(10), '" & Format(CType(txtTodate.Text, Date), "yyyy/MM/dd") & "',111) ) " _
+                    & " or (convert(varchar(10),td.requestdate,111) < convert(varchar(10), '" & Format(CType(txtFromDate.Text, Date), "yyyy/MM/dd") & "',111) " _
+                    & "  and convert(varchar(10),td.requestdate,111) > convert(varchar(10), '" & Format(CType(txtTodate.Text, Date), "yyyy/MM/dd") & "',111)) )"
+
+                End If
+            End If
+
+
+            If txtTransFromDate.Text <> "" And txtTransToDate.Text <> "" Then
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = "( (convert(varchar(10),td.transferdate,111) between convert(varchar(10), '" & Format(CType(txtTransFromDate.Text, Date), "yyyy/MM/dd") & "',111) " _
+                    & "  and  convert(varchar(10), '" & Format(CType(txtTransToDate.Text, Date), "yyyy/MM/dd") & "',111) ) " _
+                    & " or (convert(varchar(10),td.transferdate,111) < convert(varchar(10), '" & Format(CType(txtTransFromDate.Text, Date), "yyyy/MM/dd") & "',111) " _
+                    & "  and convert(varchar(10),td.transferdate,111) > convert(varchar(10), '" & Format(CType(txtTransToDate.Text, Date), "yyyy/MM/dd") & "',111)) )"
+                Else
+                    strWhereCond = strWhereCond & " and ( (convert(varchar(10),td.transferdate,111) between convert(varchar(10), '" & Format(CType(txtTransFromDate.Text, Date), "yyyy/MM/dd") & "',111) " _
+                    & "  and  convert(varchar(10), '" & Format(CType(txtTransToDate.Text, Date), "yyyy/MM/dd") & "',111) ) " _
+                    & " or (convert(varchar(10),td.transferdate,111) < convert(varchar(10), '" & Format(CType(txtTransFromDate.Text, Date), "yyyy/MM/dd") & "',111) " _
+                    & "  and convert(varchar(10),td.transferdate,111) > convert(varchar(10), '" & Format(CType(txtTransToDate.Text, Date), "yyyy/MM/dd") & "',111)) )"
+
+                End If
+            End If
+
+            If txtGuestName.Text.Trim <> "" Then
+                If Trim(strWhereCond) = "" Then
+
+                    strWhereCond = " upper(td.guestname) LIKE '" & Trim(txtGuestName.Text.Trim.ToUpper) & "%'"
+                Else
+                    strWhereCond = strWhereCond & " AND upper(td.guestname) LIKE '" & Trim(txtGuestName.Text.Trim) & "%'"
+                End If
+            End If
+
+            If txtSalesPrice.Text.Trim <> "" Then
+                If Trim(strWhereCond) = "" Then
+
+                    strWhereCond = " upper(td.salevalue) ='" & Trim(txtSalesPrice.Text.Trim.ToUpper) & "'"
+                Else
+                    strWhereCond = strWhereCond & " AND upper(td.salevalue) = '" & Trim(txtSalesPrice.Text.Trim.ToUpper) & "'"
+                End If
+            End If
+
+
+        End If
+
+        If ddlrpttype.SelectedIndex <> 3 Then
+            If Trim(strWhereCond) = "" Then
+                strWhereCond = "upper(td.transfertype) = '" & Trim(ddlrpttype.SelectedIndex) & "'"
+
+            Else
+                strWhereCond = strWhereCond & " AND upper(td.transfertype) = '" & Trim(ddlrpttype.SelectedIndex) & "'"
+
+
+            End If
+        End If
+
+        If Me.ddlCustomer.Value <> "[Select]" Then
+            If Trim(strWhereCond) = "" Then
+                strWhereCond = "upper(td.agentcode) = '" & Trim(ddlCustomer.Items(ddlCustomer.SelectedIndex).Value.Trim.ToUpper) & "'"
+            Else
+                strWhereCond = strWhereCond & " AND upper(td.agentcode) = '" & Trim(ddlCustomer.Items(ddlCustomer.SelectedIndex).Value.Trim.ToUpper) & "'"
+            End If
+        End If
+
+
+        If Me.ddlSupplier.Value <> "[Select]" Then
+            If Trim(strWhereCond) = "" Then
+                strWhereCond = " upper(td.hotelcode) = '" & Trim(ddlSupplier.Items(ddlSupplier.SelectedIndex).Value.Trim.ToUpper) & "'"
+            Else
+                strWhereCond = strWhereCond & " AND upper(td.hotelcode) = '" & Trim(ddlSupplier.Items(ddlSupplier.SelectedIndex).Value.Trim.ToUpper) & "'"
+            End If
+        End If
+
+
+        If Me.ddlUserCode.Value <> "[Select]" Then
+            If Trim(strWhereCond) = "" Then
+                strWhereCond = " upper(td.usercode) = '" & Trim(ddlUserCode.Items(ddlUserCode.SelectedIndex).Text.Trim.ToUpper) & "'"
+            Else
+                strWhereCond = strWhereCond & " AND upper(td.usercode) = '" & Trim(ddlUserCode.Items(ddlUserCode.SelectedIndex).Text.Trim.ToUpper) & "'"
+            End If
+        End If
+
+
+
+
+
+        BuildCondition = strWhereCond
+    End Function
+#End Region
+
+    Protected Sub rbtnadsearch_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles rbtnadsearch.CheckedChanged
+        pnlSearch.Visible = True
+    End Sub
+
+
+    Private Function validate_check() As Boolean
+
+        validate_check = True
+        If txtFromDate.Text <> "" And txtTodate.Text <> "" Then
+
+            If ObjDate.ConvertDateromTextBoxToDatabase(txtTodate.Text) < ObjDate.ConvertDateromTextBoxToDatabase(txtFromDate.Text) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Request to Date should be greater than request from Date.');", True)
+                validate_check = False
+            End If
+
+        End If
+        If txtTransFromDate.Text <> "" And txtTransToDate.Text <> "" Then
+
+            If objDate.ConvertDateromTextBoxToDatabase(txtTransToDate.Text) < objDate.ConvertDateromTextBoxToDatabase(txtTransFromDate.Text) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Transfer to Date should be greater than transfer  from Date.');", True)
+                validate_check = False
+            End If
+        End If
+
+
+
+    End Function
+
+    Protected Sub btnSearch_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSearch.Click
+        FillGrid("td.requestid")
+        divtransfer.Style("display") = "none"
+        divtransfer.Style("visibility") = "hidden"
+    End Sub
+
+    Protected Sub rbtnsearch_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles rbtnsearch.CheckedChanged
+        clear()
+        pnlSearch.Visible = False
+        divtransfer.Style("display") = "none"
+        divtransfer.Style("visibility") = "hidden"
+    End Sub
+
+
+#Region "Protected Sub gv_SearchResult_PageIndexChanging(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gv_SearchResult.PageIndexChanging"
+    Protected Sub gv_SearchResult_PageIndexChanging(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gv_SearchResult.PageIndexChanging
+        gv_SearchResult.PageIndex = e.NewPageIndex
+
+        Select Case ddlOrderBy.SelectedIndex
+            Case 0
+                FillGrid("td.requestid")
+            Case 1
+                FillGrid("th.requestdate")
+            Case 2
+                FillGrid("td.transferdate")
+
+        End Select
+    End Sub
+
+#End Region
+
+    Protected Sub ddlOrderBy_SelectedIndexChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles ddlOrderBy.SelectedIndexChanged
+        Select Case ddlOrderBy.SelectedIndex
+            Case 0
+                FillGrid("td.requestid")
+            Case 1
+                FillGrid("th.requestdate")
+            Case 2
+                FillGrid("td.transferdate")
+        End Select
+    End Sub
+
+    Private Sub fillorderby()
+        ddlOrderBy.Items.Clear()
+        ddlOrderBy.Items.Add("Request Id")
+        ddlOrderBy.Items.Add("Request Date")
+        ddlOrderBy.Items.Add("Transfer Date")
+
+        ddlOrderBy.SelectedIndex = 0
+    End Sub
+
+    Protected Sub btnClear_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnClear.Click
+        clear()
+
+    End Sub
+
+
+    Private Sub clear()
+        txtTranId.Text = ""
+        txtClientRef.Text = ""
+        txtFromDate.Text = ""
+        txtTodate.Text = ""
+        txtTransFromDate.Text = ""
+        txtTransToDate.Text = ""
+        Me.ddlSupplier.Value = "[Select]"
+        Me.ddlCustomer.Value = "[Select]"
+        Me.ddlUserCode.Value = "[Select]"
+        Me.ddlUserName.Value = "[Select]"
+        Me.txtGuestName.Text = ""
+        Me.txtSalesPrice.Text = ""
+        Me.ddlrpttype.SelectedIndex = 3
+        FillGrid("td.requestid")
+    End Sub
+
+    Protected Sub gv_SearchResult_Sorting(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewSortEventArgs) Handles gv_SearchResult.Sorting
+        Session.Add("strsortexpression", e.SortExpression)
+        SortGridColoumn_click()
+    End Sub
+
+#Region "Public Sub SortGridColoumn_click()"
+    Public Sub SortGridColoumn_click()
+        Dim DataTable As DataTable
+        Dim myDS As New DataSet
+        FillGrid(Session("strsortexpression"), "")
+
+        myDS = gv_SearchResult.DataSource
+        DataTable = myDS.Tables(0)
+        If IsDBNull(DataTable) = False Then
+            Dim dataView As DataView = DataTable.DefaultView
+            Session.Add("strsortdirection", objUtils.SwapSortDirection(Session("strsortdirection")))
+            dataView.Sort = Session("strsortexpression") & " " & objUtils.ConvertSortDirectionToSql(Session("strsortdirection"))
+            gv_SearchResult.DataSource = dataView
+            gv_SearchResult.DataBind()
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub gv_SearchResult_RowCommand(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gv_SearchResult.RowCommand"
+
+    Protected Sub gv_SearchResult_RowCommand(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gv_SearchResult.RowCommand
+        Try
+            If e.CommandName = "Page" Then Exit Sub
+            If e.CommandName = "Sort" Then Exit Sub
+            Dim lblId As Label
+            Dim transfertype As Label
+            lblId = gv_SearchResult.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblCode")
+            hdnField.Value = CType(lblId.Text.Trim, String)
+
+            transfertype = gv_SearchResult.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblTransferType")
+
+            If e.CommandName = "Editrow" Then
+                Dim str As String = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select requestid from transfers_booking_detailnew   where requestid ='" & (lblId.Text.Trim))
+
+
+                If str <> "" Or str <> Nothing Then
+                    If check_Privilege() = 1 Then
+                        Dim StrConfirm As String = "ConfirmOpen('" +CType(lblId.Text.Trim, String) + "');"
+                        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", StrConfirm, True)
+
+
+                        'objUtils.ConfirmMessageBox("Request has been assigned,remove assign and continue", Page)
+                        ''Exit Sub
+                        'SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+                        'sqlTrans = SqlConn.BeginTransaction
+                        'myCommand = New SqlCommand("sp_del_transfers_bookingdetails", SqlConn, sqlTrans)
+                        'myCommand.CommandType = CommandType.StoredProcedure
+
+                        'myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 10)).Value = hdnField.Value
+
+                        'myCommand.ExecuteNonQuery()
+
+                        'sqlTrans.Commit()    'SQl Tarn Commit
+                        'clsDBConnect.dbSqlTransation(sqlTrans)              ' sql Transaction disposed 
+                        'clsDBConnect.dbCommandClose(myCommand)               'sql command disposed
+                        'clsDBConnect.dbConnectionClose(SqlConn)
+                    Else
+
+                        objUtils.MessageBox("Can Edit the Record where the status is Applied", Page)
+                        Exit Sub
+
+
+                    End If
+                Else
+
+                    Dim strnew As String = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select tran_state from transfers_booking_detailnew   where requestid ='" & (lblId.Text.Trim) & "'")
+
+                    If (IsDBNull(strnew) = True Or strnew = "") Then
+
+                        Dim mindate2 As String = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select convert(varchar(10),min(transferdate),111) from view_transfers_booking_new where requestid not in (select requestid from reservation_headernew(nolock)) and  requestid ='" & lblId.Text & "'")
+
+                        Dim sealdate As String = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select sealdate from  sealing_master(nolock)")
+
+                        If mindate2 <> "" Then
+                            If Convert.ToDateTime(mindate2) <= Convert.ToDateTime(sealdate) Then
+
+                                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This Month Already Sealed');", True)
+                                Return
+                            End If
+                        End If
+
+
+
+                        Dim strnew1 As String = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select isnull(invno,'') from transfers_booking_detailnew   where requestid ='" & (lblId.Text.Trim) & "'")
+
+                        If strnew1 <> "" Then
+
+
+                            Dim strpop As String = ""
+                            strpop = "TransfersRequestEntry.aspx?State=EditRow&RefCode=" + CType(lblId.Text.Trim, String) + "','TransfersRequestEntry','width='+screen.availWidth+'height='+screen.availHeight+' left=0,top=0 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes"
+                            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "javascript:confirmInvoice('" & strpop & "');", True)
+
+
+                            'If MsgBox("This Booking Already Invoiced Do You want to Edit", MsgBoxStyle.YesNo, "Doc Edit") = MsgBoxResult.No Then
+                            '    Exit Sub
+                            'Else
+
+                            '    Dim strpop As String = ""
+                            '    strpop = "window.open('TransfersRequestEntry.aspx?State=EditRow&RefCode=" + CType(lblId.Text.Trim, String) + "  ','TransfersRequestEntry','width='+screen.availWidth+' height='+screen.availHeight+' left=0,top=0 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+                            'End If
+                        Else
+                            Dim strpop As String = ""
+                            'strpop = "window.open('TransfersRequestEntry.aspx?State=EditRow&RefCode=" + CType(lblId.Text.Trim, String) + "  ','TransfersRequestEntry','width='+screen.availWidth+' height='+screen.availHeight+' left=0,top=0 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                            strpop = "window.open('TransfersRequestEntry.aspx?State=EditRow&RefCode=" + CType(lblId.Text.Trim, String) + "  ','TransfersRequestEntry');"
+                            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+                        End If
+
+                    Else
+                        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This Booking Cant Edit');", True)
+                    End If
+
+
+                    End If
+
+
+
+
+
+                'Dim strpop As String = ""
+                '' strpop = "window.open('CancellationTypes.aspx?State=Edit','Cancellation','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                'strpop = "window.open('TransfersRequestEntry.aspx?State=Edit&RefCode=" + CType(lblId.Text.Trim, String) + "  ','TransfersRequestEntry','width='+screen.availWidth+' height='+screen.availHeight+' left=0,top=0 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                'ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+
+
+
+            ElseIf e.CommandName = "View" Then
+                Dim strpop As String = ""
+                'strpop = "window.open('TransfersRequestEntry.aspx?State=ViewRow&RefCode=" + CType(lblId.Text.Trim, String) + "','TransfersRequestEntry','width='+screen.availWidth+' height='+screen.availHeight+' left=0,top=0 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                strpop = "window.open('TransfersRequestEntry.aspx?State=ViewRow&RefCode=" + CType(lblId.Text.Trim, String) + "','TransfersRequestEntry');"
+                'strpop = "window.open('CancellationTypes.aspx?State=View','Cancellation','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+
+            ElseIf e.CommandName = "Print" Then
+
+
+
+
+                'Dim strpop As String = ""
+                'Dim strURL As String = ""
+
+                If transfertype.Text = "Arrival" Then
+                    rdnbdeparture.Checked = False
+                    rdnbdeparture.Disabled = True
+
+                Else
+
+                    rdnbdeparture.Checked = True
+                    rdnarrival.Checked = False
+
+                End If
+
+                'strURL = "PrintPopUp.aspx?RefCode=" & CType(lblId.Text.Trim, String) & " &TransferType=" & CType(transfertype.Text.Trim, String) & ""
+                'ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", String.Format(ScriptOpenModalDialog, strURL, 300), True)
+
+                divtransfer.Style("display") = "block"
+                divtransfer.Style("visibility") = "visibile"
+                divtransfer.Style("position") = "absolute"
+                divtransfer.Style("top") = "500px"
+                divtransfer.Style("z-index") = "100px"
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("TransfersRequestSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+    Public Function check_Privilege() As Integer
+        Try
+            Dim strSql As String
+            Dim usrCode As String
+            usrCode = CType(Session("GlobalUserName"), String)
+            'mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+            strSql = "select appid from group_privilege_Detail where privilegeid='30' and appid='10' and "
+            strSql += "groupid=(SELECT groupid FROM UserMaster WHERE UserCode='" + usrCode + "')"
+            'mySqlCmd = New SqlCommand(strSql, mySqlConn)
+            'mySqlReader = mySqlCmd.ExecuteReader(CommandBehavior.CloseConnection)
+
+            Dim ds1 As DataSet = objUtils.ExecuteQuerySqlnew(Session("dbconnectionName"), strSql)
+            If ds1.Tables.Count > 0 Then
+                If ds1.Tables(0).Rows.Count > 0 Then
+                    Return 1
+                Else
+                    Return 0
+                End If
+            End If
+
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("TransfersRequestSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            'clsDBConnect.dbCommandClose(mySqlCmd)               'sql command disposed
+            'clsDBConnect.dbReaderClose(mySqlReader)             ' sql reader disposed    
+            'clsDBConnect.dbConnectionClose(mySqlConn)           'connection close 
+        End Try
+    End Function
+
+    Protected Sub btnReport_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnReport.Click
+
+        Try
+            Dim transfertype As Integer
+            'If ViewState("TransfersState") = "Arrival" Then
+            '    transfertype = 0
+            'Else
+
+            '    transfertype = 1
+            'End If
+
+            If rdnarrival.Checked = True Then
+                transfertype = 0
+            Else
+                transfertype = 1
+
+            End If
+
+            Dim strpop As String = ""
+
+            'strpop = "window.open('rptReportNew.aspx?Pageame=TransferVoucher&BackPageName=TransfersRequestEntry.aspx&transfertype=" & transfertype & "&Refcode=" & hdnField.Value & "','RepPrint','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+            strpop = "window.open('rptReportNew.aspx?Pageame=TransferVoucher&BackPageName=TransfersRequestEntry.aspx&transfertype=" & transfertype & "&Refcode=" & hdnField.Value & "','RepPrint');"
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+            divtransfer.Style("display") = "none"
+            divtransfer.Style("visibility") = "hidden"
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("PrintPopUp.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+        End Try
+
+
+
+
+    End Sub
+
+    Protected Sub gv_SearchResult_RowDataBound(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gv_SearchResult.RowDataBound
+        'If (e.Row.RowType = DataControlRowType.DataRow) Then
+        '    Dim lblapprove As Label
+        '    lblapprove = e.Row.FindControl("lblapproval")
+        '    If (lblapprove.Text) = 2 Then
+        '        e.Row.Cells(25).Enabled = False
+        '    End If
+
+
+        'End If
+    End Sub
+End Class

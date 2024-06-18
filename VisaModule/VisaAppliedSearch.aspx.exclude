@@ -1,0 +1,719 @@
+﻿<%@ Page Title="" Language="VB" MasterPageFile="~/VisaMaster.master" AutoEventWireup="false"
+    EnableEventValidation="true" CodeFile="VisaAppliedSearch.aspx.vb" Inherits="VisaModule_VisaAppliedSearch" %>
+
+<%@ Register Assembly="System.Web.Extensions, Version=1.0.61025.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+    Namespace="System.Web.UI" TagPrefix="asp" %>
+<%@ Register Assembly="EclipseWebSolutions.DatePicker" Namespace="EclipseWebSolutions.DatePicker"
+    TagPrefix="ews" %>
+<%@ OutputCache Location="none" %>
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" runat="Server">        
+    <script type="text/javascript" src="../Scripts/jquery-1.8.3.min.js"></script>
+    <style type="text/css">
+        .ModalPopupBG
+        {
+            background-color: gray;
+            filter: alpha(opacity=50);
+            opacity: 0.9;
+        }
+        .style3
+        {
+            width: 213px;
+        }
+    </style>
+
+    <style type="text/css">
+        .modal
+        {
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: black;
+            z-index: 99;
+            opacity: 0.8;
+            filter: alpha(opacity=80);
+            -moz-opacity: 0.8;
+            min-height: 100%;
+            width: 100%;
+        }
+        .loading
+        {
+            font-family: Arial;
+            font-size: 10pt;
+            border: 5px solid #67CFF5;
+            width: 200px;
+            height: 100px;
+            display: none;
+            position: fixed;
+            background-color: White;
+            z-index: 999;
+        }
+    </style>
+
+    <script type="text/javascript">
+
+        //added by riswan 15/12/2015
+
+        function checkNumber(evt, txt) {
+            var charCode = (evt.which) ? evt.which : event.keyCode
+            if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+                if (charCode == 46) {
+                    return true;
+                }
+                return false;
+            } else {
+                return true;
+            }
+        }
+
+        function GetRateByScript(ddlVisaCategory, rate, dsString, paxval, amt) {
+            var ddlVisaCategory1 = document.getElementById(ddlVisaCategory);
+            var rate1 = document.getElementById(rate);
+            var amt1 = document.getElementById(amt);
+            var paxval1 = document.getElementById(paxval);
+
+            var obj = $.parseJSON(dsString);
+            $(obj).each(function (index) {
+                if (ddlVisaCategory1.value == obj[index]['VisaCategoryCode']) {
+                    rate1.value = obj[index]['Price'];
+                    if (isNaN(rate1 == true)) {
+                        rate1.value = "0";
+                    }
+                    amt1.value = (rate1.value * paxval1.innerHTML);
+                    CalculateTotal();
+                    return;
+                }
+            });
+        }
+
+
+        function statusFill(chk, allot, date, status, applieddatestr, rate, amt,cancchrg,cancselrt) {
+
+            var chkVal = document.getElementById(chk);
+            var allot = document.getElementById(allot);
+            var applieddate = document.getElementById(date);
+            var hdnstatus = document.getElementById(status);
+            var hdn = document.getElementById(applieddatestr);
+            var rate = document.getElementById(rate);
+            var amt = document.getElementById(amt);
+
+            var cancchrg1 = document.getElementById(cancchrg);
+            var cancselrt1 = document.getElementById(cancselrt);
+
+            var f = document.getElementById("<%=gv_SearchResult.ClientID %>");
+
+            var hdnCancelCharge = document.getElementById("<%=hdnCancelCharge.ClientID %>");
+            var hdnCancelSelRate = document.getElementById("<%=hdnCancelSelRate.ClientID %>");  
+                       
+            var count = 0;
+            
+            if (chkVal.checked) {
+                allot.innerHTML = "Applied";
+
+                var today = new Date();
+                var dd = today.getDate();
+                var mm = today.getMonth() + 1; //January is 0!
+
+                var yyyy = today.getFullYear();
+                if (dd < 10) {
+                    dd = '0' + dd
+                }
+                if (mm < 10) {
+                    mm = '0' + mm
+                }
+                var today = dd + '/' + mm + '/' + yyyy;
+                applieddate.value = today;
+                //                rate.value = "0"
+                //                amt.value = "0"
+                if (allot.value == "Cancelled") {
+                    cancchrg1.disabled = false;
+                    cancselrt1.disabled = false;
+                    if (cancchrg1.value == "" || cancchrg1.value == 0) {
+                        cancchrg1.value = hdnCancelCharge.value;
+                    }
+
+                    if (cancselrt1.value == "" || cancselrt1.value == 0) {
+                        cancselrt1.value = hdnCancelSelRate.value;
+                    }
+                } else {
+                    cancchrg1.value = 0;
+                    cancselrt1.value = 0;
+                }               
+            }
+
+            else {
+                allot.innerHTML = "";
+                applieddate.value = "";
+                cancchrg1.disabled = true;
+                cancselrt1.disabled = true;
+                cancchrg1.value = 0;
+                cancselrt1.value = 0;
+            }
+            grdTotal();         
+            hdnstatus.value = allot.innerHTML;
+            hdn.value = applieddate.value;
+        }
+
+        function FillAmt(rate, amt, paxval, txtcanccharge) {
+                    
+            var VisaRate = document.getElementById(rate);
+            var amount = document.getElementById(amt);
+            var paxno = document.getElementById(paxval);
+            var canccharge = document.getElementById(txtcanccharge);
+
+            if (isNaN(VisaRate == true)) {
+                VisaRate.value = "0";
+            }
+
+            var rtval = (VisaRate.value * paxno.innerHTML);
+            amount.value = parseFloat(rtval) + parseFloat(canccharge.value);            
+           //CalculateTotal();
+            grdTotal()
+        }
+
+
+        function CalculateTotal() {
+            var grid = document.getElementById("<%= gv_SearchResult.ClientID %>");
+            var total = 0.0;
+            var chk;
+            if (grid != null) {
+                var inputList = grid.getElementsByTagName("input");
+                for (var i = 0; i < inputList.length; i++) {                    
+                    if (inputList[i].type == "text") {
+                        var IdList = inputList[i].id.split("_");
+                        var item = IdList.length;
+                        if (IdList[item - 1] == "txtamt") {
+                            //if (inputList[i].value == '') { inputList[i].value = 0 }
+                            if (inputList[i].value != '') {
+                                total = parseFloat(total) + parseFloat(inputList[i].value);
+                            }
+                        }
+                    }
+                }
+                var txttot = document.getElementById("<%= txtTotal.ClientID %>");
+                txttot.value = total;
+                //var a = inputList[i].value;
+            }
+        }
+
+
+
+
+        function grdTotal() {
+           
+            var objGridView = document.getElementById('<%=gv_SearchResult.ClientID%>');
+            var amt1 = 0;
+
+
+            var valtsp;
+            var chk;
+            for (j = 1; j < objGridView.rows.length - 1; j++) {
+                if ((navigator.userAgent.indexOf("MSIE") != -1) || (!!document.documentMode == true)) {
+                    if (objGridView.rows[j].cells[0].childNodes[0].id != "") {
+                        chk = document.getElementById(objGridView.rows[j].cells[0].childNodes[0].id);                        
+                    } else {
+                        chk = document.getElementById(objGridView.rows[j].cells[0].childNodes[0].childNodes[0].id);
+                    }
+                    if (objGridView.rows[j].cells[10].childNodes[0].id != "") {
+                        valtsp = document.getElementById(objGridView.rows[j].cells[10].childNodes[0].id);
+                    }
+                    else {
+                        valtsp = document.getElementById(objGridView.rows[j].cells[10].childNodes[0].childNodes[0].id);
+                    }
+                } else {
+                    if (objGridView.rows[j].cells[0].children[0].id != "") {
+                        chk = document.getElementById(objGridView.rows[j].cells[0].children[0].id);
+                    } else {
+                        chk = document.getElementById(objGridView.rows[j].cells[0].children[0].children[0].id);
+                    }
+                    if (objGridView.rows[j].cells[10].children[0].id != "") {
+                        valtsp = document.getElementById(objGridView.rows[j].cells[10].children[0].id);
+                    }
+                    else {
+                        valtsp = document.getElementById(objGridView.rows[j].cells[10].children[0].children[0].id);
+                    }                                      
+               } 
+
+               if (chk.checked) {
+                   if (valtsp.value == '') { valtsp.value = 0; }
+                   if (isNaN(valtsp.value) == true) { valtsp.value = 0; }
+                   amt1 = parseFloat(amt1) + parseFloat(valtsp.value);
+               }               
+            }
+            var txttottsp = document.getElementById('<%=txtTotal.ClientID%>');
+            txttottsp.value = parseFloat(amt1);
+        }
+
+        function DecRound(amtToRound) {
+
+            var txtdec = document.getElementById("<%=txtdecimal.ClientID%>");
+            nodecround = Math.pow(10, parseInt(txtdec.value));
+            var rdamt = Math.round(parseFloat(Number(amtToRound)) * nodecround) / nodecround;
+            return parseFloat(rdamt);
+        }
+
+
+        function ConfUpdate() {
+            var hdnIsConfUpdate = document.getElementById("<%=hdnIsConfUpdate.ClientID%>");
+            var x = confirm('Do you want to update same status to other record of this Booking?');
+            var btn = document.getElementById("<%=btnOk.ClientID%>");
+            if (x) {
+                hdnIsConfUpdate.value = 1;
+                return true;
+            } else {
+                hdnIsConfUpdate.value = 0;
+                btn.click();
+            }
+        }
+
+        function chkRateColumn(rate, amt, btnSelect) {
+            var rate1 = document.getElementById(rate);
+            var amt1 = document.getElementById(amt);
+            var btnSelect1 = document.getElementById(btnSelect);
+            if (rate1.value == 0 || amt.value == 0 || rate1.value == "") {
+                alert("Rate and Amount column should not be zero");
+                return false;
+            } else {
+                return true;
+            }
+        }
+
+        function getapplydate(txtapp,hdn) {
+            var txtapp = document.getElementById(txtapp);
+            var hdnapp = document.getElementById(hdn);
+            hdnapp.value = txtapp.value;
+        }
+
+
+    </script>
+
+    
+
+   
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <asp:UpdateProgress ID="UpdateProgress3" runat="server" AssociatedUpdatePanelID="UpdatePanel1"
+                DisplayAfter="0">
+                <ProgressTemplate>
+                    <div id="divProgress" style="position: fixed; width: 100%; height: 100%; left: 0;
+                        right: 0; top: 0; bottom: 0; z-index: 9999; background-color: #222; opacity: 0.8;">
+                        <div style="display: block; position:absolute; vertical-align: middle; width: 100%; height: 100%; left: 40%;
+                            top: 50%;">
+                            <img src="../Images/loader.gif" height="30" width="30" /><span style="margin-left: 20px;
+                                color: White; margin-top: 5px; position: absolute;">Please wait while we are processing
+                                your request..</span>
+                        </div>
+                    </div>
+                </ProgressTemplate>
+            </asp:UpdateProgress>
+        
+            <%--Main Table--%>
+            <table style="border-right: gray 2px solid; border-top: gray 2px solid; border-left: gray 2px solid;
+                width:100%; border-bottom: gray 2px solid" class="td_cell" align="left">
+                <tr style="color: #000000">
+                    <td style="text-align: center;" class="td_cell">
+                        <asp:Label ID="lblHeading" runat="server" Text="Visa Applied/Pending" CssClass="field_heading"
+                            Width="100%">
+                        </asp:Label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <table>
+                            <tr>
+                                <td>
+                                    <asp:DropDownList ID="ddlSelectionType" AutoPostBack="True" runat="server" class="field_input"
+                                        TabIndex="0">
+                                    </asp:DropDownList>
+                                </td>
+                                <td style="width: 100px" align="center" class="td_cell">
+                                    Search Text
+                                </td>
+                                <td style="width: 110px" class="td_cell">
+                                    <asp:TextBox ID="txtSearch" runat="server" CssClass="field_input" Width="250px" Enabled="True"></asp:TextBox>
+                                </td>
+                                <td style="width: 60px;" align="left" class="td_cell">
+                                    From Date
+                                </td>
+                                <td style="align=left" class="td_cell">
+                                    <asp:TextBox ID="fromdate" runat="server" AutoPostBack="false" CssClass="fiel_input"
+                                        Width="60px" TabIndex="1"></asp:TextBox>
+                                    <asp:CalendarExtender ID="CEPFromDate" runat="server" Format="dd/MM/yyyy" PopupButtonID="ImgPBtnFrmDt"
+                                        TargetControlID="fromdate">
+                                    </asp:CalendarExtender>
+                                    <asp:MaskedEditExtender ID="MEPFromDate" runat="server" Mask="99/99/9999" MaskType="Date"
+                                        TargetControlID="fromdate">
+                                    </asp:MaskedEditExtender>
+                                    <asp:ImageButton ID="ImgPBtnFrmDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                                        Height="15px" TabIndex="2" /><asp:MaskedEditValidator ID="MEVPFromDate" runat="server"
+                                            ControlExtender="MEPFromDate" ControlToValidate="fromdate" CssClass="field_error"
+                                            Display="Dynamic" EmptyValueBlurredText="Date is required" EmptyValueMessage="Date is required"
+                                            ErrorMessage="MEPFromDate" InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                            TabIndex="-1" TooltipMessage="Date in dd/mm/yyyy format"> </asp:MaskedEditValidator>
+                                </td>
+                                <td style="width: 60px;" class="td_cell">
+                                    To Date
+                                </td>
+                                <td style="align=left" class="td_cell">
+                                    <asp:TextBox ID="txtodate" runat="server" AutoPostBack="false" CssClass="fiel_input"
+                                        Width="60px" Height="15px" TabIndex="3"></asp:TextBox>
+                                    <asp:CalendarExtender ID="CEPToDate" runat="server" Format="dd/MM/yyyy" PopupButtonID="ImgPBtnToDt"
+                                        TargetControlID="txtodate">
+                                    </asp:CalendarExtender>
+                                    <asp:MaskedEditExtender ID="MEPToDate" runat="server" Mask="99/99/9999" MaskType="Date"
+                                        TargetControlID="txtodate">
+                                    </asp:MaskedEditExtender>
+                                    &nbsp;<asp:ImageButton ID="ImgPBtnToDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                                        Height="15px" TabIndex="4" />
+                                    <asp:MaskedEditValidator ID="MEVPToDate" runat="server" ControlExtender="MEPToDate"
+                                        ControlToValidate="txtodate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                        EmptyValueMessage="Date is required" ErrorMessage="MEPToDate" InvalidValueBlurredMessage="Invalid Date"
+                                        InvalidValueMessage="Invalid Date" TabIndex="-1" TooltipMessage="Date in dd/mm/yyyy format">
+                                    </asp:MaskedEditValidator>
+                                </td>
+                                <td>
+                                    <asp:CheckBox ID="chkDateRequired" runat="server" AutoPostBack="True" Width="20px" />
+                                </td>
+                                <td>
+                                    <asp:Button ID="btnResult" runat="server" CssClass="btn" Font-Bold="False" Text="Fill Results"
+                                        Width="100px" />
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <asp:Panel ID="pnlGrid" runat="server" ScrollBars="Vertical">
+                            <asp:GridView ID="gv_SearchResult" runat="server" Font-Size="10px" CssClass="grdstyle"
+                                AllowPaging="True" AllowSorting="True" AutoGenerateColumns="False" GridLines="Vertical"
+                                CellPadding="3" BorderWidth="1px" BorderStyle="None" PageSize="25">
+                                <FooterStyle CssClass="grdfooter"></FooterStyle>
+                                <Columns>
+                                    <asp:TemplateField>
+                                        <ItemTemplate>
+                                            <asp:CheckBox ID="chkSelect" runat="server" />
+                                            <asp:HiddenField ID="hdnCancelFlg" runat="server" />                                                    
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Request No">
+                                        <ItemTemplate>
+                                            <asp:Label ID="lblRequestNo" runat="server" Text='<%# DataBinder.Eval (Container.DataItem, "requestid")%>'>
+                                            </asp:Label>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Request Date" Visible="false">
+                                        <ItemTemplate>
+                                            <asp:Label ID="lblRequestDate" runat="server" Text='<%# DataBinder.Eval (Container.DataItem, "requestdate")%>'>
+                                            </asp:Label>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="AgentCode" Visible="false">
+                                        <ItemTemplate>
+                                            <asp:Label ID="lblAgentCode" runat="server" Text='<%# DataBinder.Eval (Container.DataItem, "agentcode")%>'>
+                                            </asp:Label>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Title">
+                                        <ItemTemplate>
+                                            <asp:DropDownList ID="ddlTitle" runat="server" SelectedValue='<%# Bind("title") %>'>
+                                                <asp:ListItem Value="Mr" Text="Mr"></asp:ListItem>
+                                                <asp:ListItem Value="Mrs" Text="Mrs"></asp:ListItem>
+                                                <asp:ListItem Value="Ms" Text="Ms"></asp:ListItem>
+                                                <asp:ListItem Value="Miss" Text="Mis"></asp:ListItem>
+                                                <asp:ListItem Value="Chl" Text="Chl"></asp:ListItem>
+                                                <asp:ListItem Value="Master" Text="Master"></asp:ListItem>
+                                                <asp:ListItem Value="Inf" Text="Inf"></asp:ListItem>
+                                                <asp:ListItem Value="Dr" Text="Dr"></asp:ListItem>
+                                                <asp:ListItem Value="HE" Text="HE"></asp:ListItem>
+                                                <asp:ListItem Value="Oth" Text="Others"></asp:ListItem>
+                                            </asp:DropDownList>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="First Name">
+                                        <ItemTemplate>
+                                            <asp:TextBox CssClass="field_input" runat="server" Text='<%# DataBinder.Eval (Container.DataItem, "FirstName")%>'
+                                                ID="txtFirstName"></asp:TextBox>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Last Name">
+                                        <ItemTemplate>
+                                            <asp:TextBox CssClass="field_input" runat="server" Text='<%# DataBinder.Eval (Container.DataItem, "LastName")%>'
+                                                ID="txtLastName"></asp:TextBox>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Passport No">
+                                        <ItemTemplate>
+                                            <asp:TextBox CssClass="field_input" runat="server" ID="txtPassportNo" Text='<%# DataBinder.Eval (Container.DataItem, "passportno")%>' >
+                                            </asp:TextBox>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Arrival Date">
+                                        <ItemTemplate>
+                                            <asp:Label ID="lblArrivalDate" runat="server" Text='<%# getdate(DataBinder.Eval (Container.DataItem, "datein"))%>'></asp:Label>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Pax">
+                                        <ItemTemplate>
+                                            <asp:Label ID="lblPax" runat="server" Text='<%# DataBinder.Eval (Container.DataItem, "pax")%>'></asp:Label>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Rate">
+                                        <ItemTemplate>
+                                            <asp:TextBox ID="txtrate" Width="50px" Text='<%# DataBinder.Eval (Container.DataItem, "rate")%>'
+                                                CssClass="field_input" runat="server"></asp:TextBox>
+                                            <asp:HiddenField ID="hdnVisaPrice" runat="server" Value='<%# DataBinder.Eval(Container.DataItem, "visaprice")%>' />
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Cancel Charge">
+                                        <ItemTemplate>                                            
+                                            <asp:TextBox ID="txtCancelCharge" Width="50px" Text='<%# DataBinder.Eval(Container.DataItem, "cancelcharge")%>'
+                                                CssClass="field_input" runat="server"></asp:TextBox>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Amount">
+                                        <ItemTemplate>                                            
+                                            <asp:TextBox ID="txtamt" Width="50px" ReadOnly="true" CssClass="field_input" runat="server"></asp:TextBox>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Applied Date">
+                                        <ItemTemplate>                                            
+                                            <asp:TextBox ID="txtAppliedDate" runat="server" CssClass="fiel_input" Text='<%# DataBinder.Eval(Container.DataItem, "apply_date")%>'
+                                                Width="60px"></asp:TextBox>
+                                            <asp:HiddenField ID="hdnapplieddate" runat="server" />
+                                            <asp:CalendarExtender ID="CEPAppliedDate" runat="server" Format="dd/MM/yyyy" PopupButtonID="ImgPBtnAppDt"
+                                                TargetControlID="txtAppliedDate">
+                                            </asp:CalendarExtender>
+                                            <asp:MaskedEditExtender ID="MEPAppliedDate" runat="server" Mask="99/99/9999" MaskType="Date"
+                                                TargetControlID="txtAppliedDate">
+                                            </asp:MaskedEditExtender>
+                                            <asp:ImageButton ID="ImgPBtnAppDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                                                Height="15px" TabIndex="2" />
+                                            <asp:MaskedEditValidator ID="MEPAppDate" runat="server" ControlExtender="MEPAppliedDate"
+                                                ControlToValidate="txtAppliedDate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                                EmptyValueMessage="Date is required" ErrorMessage="MEPAppliedDate" InvalidValueBlurredMessage="Invalid Date"
+                                                InvalidValueMessage="Invalid Date" TabIndex="-1" TooltipMessage="Date in dd/mm/yyyy format"> </asp:MaskedEditValidator>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Status Date">
+                                        <ItemTemplate>
+                                            <%--This is added by now--%>
+                                            <asp:Label ID="lblStatusDate" Text='<%# DataBinder.Eval (Container.DataItem, "status_date", "{0:dd/MM/yyyy}") %>'
+                                                runat="server" ></asp:Label>                                            
+                                        </ItemTemplate>
+                                    </asp:TemplateField>                                    
+                                    <asp:TemplateField HeaderText="Status">
+                                        <ItemTemplate>
+                                            <asp:Label ID="lblstatus" Width="30px" runat="server"></asp:Label>
+                                            <asp:HiddenField ID="hdnstatus" runat="server" />
+                                            <asp:Button ID="btnSelect" runat="server" Text="Select" OnClick="btnSelect_Click"
+                                                CssClass="btn" />
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Sell Rate">
+                                        <ItemTemplate>
+                                            <asp:Label ID="lblSellRate" runat="server" Text='<%# DataBinder.Eval (Container.DataItem, "sellrate")%>'></asp:Label>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Cancel Sell Rate ">
+                                        <ItemTemplate>                                            
+                                            <asp:TextBox ID="txtCancelSelRate" Width="50px" Text='<%# DataBinder.Eval (Container.DataItem, "cancelselrate")%>'
+                                                CssClass="field_input" runat="server"></asp:TextBox>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Visa Category">
+                                        <ItemTemplate>
+                                            <asp:HiddenField ID="hdnvisacatcode" runat="server" Value='<%# DataBinder.Eval (Container.DataItem, "visacatcode")%>' />
+                                            <asp:DropDownList ID="ddlVisaCategory" runat="server" class="field_input">
+                                            </asp:DropDownList>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Action">
+                                        <ItemTemplate>                                            
+                                            <asp:Button ID="btnSaveRec" runat="server" Text="Save" CssClass="btn" CommandName="SaveRow" 
+                                            CommandArgument='<%# Container.DataItemIndex %>' />
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Online No" Visible="false">
+                                        <ItemTemplate>
+                                            <asp:Label ID="lblOlineno" runat="server" Text='<%# DataBinder.Eval (Container.DataItem, "olineno")%>'></asp:Label>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Gline No" Visible="false">
+                                        <ItemTemplate>
+                                            <asp:Label ID="lblGlineno" runat="server" Text='<%# DataBinder.Eval (Container.DataItem, "glineno")%>'></asp:Label>
+                                            <asp:Label ID="lblGuestLineNo" runat="server" Text='<%# DataBinder.Eval (Container.DataItem, "guestlineno")%>'></asp:Label>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Select" Visible="false">
+                                        <ItemTemplate>                                            
+                                            <asp:Label ID="lblSelectNo" runat="server" Text='<%# DataBinder.Eval (Container.DataItem, "sel")%>'></asp:Label>
+                                            <asp:HiddenField ID="hdnCancelOlineNo" runat="server" Value='<%# DataBinder.Eval (Container.DataItem, "cancelolineno")%>' />
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                </Columns>
+                                <RowStyle CssClass="grdRowstyle"></RowStyle>
+                                <SelectedRowStyle CssClass="grdselectrowstyle"></SelectedRowStyle>
+                                <PagerStyle CssClass="grdpagerstyle" HorizontalAlign="Center"></PagerStyle>
+                                <HeaderStyle CssClass="grdheader" ForeColor="white"></HeaderStyle>
+                                <AlternatingRowStyle CssClass="grdAternaterow"></AlternatingRowStyle>
+                            </asp:GridView>
+                        </asp:Panel>
+                        <div class="loading" align="center">
+                            Loading. Please wait.<br />
+                            <br />
+                            <img src="../Images/loader.gif" alt="" />
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:500px;">
+                        Visa Cost Value: <asp:TextBox ID="txtTotal" runat="server" CssClass="field_input" Width="100px" Enabled="True" style="text-align:right"></asp:TextBox>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <table>
+                            <%--Inner table for showing status--%>
+                            <tr>
+                                <td>
+                                    <asp:Label ID="lblReport" runat="server" CssClass="btn" align="middle" Font-Bold="False"
+                                        Text="Report For" Width="150px" />
+                                </td>
+                                <td>
+                                    <asp:DropDownList ID="ddlReportFor" runat="server" class="field_input"
+                                        Style="width: 100px;">
+                                    </asp:DropDownList>
+                                </td>
+                                <td>
+                                    <asp:Label ID="lblFilter" runat="server" CssClass="btn" align="middle" Font-Bold="False"
+                                        Text="Filter By" Width="150px" />
+                                </td>
+                                <td>
+                                    <asp:DropDownList ID="ddlFilter" runat="server" class="field_input"
+                                        Style="width: 100px;">
+                                    </asp:DropDownList>
+                                </td>
+                                <td style="display:none">
+                                    A-Applied
+                                </td>
+                                <td style="display:none">
+                                    <asp:CheckBox ID="chkRejected" runat="server" AutoPostBack="True" Width="20px" />
+                                </td>
+                                <td style="display:none">
+                                    R-Rejected
+                                </td>
+                                <td style="display:none">
+                                    <asp:CheckBox ID="chkConfirmed" runat="server" AutoPostBack="True" Width="20px" />
+                                </td>
+                                <td style="display:none">
+                                    C-Confirmed
+                                </td>                                
+                            </tr>
+                        </table>
+                        <%--Inner table is ending here--%>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                            <asp:Button ID="btnPrint" runat="server" CssClass="btn" Font-Bold="False" Text="Print"
+                            Width="100px" /> &nbsp;<asp:Button ID="btnSave" runat="server" CssClass="btn" Visible="false" Font-Bold="False" Text="Save" 
+                            Width="100px" />&nbsp;<asp:Button ID="btnExit" runat="server" CssClass="btn" Font-Bold="False" Text="Exit"
+                            Width="100px" />
+                            <asp:Button id="btnhelp" 
+        tabIndex=3 onclick="btnhelp_Click" runat="server" Text="Help" 
+        Font-Bold="False" CssClass="search_button"></asp:Button> 
+                    </td>
+                    
+                    
+ <td style="display:none">
+               <asp:Button id="btnadd" tabIndex=16  runat="server"  
+        CssClass="field_button"></asp:Button>
+         <asp:Button id="Button1" tabIndex=16 runat="server" 
+        CssClass="field_button"></asp:Button></td>
+                      
+                                        
+                </tr>
+                <tr>
+                    <td>
+                        <asp:HiddenField ID="hdnReqID" runat="server" />
+                        <asp:HiddenField ID="hdnDate" runat="server" />
+                        <asp:HiddenField ID="hdnrate" runat="server" />
+                        <asp:HiddenField ID="hdnAmount" runat="server" />
+                        <asp:HiddenField ID="hdnAppDate" runat="server" />
+                        <asp:HiddenField ID="hfnVisaCat" runat="server" />
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="style3">
+                        <div id="ShowVisaStatus" runat="server" style="overflow: scroll; height: 300px; width: 300px;
+                            border: 3px solid green; background-color: White; display: none">
+                            <table>
+                                <tr>
+                                    <td>
+                                        <asp:Label Width="100px" ID="divlblstatus" runat="server" Text="Visa Status" CssClass="lblclass"></asp:Label>
+                                    </td>
+                                    <td>
+                                        <select id="divddlvisastatus" autopostback="True" runat="server" class="field_input"
+                                            style="width: 100px;">
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="width: 60px;">
+                                        <asp:Label Width="100px" ID="divDate" runat="server" Text="Date" CssClass="lblclass"></asp:Label>
+                                    </td>
+                                    <td style="align=left" class="td_cell">
+                                        <asp:TextBox ID="divtxtDate" runat="server" AutoPostBack="false" CssClass="fiel_input"
+                                            Width="60px" Height="15px"></asp:TextBox>
+                                        <asp:CalendarExtender ID="DivCEPToDate" runat="server" Format="dd/MM/yyyy" PopupButtonID="DivImgPBtnToDt"
+                                            TargetControlID="divtxtDate">
+                                        </asp:CalendarExtender>
+                                        <asp:MaskedEditExtender ID="DivMEPToDate" runat="server" Mask="99/99/9999" MaskType="Date"
+                                            TargetControlID="divtxtDate">
+                                        </asp:MaskedEditExtender>
+                                        &nbsp;<asp:ImageButton ID="DivImgPBtnToDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                                            Height="15px" />
+                                        <asp:MaskedEditValidator ID="DivMEVPToDate" runat="server" ControlExtender="DivMEPToDate"
+                                            ControlToValidate="divtxtDate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                            EmptyValueMessage="Date is required" ErrorMessage="DivMEVPToDate" InvalidValueBlurredMessage="Invalid Date"
+                                            InvalidValueMessage="Invalid Date" TabIndex="-1" TooltipMessage="Date in dd/mm/yyyy format">
+                                        </asp:MaskedEditValidator>
+                                    </td>
+                                </tr>
+                            </table>
+                            <table style="float: left">
+                                <tr>
+                                    <td>
+                                        <asp:HiddenField ID="hdnIsConfUpdate" runat="server" Value="0" />
+                                        <asp:Button ID="btnOk" runat="server" CssClass="field_button" Text="Ok" Width="60px"
+                                            OnClientClick="return ConfUpdate();" />
+                                        &nbsp;
+                                    </td>
+                                    <td>
+                                        <asp:Button ID="btnCanel" runat="server" CssClass="field_button" Text="Exit" Width="60px" />&nbsp;
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <asp:ModalPopupExtender ID="ModalPopupDays" runat="server" BehaviorID="ModalPopupDays"
+                            CancelControlID="btnCancel1" OkControlID="btnOkay" TargetControlID="btnInvisibleGuest"
+                            PopupControlID="ShowVisaStatus" PopupDragHandleControlID="PopupHeader" Drag="true"
+                            BackgroundCssClass="ModalPopupBG">
+                        </asp:ModalPopupExtender>
+                        <input id="btnInvisibleGuest" runat="server" type="button" value="Cancel" style="visibility: hidden" />
+                        <input id="btnOkay" type="button" value="OK" style="visibility: hidden" />
+                        <input id="btnCancel1" type="button" value="Cancel" style="visibility: hidden" />
+                        <input style="visibility: hidden; width: 33px" id="txtdecimal" type="text" maxlength="15"
+                            runat="server" />
+                    </td>
+                </tr>
+            </table>    
+            <asp:HiddenField ID="hdnCancelCharge" runat="server" />
+            <asp:HiddenField ID="hdnCancelSelRate" runat="server" />    
+            
+        </ContentTemplate>
+    </asp:UpdatePanel>
+</asp:Content>

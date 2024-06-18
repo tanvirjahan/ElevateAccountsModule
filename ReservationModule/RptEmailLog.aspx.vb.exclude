@@ -1,0 +1,366 @@
+﻿
+Imports Microsoft.VisualBasic
+Imports System.Data
+Imports System.Data.SqlClient
+Imports iTextSharp.text
+Imports iTextSharp.text.pdf
+Imports System.Collections.Generic
+Imports System.IO
+Imports System.Linq
+
+Imports Ionic.Zip
+
+
+Partial Class RptEmailLog
+    Inherits System.Web.UI.Page
+
+#Region "Global Declaration"
+    Dim objUtils As New clsUtils
+    Dim objUser As New clsUser
+    Dim strSqlQry As String
+    Dim strWhereCond As String
+    Dim SqlConn As SqlConnection
+    Dim myCommand As SqlCommand
+    Dim myReader As SqlDataReader
+    Dim myDataAdapter As SqlDataAdapter
+
+    Dim objclsUtilities As New clsUtils
+    Dim normalfont As Font = FontFactory.GetFont("Arial", 8, Font.NORMAL, BaseColor.BLACK)
+    Dim caption As Font = FontFactory.GetFont("Arial", 7, Font.BOLD, BaseColor.BLACK)
+    Dim normalfontbold As Font = FontFactory.GetFont("Arial", 10, Font.BOLD, BaseColor.BLACK)
+    Dim headerfont As Font = FontFactory.GetFont("Arial", 13, Font.BOLD, BaseColor.BLACK)
+    Dim Companyname As Font = New Font(FontFactory.GetFont("Times New Roman", 14, Font.BOLD, BaseColor.BLACK))
+    Dim ReportNamefont As Font = New Font(FontFactory.GetFont("Arial", 11, Font.BOLD, BaseColor.BLACK))
+
+#End Region
+
+
+
+
+
+#Region "Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        Try
+            If Page.IsPostBack = False Then
+
+                If CType(Session("GlobalUserName"), String) = "" Or CType(Session("Userpwd"), String) = Nothing Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+                Dim strappid As String = ""
+                Dim strappname As String = ""
+
+                Dim AppName As HiddenField = CType(Master.FindControl("hdnAppName"), HiddenField)
+                Dim AppId As HiddenField = CType(Master.FindControl("hdnAppId"), HiddenField)
+                ' Dim lbltitle As Label = CType(Master.FindControl("Title"), Label)
+                Dim type As String = Convert.ToString(Request.QueryString("type"))
+                If type <> "" Then
+                    txtRptType.Text = type.Trim
+                End If
+
+
+                If AppId.Value Is Nothing = False Then
+                    strappid = AppId.Value
+                End If
+                strappname = objUser.GetAppName(Session("dbconnectionName"), strappid)
+
+                objUser.CheckUserRight(Session("dbconnectionName"), CType(Session("GlobalUserName"), String), CType(Session("Userpwd"), String), _
+                                                       CType(strappname, String), "ReservationModule\RptEmailLog.aspx?appid=" + strappid.Trim, btnAddNew, btnExportToExcel, _
+                                                       btnExportToExcel, gvSearch:=gv_SearchResult)
+                'RowsPerPageCUS.SelectedValue = objUtils.ExecuteQueryReturnSingleValuenew(Session("dbconnectionName"), "select option_selected from reservation_parameters where param_id='2006'")
+
+
+                txtFromDt.Text = Now.Date
+                txtToDt.Text = Now.Date
+
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("RptEmailLog.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Function Validation() As Boolean"
+    Protected Function Validation() As Boolean
+        Try
+            If (Not IsDate(txtFromDt.Text) And IsDate(txtToDt.Text)) Or (IsDate(txtFromDt.Text) And Not IsDate(txtToDt.Text)) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Verify From Date and To Date' );", True)
+                Validation = False
+                Exit Function
+            End If
+
+            Validation = True
+        Catch ex As Exception
+            Validation = False
+            Throw ex
+        End Try
+    End Function
+#End Region
+
+#Region "Protected Sub btnLoadReport_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnLoadReport.Click"
+    Protected Sub btnLoadReport_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnLoadReport.Click
+        Try
+            '  If txtRptType.Text.Trim = "Inhouse" Then
+
+            '    ElseIf txtRptType.Text = "E" Then
+            EmailLogReport()
+            '   End If
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("RptInhouse.aspx", Server.MapPath("ErrorLog.txt"), ex.StackTrace.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+#Region "Protected sub EmailLogReport() "
+
+
+    Protected Sub EmailLogReport()
+        Try
+            If Validation() = False Then Exit Sub
+            Dim pagevaluecus = RowsPerPageCUS.SelectedValue
+            If gv_SearchResult.PageIndex < 0 Then
+                gv_SearchResult.PageIndex = 0
+            End If
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+            myCommand = New SqlCommand("sp_get_emaillog", SqlConn)
+            myCommand.CommandType = CommandType.StoredProcedure
+
+            myCommand.Parameters.Add(New SqlParameter("@fromemail", SqlDbType.VarChar, 20)).Value = IIf(txtFromEmail.Text.Trim <> "", txtFromEmail.Text.Trim, "")
+            myCommand.Parameters.Add(New SqlParameter("@toemail", SqlDbType.VarChar, 20)).Value = IIf(txtToEmail.Text.Trim <> "", txtToEmail.Text.Trim, "")
+            myCommand.Parameters.Add(New SqlParameter("@Ccemail", SqlDbType.VarChar, 20)).Value = IIf(TxtCcEmail.Text.Trim <> "", TxtCcEmail.Text.Trim, "")
+            myCommand.Parameters.Add(New SqlParameter("@Bccemail", SqlDbType.VarChar, 20)).Value = IIf(TxtBccEmail.Text.Trim <> "", TxtBccEmail.Text.Trim, "")
+            myCommand.Parameters.Add(New SqlParameter("@emailsubject", SqlDbType.VarChar, 20)).Value = IIf(TxtEmailSubject.Text.Trim <> "", TxtEmailSubject.Text.Trim, "")
+            myCommand.Parameters.Add(New SqlParameter("@emailbody", SqlDbType.VarChar, 20)).Value = IIf(TxtEmailBody.Text.Trim <> "", TxtEmailBody.Text.Trim, "")
+            myCommand.Parameters.Add(New SqlParameter("@Requestid", SqlDbType.VarChar, 20)).Value = IIf(txtRequestID.Text.Trim <> "", txtRequestID.Text.Trim, "")
+            myCommand.Parameters.Add(New SqlParameter("@EmailType", SqlDbType.VarChar, 20)).Value = IIf(txtEmailType.Text.Trim <> "", txtEmailType.Text.Trim, "")
+            If IsDate(txtFromDt.Text) Then
+                myCommand.Parameters.Add(New SqlParameter("@Reqfromdate", SqlDbType.VarChar, 10)).Value = Convert.ToDateTime(txtFromDt.Text).ToString("yyyy/MM/dd")
+            Else
+                myCommand.Parameters.Add(New SqlParameter("@Reqfromdate", SqlDbType.VarChar, 10)).Value = DBNull.Value
+            End If
+            If IsDate(txtToDt.Text) Then
+                myCommand.Parameters.Add(New SqlParameter("@Reqtodate", SqlDbType.VarChar, 10)).Value = Convert.ToDateTime(txtToDt.Text).ToString("yyyy/MM/dd")
+            Else
+                myCommand.Parameters.Add(New SqlParameter("@Reqtodate", SqlDbType.VarChar, 10)).Value = DBNull.Value
+            End If
+
+            myDataAdapter = New SqlDataAdapter(myCommand)
+            Dim myds As New DataSet
+            myDataAdapter.Fill(myds)
+            If myds.Tables(0).Rows.Count > 0 Then
+                gv_SearchResult.Visible = True
+                gv_SearchResult.DataSource = myds.Tables(0)
+                gv_SearchResult.PageSize = pagevaluecus
+                gv_SearchResult.DataBind()
+                lblMsg.Visible = False
+            Else
+                gv_SearchResult.DataSource = Nothing
+                gv_SearchResult.PageIndex = 0
+                gv_SearchResult.DataBind()
+                lblMsg.Visible = True
+                lblMsg.Text = "Records not found, Please redefine search criteria."
+            End If
+
+        Catch ex As Exception
+            If Not SqlConn Is Nothing Then
+                clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+                clsDBConnect.dbConnectionClose(SqlConn)
+            End If
+            Throw ex
+        End Try
+    End Sub
+#End Region
+
+    Protected Sub btnemailbody_Click()
+        ModalExtraPopup.Show()
+
+
+    End Sub
+    Function SetVisibility(ByVal desc As Object, ByVal maxlen As Integer) As Boolean
+
+        If desc.ToString = "" Then
+            Return False
+        Else
+            If desc.ToString.Length > maxlen Then
+                Return True
+            Else
+                Return False
+            End If
+        End If
+
+
+    End Function
+    Function Limit(ByVal desc As Object, ByVal maxlen As Integer) As String
+
+        If desc.ToString = "" Then
+            Return ""
+        Else
+            If desc.ToString.Length > maxlen Then
+                desc = desc.Substring(0, maxlen)
+            Else
+
+                desc = desc
+            End If
+        End If
+
+        Return desc
+
+
+    End Function
+
+    Protected Sub ReadMoreLinkButtonToEmail_Click(ByVal sender As Object, ByVal e As EventArgs)
+        Try
+            Dim readmore As LinkButton = CType(sender, LinkButton)
+            Dim row As GridViewRow = CType((CType(sender, LinkButton)).NamingContainer, GridViewRow)
+            Dim lbtext As Label = CType(row.FindControl("lblToEmail"), Label)
+            Dim strtemp As String = ""
+            strtemp = lbtext.Text
+            If readmore.Text.ToUpper = UCase("More") Then
+
+                lbtext.Text = lbtext.ToolTip
+                lbtext.ToolTip = strtemp
+                readmore.Text = "less"
+            Else
+                readmore.Text = "More"
+                lbtext.ToolTip = lbtext.Text
+                lbtext.Text = lbtext.Text.Substring(0, 10)
+            End If
+            '  ModalExtraPopup1.Show()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("Rptaspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub ReadMoreLinkButtonToEmSub_Click(ByVal sender As Object, ByVal e As EventArgs)
+        Try
+            Dim readmore As LinkButton = CType(sender, LinkButton)
+            Dim row As GridViewRow = CType((CType(sender, LinkButton)).NamingContainer, GridViewRow)
+            Dim lbtext As Label = CType(row.FindControl("lblemailsubject"), Label)
+            Dim strtemp As String = ""
+            strtemp = lbtext.Text
+            If readmore.Text.ToUpper = UCase("More") Then
+
+                lbtext.Text = lbtext.ToolTip
+                lbtext.ToolTip = strtemp
+                readmore.Text = "less"
+            Else
+                readmore.Text = "More"
+                lbtext.ToolTip = lbtext.Text
+                lbtext.Text = lbtext.Text.Substring(0, 10)
+            End If
+            '  ModalExtraPopup1.Show()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("Rptaspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+    Protected Sub btnReset_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnReset.Click
+        TxtBccEmail.Text = ""
+        txtToEmail.Text = ""
+        TxtCcEmail.Text = ""
+        TxtEmailBody.Text = ""
+        TxtEmailSubject.Text = ""
+        txtEmailType.Text = ""
+        txtFromDt.Text = Now.Date
+        txtFromEmail.Text = ""
+        txtRequestID.Text = ""
+        txtToDt.Text = Now.Date
+        txtRptType.Text = ""
+        gv_SearchResult.DataSource = Nothing
+        gv_SearchResult.DataBind()
+
+    End Sub
+
+    Protected Sub gv_SearchResult_PageIndexChanging(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gv_SearchResult.PageIndexChanging
+        gv_SearchResult.PageIndex = e.NewPageIndex
+        EmailLogReport()
+    End Sub
+
+    Protected Sub gv_SearchResult_RowCommand(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gv_SearchResult.RowCommand
+        Try
+
+            If e.CommandName = "ShowEmailText" Then
+                Dim gvr As GridViewRow = gv_SearchResult.Rows(e.CommandArgument)
+                Dim lblemailrowid As Label = CType(gvr.FindControl("lblemailrowid"), Label)
+                SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+
+                Ltlemailtext.Text = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "  select emailbody from AgentOnline_EmailNotification where  id='" & lblemailrowid.Text.Trim & "' ")
+                ModalExtraPopup.Show()
+            ElseIf e.CommandName = "BtnShowAttachments" Then
+
+                Dim gvr As GridViewRow = gv_SearchResult.Rows(e.CommandArgument)
+                Dim lblemailrowid As Label = CType(gvr.FindControl("lblemailrowid"), Label)
+                Dim lblattachments As Label = CType(gvr.FindControl("lblattachments"), Label)
+                Dim ddlattachments As DropDownList = CType(gvr.FindControl("ddlattachments"), DropDownList)
+                Dim strpop As String
+
+
+                Dim lsAttachment() As String
+                lsAttachment = lblattachments.Text.Split(";")
+                Dim filepath As String = lsAttachment(ddlattachments.SelectedIndex).Trim
+
+                Dim filename As String = ddlattachments.SelectedItem.Text
+                strpop = "window.open('FileDownload.aspx?printId=emaillog&filepath= " + filepath.Replace("\", "*") + " &filename=" + filename.Trim + "','RepCBbook');"
+                '   strpop = "window.open('../AccountsModule/TransactionReports.aspx?Pageame=CustomerGroup&printId=CustomerGroup&BackPageName=../PriceListModule/CustomerGroupSearch.aspx&customergroupcode=" + txtGroupCode.Text.Trim + "&customergroupname=" + txtName.Text.Trim + "','rptCustomerGroup');"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+
+
+
+            End If
+        Catch ex As Exception
+            If Not SqlConn Is Nothing Then
+                ' clsDBConnect.dbCommandClose(mySqlCmd)
+                clsDBConnect.dbConnectionClose(SqlConn)
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("UpdateSupplierInvoice.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub gv_SearchResult_RowDataBound(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gv_SearchResult.RowDataBound
+        'If e.CommandName = "ShowAttachments" Then
+        ' Dim gvr As GridViewRow = gv_SearchResult.Rows(e.CommandArgument)
+        If e.Row.RowType = DataControlRowType.DataRow Then
+            Dim ddlattachments As DropDownList = CType(e.Row.FindControl("ddlattachments"), DropDownList)
+
+            Dim lblattachments As Label = CType(e.Row.FindControl("lblattachments"), Label)
+
+            Dim btnattachment As Button = CType(e.Row.FindControl("btnattachment"), Button)
+            If lblattachments.Text = "" Then
+                ddlattachments.Visible = False
+                btnattachment.Visible = False
+
+
+            End If
+            Dim attachmentsall() As String
+            attachmentsall = lblattachments.Text.Split(";")
+            If attachmentsall.Length > 1 Then
+                For Each item In attachmentsall
+                    Dim Eachitemattach() As String
+                    Eachitemattach = item.Split("\")
+                    Dim attachlength As Integer = Eachitemattach.Length
+                    ddlattachments.Items.Add(Eachitemattach(Eachitemattach.Length - 1))
+                Next
+
+            Else
+
+                Dim itemattach() As String
+                itemattach = lblattachments.Text.Split("\")
+                Dim attachlength As Integer = itemattach.Length
+                ddlattachments.Items.Add(itemattach(itemattach.Length - 1))
+
+
+            End If
+
+            'objUtils.FillDropDownListWithValuenew(Session("dbconnectionName"), ddlattachments, "creditterms", "crtermid", "select * from creditdaysterms  where   divcode='" & divid & "'   order by crtermid", False)
+        End If
+    End Sub
+
+    Protected Sub RowsPerPageCUS_SelectedIndexChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles RowsPerPageCUS.SelectedIndexChanged
+        EmailLogReport()
+    End Sub
+End Class
+

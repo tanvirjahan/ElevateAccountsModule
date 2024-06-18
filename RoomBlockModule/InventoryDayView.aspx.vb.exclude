@@ -1,0 +1,885 @@
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Collections.Generic
+Imports System.Drawing.Color
+
+Partial Class InventoryDayView
+    Inherits System.Web.UI.Page
+
+#Region "Global Decalration"
+    Dim objUtils As New clsUtils
+    Dim objUser As New clsUser
+    Dim SqlConn As New SqlConnection
+    Dim mySqlCmd As SqlCommand
+    Dim myDataAdapter As New SqlDataAdapter
+    Dim dateList As New List(Of String)
+    Dim distinctRoomDt As DataTable
+#End Region
+
+#Region "Web Service Methods"
+    <System.Web.Services.WebMethod()> _
+    Public Shared Function GetOffers(HotelCode As String, RoomType As String, InvDate As String) As [String]
+        Dim ds As New DataSet()
+        Dim dt As New DataTable("dtOffers")
+        Dim dt1 As New DataTable("dtOffers")
+        Dim sqlCon As New SqlConnection
+        Dim myDataAdapter As New SqlDataAdapter
+        Dim strSqlQry As String = ""
+        strSqlQry = "select I.LinkTo,I.RoomsAvailable,O.PromotionID,O.PromotionName,O.ApplicableTo,O.Period from inventory I inner join Inventory_offers O on I.InventoryIDs like '%' + O.InventoryID + '%' and I.InventoryDate ='" + InvDate + "' and I.PartyCode='" + HotelCode + "' and I.RmTypCode='" + RoomType + "'"
+        sqlCon = clsDBConnect.dbConnectionnew("strDBConnection")
+        myDataAdapter = New SqlDataAdapter(strSqlQry, sqlCon)
+        myDataAdapter.Fill(dt)
+        myDataAdapter.Dispose()
+        If dt.Rows.Count <= 0 Then
+            strSqlQry = "select I.LinkTo,I.RoomsAvailable,Null as PromotionID, Null as PromotionName, Null as ApplicableTo, Null as Period from inventory I where InventoryDate='" + InvDate + "' and I.PartyCode='" + HotelCode + "' group by I.InventoryDate,I.LinkTo,I.RoomsAvailable"
+            myDataAdapter = New SqlDataAdapter(strSqlQry, sqlCon)
+            myDataAdapter.Fill(dt1)
+            ds.Tables.Add(dt1)
+        Else
+            ds.Tables.Add(dt)
+        End If
+        Return ds.GetXml()
+    End Function
+#End Region
+
+#Region "Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load
+        Try
+            If Page.IsPostBack = False Then
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("Login.aspx", False)
+                    Exit Sub
+                End If
+                Me.InventoryView1.appval = CType(Request.QueryString("appid"), String)
+                Me.InventoryView1.menuidval = objUser.GetMenuId(Session("dbconnectionName"), CType("MainPageInventory.aspx", String), CType(Request.QueryString("appid"), Integer))
+                Dim dtt As DataTable
+                dtt = TryCast(Session("sDtHotel"), DataTable)
+                If dtt Is Nothing Then
+                    Dim dtHotel = New DataTable()
+                    Dim dhCode = New DataColumn("Code", GetType(String))
+                    Dim dhValue = New DataColumn("Value", GetType(String))
+                    Dim dhCodeAndValue = New DataColumn("CodeAndValue", GetType(String))
+                    dtHotel.Columns.Add(dhCode)
+                    dtHotel.Columns.Add(dhValue)
+                    dtHotel.Columns.Add(dhCodeAndValue)
+                    Session("sDtHotel") = dtHotel
+                Else
+                    dlHotels.DataSource = dtt
+                    dlHotels.DataBind()
+                End If
+                dtt = TryCast(Session("sDtAgent"), DataTable)
+                If dtt Is Nothing Then
+                    Dim dtAgent = New DataTable()
+                    Dim daCode = New DataColumn("Code", GetType(String))
+                    Dim daValue = New DataColumn("Value", GetType(String))
+                    Dim daCodeAndValue = New DataColumn("CodeAndValue", GetType(String))
+                    dtAgent.Columns.Add(daCode)
+                    dtAgent.Columns.Add(daValue)
+                    dtAgent.Columns.Add(daCodeAndValue)
+                    Session("sDtAgent") = dtAgent
+                Else
+                    dlAgents.DataSource = dtt
+                    dlAgents.DataBind()
+                End If
+                Dim selMonthArr() As String = {"", ""}
+                If (Not String.IsNullOrEmpty(Convert.ToString(Session("SelectedInventoryMonth")))) Then
+                    Dim selMonth As String = Convert.ToString(Session("SelectedInventoryMonth"))
+                    selMonthArr = selMonth.Split(",")
+                End If
+                Dim FromDt As DateTime
+                If IsNumeric(selMonthArr(0)) And IsNumeric(selMonthArr(1)) Then
+                    FromDt = Convert.ToDateTime("01/" & Convert.ToInt32(selMonthArr(0)).ToString("00") & "/" & selMonthArr(1))
+                End If
+                If FromDt.Date > Date.Now.Date Then
+                    txtFromDate.Text = FromDt.Date
+                    txtToDate.Text = FromDt.AddDays(14)
+                Else
+                    txtFromDate.Text = Date.Now.Date
+                    txtToDate.Text = Date.Now.Date.AddDays(7)
+                End If
+                txtReleaseDays.Attributes.Add("onkeypress", "return validateDigitOnly(event)")
+                GenerateColumn()
+                Dim dt As New DataTable()
+                dt.Columns.Add("LinkTo")
+                dt.Columns.Add("RoomsAvailable")
+                dt.Columns.Add("PromotionID")
+                dt.Columns.Add("PromotionName")
+                dt.Columns.Add("ApplicableTo")
+                dt.Columns.Add("Period")
+                dt.Rows.Add()
+                gvOffers.DataSource = dt
+                gvOffers.DataBind()
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryDayView.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+        If (Me.IsPostBack And Me.Request("__EVENTTARGET") = "InventoryWindowPostBack") Then
+
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnvsprocess_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnvsprocess.Click"
+    Protected Sub btnvsprocess_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnvsprocess.Click
+        Try
+            FilterGrid("Hotel")
+            GenerateColumn()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryDayView.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnResetAgent_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnResetAgent.Click"
+    Protected Sub btnResetAgent_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnResetAgent.Click
+        Dim dtt As DataTable
+        dtt = Session("sDtAgent")
+        If dtt.Rows.Count > 0 Then
+            dtt.Clear()
+        End If
+        Session("sDtAgent") = dtt
+        dlAgents.DataSource = dtt
+        dlAgents.DataBind()
+        GenerateColumn()
+    End Sub
+#End Region
+
+#Region "Protected Sub btnvsprocessAgent_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnvsprocessAgent.Click"
+    Protected Sub btnvsprocessAgent_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnvsprocessAgent.Click
+        Try
+            FilterGrid("Agent")
+            GenerateColumn()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryDayView.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub lbClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)"
+    Protected Sub lbClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            Dim myButton As Button = CType(sender, Button)
+            Dim dlItem As DataListItem = CType((CType(sender, Button)).NamingContainer, DataListItem)
+            Dim lnkcode As Button = CType(dlItem.FindControl("lnkcode"), Button)
+            Dim lnkvalue As Button = CType(dlItem.FindControl("lnkvalue"), Button)
+            Dim dtHotels As New DataTable
+            dtHotels = Session("sDtHotel")
+            If dtHotels.Rows.Count > 0 Then
+                Dim j As Integer
+                For j = dtHotels.Rows.Count - 1 To 0 Step j - 1
+                    If lnkcode.Text.Trim.ToUpper = dtHotels.Rows(j)("code").ToString.Trim.ToUpper And lnkvalue.Text.Trim.ToUpper = dtHotels.Rows(j)("Value").ToString.Trim.ToUpper Then
+                        dtHotels.Rows.Remove(dtHotels.Rows(j))
+                    End If
+                Next
+            End If
+            Session("sDtHotel") = dtHotels
+            dlHotels.DataSource = dtHotels
+            dlHotels.DataBind()
+            GenerateColumn()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub lbAgentClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)"
+    Protected Sub lbAgentClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            Dim myButton As Button = CType(sender, Button)
+            Dim dlItem As DataListItem = CType((CType(sender, Button)).NamingContainer, DataListItem)
+            Dim lnkcode As Button = CType(dlItem.FindControl("lnkAgentCode"), Button)
+            Dim lnkvalue As Button = CType(dlItem.FindControl("lnkAgentValue"), Button)
+            Dim dtAgents As New DataTable
+            dtAgents = Session("sDtAgent")
+            If dtAgents.Rows.Count > 0 Then
+                Dim j As Integer
+                For j = dtAgents.Rows.Count - 1 To 0 Step j - 1
+                    If lnkcode.Text.Trim.ToUpper = dtAgents.Rows(j)("code").ToString.Trim.ToUpper And lnkvalue.Text.Trim.ToUpper = dtAgents.Rows(j)("Value").ToString.Trim.ToUpper Then
+                        dtAgents.Rows.Remove(dtAgents.Rows(j))
+                    End If
+                Next
+            End If
+            Session("sDtAgent") = dtAgents
+            dlAgents.DataSource = dtAgents
+            dlAgents.DataBind()
+            GenerateColumn()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Sub
+#End Region
+
+#Region "Private Sub FilterGrid(ByVal FilterType As String)"
+    Private Sub FilterGrid(ByVal FilterType As String)
+        Dim lsSearchTxt As String = ""
+        If FilterType = "Hotel" Then
+            lsSearchTxt = txtvsprocesssplit.Text
+            Dim lsProcessText As String = ""
+            Dim lsProcessHotels As String = ""
+
+            Dim lsMainArr As String()
+            lsMainArr = objUtils.splitWithWords(lsSearchTxt, "|~,")
+            For i = 0 To lsMainArr.GetUpperBound(0)
+                Select Case lsMainArr(i).Split(":")(0).ToString.ToUpper.Trim
+                    Case "CITY"
+                        lsProcessHotels = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("CITY", lsProcessHotels, "CT", FilterType)
+                    Case "TEXT"
+                        lsProcessText = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("TEXT", lsProcessText, "T", FilterType)
+                    Case "COUNTRY"
+                        lsProcessHotels = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("COUNTRY", lsProcessHotels, "C", FilterType)
+                    Case "SECTOR"
+                        lsProcessHotels = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("SECTOR", lsProcessHotels, "S", FilterType)
+                    Case "CATEGORY"
+                        lsProcessHotels = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("CATEGORY", lsProcessHotels, "CTG", FilterType)
+                    Case "HOTEL GROUP"
+                        lsProcessHotels = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("HOTEL GROUP", lsProcessHotels, "HG", FilterType)
+                    Case "HOTELS"
+                        lsProcessHotels = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("HOTELS", lsProcessHotels, "H", FilterType)
+                End Select
+            Next
+            Dim dtt As DataTable
+            dtt = Session("sDtHotel")
+            dlHotels.DataSource = dtt
+            dlHotels.DataBind()
+        Else
+            lsSearchTxt = txtvsprocesssplitAgent.Text
+            Dim lsProcessText As String = ""
+            Dim lsProcessAgents As String = ""
+
+            Dim lsMainArr As String()
+            lsMainArr = objUtils.splitWithWords(lsSearchTxt, "|~,")
+            For i = 0 To lsMainArr.GetUpperBound(0)
+                Select Case lsMainArr(i).Split(":")(0).ToString.ToUpper.Trim
+                    Case "CITY"
+                        lsProcessAgents = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("CITY", lsProcessAgents, "CT", FilterType)
+                    Case "TEXT"
+                        lsProcessText = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("TEXT", lsProcessText, "T", FilterType)
+                    Case "COUNTRY"
+                        lsProcessAgents = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("COUNTRY", lsProcessAgents, "C", FilterType)
+                    Case "SECTOR"
+                        lsProcessAgents = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("SECTOR", lsProcessAgents, "S", FilterType)
+                    Case "CATEGORY"
+                        lsProcessAgents = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("CATEGORY", lsProcessAgents, "CTG", FilterType)
+                    Case "COUNTRY GROUP"
+                        lsProcessAgents = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("COUNTRY GROUP", lsProcessAgents, "CG", FilterType)
+                    Case "AGENT"
+                        lsProcessAgents = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("AGENT", lsProcessAgents, "A", FilterType)
+                End Select
+            Next
+            Dim dtt As DataTable
+            dtt = Session("sDtAgent")
+            dlAgents.DataSource = dtt
+            dlAgents.DataBind()
+        End If
+    End Sub
+#End Region
+
+#Region "Function sbAddToDataTable(ByVal lsName As String, ByVal lsValue As String, ByVal lsShortCode As String, ByVal FilterType As String) As Boolean"
+    Function sbAddToDataTable(ByVal lsName As String, ByVal lsValue As String, ByVal lsShortCode As String, ByVal FilterType As String) As Boolean
+        Dim iFlag As Integer = 0
+        Dim dtt As DataTable
+        If FilterType = "Hotel" Then
+            dtt = Session("sDtHotel")
+        Else
+            dtt = Session("sDtAgent")
+        End If
+        If dtt.Rows.Count >= 0 Then
+            For i = 0 To dtt.Rows.Count - 1
+                If dtt.Rows(i)("Code").ToString.Trim.ToUpper = lsName.Trim.ToUpper And dtt.Rows(i)("Value").ToString.Trim.ToUpper = lsValue.Trim.ToUpper Then
+                    iFlag = 1
+                End If
+            Next
+            If iFlag = 0 Then
+                dtt.NewRow()
+                dtt.Rows.Add(lsName.Trim.ToUpper, lsValue.Trim.ToUpper, lsShortCode.Trim.ToUpper & ": " & lsValue.Trim)
+                If FilterType = "Hotel" Then
+                    Session("sDtHotel") = dtt
+                Else
+                    Session("sDtAgent") = dtt
+                End If
+            End If
+        End If
+        Return True
+    End Function
+#End Region
+
+#Region "Protected Sub btnResetSelection_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnResetSelection.Click"
+    Protected Sub btnResetSelection_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnResetSelection.Click
+        Dim dtt As DataTable
+        dtt = Session("sDtHotel")
+        If dtt.Rows.Count > 0 Then
+            dtt.Clear()
+        End If
+        Session("sDtHotel") = dtt
+        dlHotels.DataSource = dtt
+        dlHotels.DataBind()
+        GenerateColumn()
+    End Sub
+#End Region
+
+#Region "Protected Sub btnShow_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnShow.Click"
+    Protected Sub btnShow_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnShow.Click
+        GenerateColumn()
+    End Sub
+#End Region
+
+#Region "Protected Sub GenerateColumn()"
+    Protected Sub GenerateColumn()
+        Try
+            If (RdoSummary.Checked = True) Then
+                Dim fromDt As Date
+                Dim toDt As Date
+                Try
+                    fromDt = CType(txtFromDate.Text, Date)
+                    toDt = CType(txtToDate.Text, Date)
+                Catch ex As Exception
+                    Exit Sub
+                End Try
+                Session("SelectedInventoryMonth") = fromDt.Month.ToString("00") + "," + fromDt.Year.ToString()
+                While (fromDt <= toDt)
+                    dateList.Add(fromDt.Day.ToString("00") + "/" + fromDt.Month.ToString("00"))
+                    fromDt = fromDt.AddDays(1)
+                End While
+                Dim cnt As Integer = gvDayView.Columns.Count
+                While (cnt > 3)
+                    gvDayView.Columns.RemoveAt(cnt)
+                    cnt = cnt - 1
+                End While
+
+                Dim tField As New TemplateField()
+                Dim i As String
+                For Each i In dateList
+                    tField = New TemplateField()
+                    tField.HeaderText = i
+                    gvDayView.Columns.Add(tField)
+                Next
+                Dim srDt As DataTable = Nothing
+                Dim CountriesList As DataTable = Nothing
+                SearchRecord(srDt, CountriesList)
+                If srDt Is Nothing Then Exit Sub
+                Dim CtryAgtList As DataTable = srDt.DefaultView.ToTable(True, {"Countries", "Agents", "PartyCode"})
+                Dim distinctDt As DataTable = srDt.DefaultView.ToTable(True, "PartyCode")
+                distinctRoomDt = srDt.DefaultView.ToTable(True, {"PartyCode", "RmTypCode"})
+                Dim HotelList As String = ""
+                For Each disDtRow As DataRow In distinctDt.Rows
+                    If HotelList = "" Then
+                        HotelList = "'" + disDtRow("PartyCode") + "'"
+                    Else
+                        HotelList = HotelList + ",'" + disDtRow("PartyCode") + "'"
+                    End If
+                Next
+                Me.BindGrid(HotelList, CtryAgtList, CountriesList)
+                distinctDt.Clear()
+                gvDayView.ViewStateMode = UI.ViewStateMode.Disabled
+                FillGridNew(srDt)
+            Else
+
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryDayView.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Private Sub SearchRecord(ByRef srDt As DataTable, ByRef CountriesList As DataTable)"
+    Private Sub SearchRecord(ByRef srDt As DataTable, ByRef CountriesList As DataTable)
+        Try
+            Dim dtHotel As DataTable
+            dtHotel = Session("sDtHotel")
+            Dim HotelCountry As String = ""
+            Dim HotelCity As String = ""
+            Dim HotelSector As String = ""
+            Dim HotelCategory As String = ""
+            Dim HotelGroup As String = ""
+            Dim HotelCode As String = ""
+            Dim HotelText As String = ""
+            If Not dtHotel Is Nothing Then
+                For Each dth As DataRow In dtHotel.Rows
+                    If dth("Code") = "COUNTRY" Then
+                        If HotelCountry = "" Then HotelCountry = "'" + dth("value") + "'" Else HotelCountry = HotelCountry + ",'" + dth("value") + "'"
+                    ElseIf dth("Code") = "CITY" Then
+                        If HotelCity = "" Then HotelCity = "'" + dth("value") + "'" Else HotelCity = HotelCity + ",'" + dth("value") + "'"
+                    ElseIf dth("Code") = "SECTOR" Then
+                        If HotelSector = "" Then HotelSector = "'" + dth("value") + "'" Else HotelSector = HotelSector + ",'" + dth("value") + "'"
+                    ElseIf dth("Code") = "CATEGORY" Then
+                        If HotelCategory = "" Then HotelCategory = "'" + dth("value") + "'" Else HotelCategory = HotelCategory + ",'" + dth("value") + "'"
+                    ElseIf dth("Code") = "HOTEL GROUP" Then
+                        If HotelGroup = "" Then HotelGroup = "'" + dth("value") + "'" Else HotelGroup = HotelGroup + ",'" + dth("value") + "'"
+                    ElseIf dth("Code") = "HOTELS" Then
+                        If HotelCode = "" Then HotelCode = "'" + dth("value") + "'" Else HotelCode = HotelCode + ",'" + dth("value") + "'"
+                    ElseIf dth("Code") = "TEXT" Then
+                        If HotelText = "" Then HotelText = dth("value") Else HotelText = HotelText + "," + dth("value")
+                    End If
+                Next
+                'If HotelText <> "" Then HotelText = HotelText + "'"
+            End If
+            Dim dtAgent As DataTable
+            dtAgent = Session("sDtAgent")
+            Dim AgentCountry As String = ""
+            Dim AgentCity As String = ""
+            Dim AgentSector As String = ""
+            Dim AgentCategory As String = ""
+            Dim CountryGroup As String = ""
+            Dim AgentCode As String = ""
+            Dim AgentText As String = ""
+
+            If Not dtAgent Is Nothing Then
+                For Each dtA As DataRow In dtAgent.Rows
+                    If dtA("Code") = "COUNTRY" Then
+                        If AgentCountry = "" Then AgentCountry = "'" + dtA("value") + "'" Else AgentCountry = AgentCountry + ",'" + dtA("value") + "'"
+                    ElseIf dtA("Code") = "CITY" Then
+                        If AgentCity = "" Then AgentCity = "'" + dtA("value") + "'" Else AgentCity = AgentCity + ",'" + dtA("value") + "'"
+                    ElseIf dtA("Code") = "SECTOR" Then
+                        If AgentSector = "" Then AgentSector = "'" + dtA("value") + "'" Else AgentSector = AgentSector + ",'" + dtA("value") + "'"
+                    ElseIf dtA("Code") = "CATEGORY" Then
+                        If AgentCategory = "" Then AgentCategory = "'" + dtA("value") + "'" Else AgentCategory = AgentCategory + ",'" + dtA("value") + "'"
+                    ElseIf dtA("Code") = "COUNTRY GROUP" Then
+                        If CountryGroup = "" Then CountryGroup = dtA("value") Else CountryGroup = CountryGroup + "," + dtA("value")
+                    ElseIf dtA("Code") = "AGENT" Then
+                        If AgentCode = "" Then AgentCode = "'" + dtA("value") + "'" Else AgentCode = AgentCode + ",'" + dtA("value") + "'"
+                    ElseIf dtA("Code") = "TEXT" Then
+                        If AgentText = "" Then AgentText = dtA("value") Else AgentText = AgentText + "," + dtA("value")
+                    End If
+                Next
+                'If AgentText <> "" Then AgentText = AgentText + "'"
+            End If
+            Dim InventoryTypes As String = ""
+            If chkB2B.Checked = True Then InventoryTypes = "'B2B'"
+            If chkFinancial.Checked = True Then
+                If InventoryTypes = "" Then InventoryTypes = "'Financial'" Else InventoryTypes = InventoryTypes + ",'Financial'"
+            End If
+            If chkGeneral.Checked = True Then
+                If InventoryTypes = "" Then InventoryTypes = "'General'" Else InventoryTypes = InventoryTypes + ",'General'"
+            End If
+            If chkFreeSale.Checked = True Then
+                If InventoryTypes = "" Then InventoryTypes = "'Free Sale'" Else InventoryTypes = InventoryTypes + ",'Free Sale'"
+            End If
+            If chkStopSale.Checked = True Then
+                If InventoryTypes = "" Then InventoryTypes = "'Stop Sale'" Else InventoryTypes = InventoryTypes + ",'Stop Sale'"
+            End If
+
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            mySqlCmd = New SqlCommand("sp_InventoryDayView", SqlConn)
+            mySqlCmd.CommandType = CommandType.StoredProcedure
+            mySqlCmd.Parameters.Add(New SqlParameter("@FromDate", SqlDbType.VarChar, 10)).Value = Convert.ToDateTime(txtFromDate.Text).ToString("yyyy/MM/dd")
+            mySqlCmd.Parameters.Add(New SqlParameter("@ToDate", SqlDbType.VarChar, 10)).Value = Convert.ToDateTime(txtToDate.Text).ToString("yyyy/MM/dd")
+            mySqlCmd.Parameters.Add(New SqlParameter("@HotelCountry", SqlDbType.VarChar, -1)).Value = HotelCountry
+            mySqlCmd.Parameters.Add(New SqlParameter("@HotelCity", SqlDbType.VarChar, -1)).Value = HotelCity
+            mySqlCmd.Parameters.Add(New SqlParameter("@HotelSector", SqlDbType.VarChar, -1)).Value = HotelSector
+            mySqlCmd.Parameters.Add(New SqlParameter("@HotelCategory", SqlDbType.VarChar, -1)).Value = HotelCategory
+            mySqlCmd.Parameters.Add(New SqlParameter("@HotelGroup", SqlDbType.VarChar, -1)).Value = HotelGroup
+            mySqlCmd.Parameters.Add(New SqlParameter("@HotelCode", SqlDbType.VarChar, -1)).Value = HotelCode
+            mySqlCmd.Parameters.Add(New SqlParameter("@HotelText", SqlDbType.VarChar, -1)).Value = HotelText
+            mySqlCmd.Parameters.Add(New SqlParameter("@AgentCountry", SqlDbType.VarChar, -1)).Value = AgentCountry
+            mySqlCmd.Parameters.Add(New SqlParameter("@AgentCity", SqlDbType.VarChar, -1)).Value = AgentCity
+            mySqlCmd.Parameters.Add(New SqlParameter("@AgentSector", SqlDbType.VarChar, -1)).Value = AgentSector
+            mySqlCmd.Parameters.Add(New SqlParameter("@AgentCategory", SqlDbType.VarChar, -1)).Value = AgentCategory
+            mySqlCmd.Parameters.Add(New SqlParameter("@CountryGroup", SqlDbType.VarChar, -1)).Value = CountryGroup
+            mySqlCmd.Parameters.Add(New SqlParameter("@AgentCode", SqlDbType.VarChar, -1)).Value = AgentCode
+            mySqlCmd.Parameters.Add(New SqlParameter("@AgentText", SqlDbType.VarChar, -1)).Value = AgentText
+            If IsNumeric(txtReleaseDays.Text.Trim) Then
+                mySqlCmd.Parameters.Add(New SqlParameter("@NearReleaseDay", SqlDbType.VarChar, 3)).Value = CType(txtReleaseDays.Text.Trim, String)
+            Else
+                mySqlCmd.Parameters.Add(New SqlParameter("@NearReleaseDay", SqlDbType.VarChar, 3)).Value = "0"
+            End If
+            mySqlCmd.Parameters.Add(New SqlParameter("@InventoryTypes", SqlDbType.VarChar, -1)).Value = InventoryTypes
+            myDataAdapter.SelectCommand = mySqlCmd
+            Dim sDs As New DataSet
+            myDataAdapter.Fill(sDs)
+            CountriesList = sDs.Tables(0)
+            srDt = sDs.Tables(1)
+            clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            clsDBConnect.dbConnectionClose(SqlConn)
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryDayView.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            srDt = Nothing
+            CountriesList = Nothing
+        End Try
+    End Sub
+#End Region
+
+#Region "Private Sub BindGrid(ByVal HotelList As String, ByVal CtryAgtList As DataTable, ByVal CountriesList As DataTable)"
+    Private Sub BindGrid(ByVal HotelList As String, ByVal CtryAgtList As DataTable, ByVal CountriesList As DataTable)
+        Try
+            gvDayView.DataSource = Nothing
+            gvDayView.DataBind()
+            Dim strSqlQry As String
+            Dim myDS As New DataSet
+            If HotelList = "" Then HotelList = "''"
+            Dim countryDt As New DataTable
+            countryDt.Columns.Add(New DataColumn("Countries", GetType(String)))
+            countryDt.Columns.Add(New DataColumn("Agents", GetType(String)))
+            countryDt.Columns.Add(New DataColumn("PartyCode", GetType(String)))
+            countryDt.Columns("PartyCode").DefaultValue = "Country"
+            countryDt.Columns.Add(New DataColumn("HotelName", GetType(String)))
+            countryDt.Columns("HotelName").DefaultValue = ""
+            countryDt.Merge(CtryAgtList)
+            strSqlQry = "select PartyCode,PartyName as HotelName from partymast where partycode in (" + HotelList + ") order by partyname"
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For Each dr As DataRow In myDS.Tables(0).Rows
+                    For Each drc As DataRow In countryDt.Rows
+                        If drc("partyCode") = dr("partyCode") Then
+                            drc("HotelName") = dr("HotelName")
+                        End If
+                    Next
+                Next
+                countryDt.Columns.Add(New DataColumn("CountriesName", GetType(String)))
+                countryDt.Columns.Add(New DataColumn("AgentsName", GetType(String)))
+                countryDt.Columns.Add(New DataColumn("ApplicableTo", GetType(String)))
+                countryDt.Merge(CountriesList)
+                Dim dv As New DataView(countryDt)
+                dv.Sort = "countries asc,agents asc,Hotelname asc"
+                gvDayView.DataSource = dv
+                gvDayView.DataBind()
+            Else
+                myDS.Tables(0).Rows.Add(myDS.Tables(0).NewRow)
+                countryDt.Columns.Add(New DataColumn("CountriesName", GetType(String)))
+                countryDt.Columns.Add(New DataColumn("AgentsName", GetType(String)))
+                countryDt.Columns.Add(New DataColumn("ApplicableTo", GetType(String)))
+                countryDt.Merge(CountriesList)
+                countryDt.Merge(myDS.Tables(0))
+                gvDayView.DataSource = countryDt
+                gvDayView.DataBind()
+                Dim totalCol As Integer = gvDayView.Rows(0).Cells.Count
+                gvDayView.Rows(0).Cells.Clear()
+                gvDayView.Rows(0).Cells.Add(New TableCell())
+                gvDayView.Rows(0).Cells(0).ColumnSpan = totalCol
+                gvDayView.Rows(0).Cells(0).CssClass = "NoData"
+                gvDayView.Rows(0).Cells(0).Text = "No Data Found"
+            End If
+            clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            clsDBConnect.dbConnectionClose(SqlConn)                          'Close connection
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryDayView.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub gvDayView_PageIndexChanging(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gvDayView.PageIndexChanging"
+    Protected Sub gvDayView_PageIndexChanging(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gvDayView.PageIndexChanging
+        gvDayView.PageIndex = e.NewPageIndex
+        btnShow_Click(sender, e)
+    End Sub
+#End Region
+
+#Region "Protected Sub gvDayView_RowDataBound(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvDayView.RowDataBound"
+    Protected Sub gvDayView_RowDataBound(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvDayView.RowDataBound
+        If (e.Row.RowType = DataControlRowType.DataRow) Then
+            Dim HotelCode As Label = TryCast(e.Row.FindControl("lblHotelCode"), Label)
+
+            If (HotelCode.Text = "Country") Then
+                Dim HotelName As Label = TryCast(e.Row.FindControl("lblHotelName"), Label)
+                Dim Ctry As Label = TryCast(e.Row.FindControl("lblCountriesName"), Label)
+                Dim Agt As Label = TryCast(e.Row.FindControl("lblAgentsName"), Label)
+                Dim lblApplicableTo As Label = TryCast(e.Row.FindControl("lblApplicableTo"), Label)
+                Dim div As New HtmlGenericControl("div")
+                Dim str1 As String = "divId" + Convert.ToString(e.Row.RowIndex)
+                div.Attributes.Add("id", str1)
+                Dim showTitle As String = "Countries :- " + Ctry.Text + vbCrLf + "Agents :- " + Agt.Text
+                'If (Ctry.Text.Trim <> "" And Agt.Text.Trim <> "") Then
+                '    div.InnerHtml = "Countries :- " + Ctry.Text + " Agents :- " + Agt.Text
+                'ElseIf (Ctry.Text.Trim <> "") Then
+                '    div.InnerText = "Countries :- " + Ctry.Text
+                'ElseIf (Agt.Text.Trim <> "") Then
+                '    div.InnerText = "Agents :- " + Agt.Text
+                'End If
+                div.InnerText = "Applicable To :- " + lblApplicableTo.Text.Trim
+                div.Attributes.Add("class", "Countrycss")
+                div.Attributes.Add("alt", showTitle)
+                div.Attributes.Add("title", showTitle)
+                div.Attributes.Add("onclick", "ShowPopup(this)")
+                e.Row.Cells(2).Controls.Add(div)
+                HotelName.Visible = False
+                Dim imgSign As HtmlImage = TryCast(e.Row.FindControl("imgSign"), HtmlImage)
+                imgSign.Visible = False
+            End If
+            Dim gvRoomType As GridView = TryCast(e.Row.FindControl("gvRoomType"), GridView)
+            AddHandler gvRoomType.RowDataBound, AddressOf gvRoomType_RowDataBound
+            Dim tField As New TemplateField()
+            Dim i As String
+            For Each i In dateList
+                tField = New TemplateField()
+                tField.HeaderText = i
+                tField.ItemTemplate = New DynamicTemplateField(i)
+                gvRoomType.Columns.Add(tField)
+            Next
+            Dim rsRType As DataRow()
+            Dim str As String = "PartyCode like '" + HotelCode.Text.Trim + "'"
+            rsRType = distinctRoomDt.Select(str)
+            Dim roomStr As String = ""
+            For Each rtypeRow As DataRow In rsRType
+                If roomStr = "" Then
+                    roomStr = "'" + rtypeRow("RmTypCode") + "'"
+                Else
+                    roomStr = roomStr + ",'" + rtypeRow("RmTypCode") + "'"
+                End If
+            Next
+            If roomStr = "" Then roomStr = "''"
+            gvRoomType.DataSource = GetRoomType(String.Format("select rmtypcode as RTypeCode,rmtypName as RTypeName from partyrmtyp where partycode = '{0}' and rmtypcode in({1})", {HotelCode.Text.Trim, roomStr}))
+            gvRoomType.DataBind()
+
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub gvRoomType_RowDataBound(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewRowEventArgs)"
+    Protected Sub gvRoomType_RowDataBound(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewRowEventArgs)
+        
+    End Sub
+#End Region
+
+#Region "Private Function GetRoomType(ByVal strSqlQry As String) As DataTable"
+    Private Function GetRoomType(ByVal strSqlQry As String) As DataTable
+        Try
+            Dim myDS As New DataSet
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            GetRoomType = myDS.Tables(0)
+            clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            clsDBConnect.dbConnectionClose(SqlConn)                          'Close connection
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryDayView.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            GetRoomType = Nothing
+        Finally
+
+        End Try
+    End Function
+#End Region
+
+#Region "Protected Sub RdoSummary_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles RdoSummary.CheckedChanged"
+    Protected Sub RdoSummary_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles RdoSummary.CheckedChanged
+        If (RdoSummary.Checked = True) Then
+            GenerateColumn()
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub RdoDetails_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles RdoDetails.CheckedChanged"
+    Protected Sub RdoDetails_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles RdoDetails.CheckedChanged
+        If (RdoDetails.Checked = True) Then
+            GenerateColumn()
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub FillGridNew(ByVal rsDt As DataTable)"
+    Protected Sub FillGridNew(ByVal rsDt As DataTable)
+        Try
+            Dim lblDate As Date
+            Dim lblHotel As Label
+            Dim lblCountries As Label
+            Dim lblAgents As Label
+            Dim GridroomType As GridView
+            Dim lblRoomType As Label
+            Dim img As Image
+            Dim lbl As Label
+            Dim brctl As HtmlGenericControl
+            If rsDt.Rows.Count > 0 Then
+                For Each rsDtRow As DataRow In rsDt.Rows
+                    For Each gvRow As GridViewRow In gvDayView.Rows
+                        lblCountries = TryCast(gvRow.FindControl("lblCountries"), Label)
+                        lblAgents = TryCast(gvRow.FindControl("lblAgent"), Label)
+                        lblHotel = TryCast(gvRow.FindControl("lblHotelCode"), Label)
+                        If (lblCountries.Text.Trim = rsDtRow("Countries") And lblAgents.Text.Trim = rsDtRow("Agents") And lblHotel.Text.Trim = rsDtRow("PartyCode")) Then
+                            GridroomType = TryCast(gvRow.FindControl("gvRoomType"), GridView)
+                            For Each gvRoomRow As GridViewRow In GridroomType.Rows
+                                If gvRoomRow.RowType = DataControlRowType.DataRow Then
+                                    lblRoomType = TryCast(gvRoomRow.FindControl("lblRTypeCode"), Label)
+                                    Dim HeaderTxt As String
+                                    If (lblRoomType.Text.Trim = rsDtRow("RmTypCode")) Then
+                                        lblDate = Convert.ToDateTime(rsDtRow("InventoryDate"))
+                                        HeaderTxt = lblDate.Day.ToString("00") + "/" + lblDate.Month.ToString("00")
+                                        For i As Integer = 2 To GridroomType.Columns.Count - 1
+                                            If (HeaderTxt = GridroomType.Columns(i).HeaderText.Trim) Then
+                                                If (rsDtRow("InventoryType") = "B2B" And Not IsDBNull(rsDtRow("RoomsAvailable"))) Then
+                                                    img = TryCast(gvRoomRow.Cells(i).FindControl("imgB2B" + GridroomType.Columns(i).HeaderText.Trim), Image)
+                                                    img.Visible = True
+                                                    lbl = TryCast(gvRoomRow.Cells(i).FindControl("lblB2B" + GridroomType.Columns(i).HeaderText.Trim), Label)
+                                                    lbl.Text = rsDtRow("RoomsAvailable")
+                                                    brctl = TryCast(gvRoomRow.Cells(i).FindControl("brB2B" + GridroomType.Columns(i).HeaderText.Trim), HtmlGenericControl)
+                                                    brctl.Visible = True
+                                                ElseIf (rsDtRow("InventoryType") = "Financial" And Not IsDBNull(rsDtRow("RoomsAvailable"))) Then
+                                                    img = TryCast(gvRoomRow.Cells(i).FindControl("imgFinancial" + GridroomType.Columns(i).HeaderText.Trim), Image)
+                                                    img.Visible = True
+                                                    lbl = TryCast(gvRoomRow.Cells(i).FindControl("lblFinancial" + GridroomType.Columns(i).HeaderText.Trim), Label)
+                                                    lbl.Text = rsDtRow("RoomsAvailable")
+                                                    brctl = TryCast(gvRoomRow.Cells(i).FindControl("brFinancial" + GridroomType.Columns(i).HeaderText.Trim), HtmlGenericControl)
+                                                    brctl.Visible = True
+                                                ElseIf (rsDtRow("InventoryType") = "General" And Not IsDBNull(rsDtRow("RoomsAvailable"))) Then
+                                                    img = TryCast(gvRoomRow.Cells(i).FindControl("imgGeneral" + GridroomType.Columns(i).HeaderText.Trim), Image)
+                                                    img.Visible = True
+                                                    lbl = TryCast(gvRoomRow.Cells(i).FindControl("lblGeneral" + GridroomType.Columns(i).HeaderText.Trim), Label)
+                                                    lbl.Text = rsDtRow("RoomsAvailable")
+                                                ElseIf (rsDtRow("InventoryType") = "Free Sale" And Not IsDBNull(rsDtRow("RoomsAvailable"))) Then
+                                                    img = TryCast(gvRoomRow.Cells(i).FindControl("imgFreeSale" + GridroomType.Columns(i).HeaderText.Trim), Image)
+                                                    img.Visible = True
+                                                    img.Attributes.Add("class", "imagecss")
+                                                    Dim evtHandler As String = "ShowOffer ('" + lblHotel.Text.Trim + "','" + lblRoomType.Text.Trim + "','" + lblDate.Date.ToString("yyyy/MM/dd") + "')"
+                                                    img.Attributes.Add("onClick", evtHandler)
+                                                    lbl = TryCast(gvRoomRow.Cells(i).FindControl("lblFreeSale" + GridroomType.Columns(i).HeaderText.Trim), Label)
+                                                    lbl.Text = rsDtRow("RoomsAvailable")
+                                                    If (Convert.ToInt32(lbl.Text) < 100) Then lbl.Visible = True Else lbl.Visible = False
+                                                    brctl = TryCast(gvRoomRow.Cells(i).FindControl("brFreeSale" + GridroomType.Columns(i).HeaderText.Trim), HtmlGenericControl)
+                                                    brctl.Visible = True
+                                                ElseIf (rsDtRow("InventoryType") = "Stop Sale" And Not IsDBNull(rsDtRow("RoomsAvailable"))) Then
+                                                    img = TryCast(gvRoomRow.Cells(i).FindControl("imgStopSale" + GridroomType.Columns(i).HeaderText.Trim), Image)
+                                                    img.Visible = True
+                                                    lbl = TryCast(gvRoomRow.Cells(i).FindControl("lblStopSale" + GridroomType.Columns(i).HeaderText.Trim), Label)
+                                                    lbl.Text = rsDtRow("RoomsAvailable")
+                                                    brctl = TryCast(gvRoomRow.Cells(i).FindControl("brStopSale" + GridroomType.Columns(i).HeaderText.Trim), HtmlGenericControl)
+                                                    brctl.Visible = True
+                                                End If
+                                                If rsDtRow("NearRelease") = "Red" And (rsDtRow("InventoryType") = "B2B" Or rsDtRow("InventoryType") = "Financial") Then
+                                                    GridroomType.HeaderRow.Cells(i).CssClass = "gvHeaderStyle"
+                                                End If
+                                                Exit For
+                                            End If
+                                        Next
+                                    End If
+                                End If
+                            Next
+                        End If
+                    Next
+                Next
+                InventoryTypeSelection()
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryDayView.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub InventoryTypeSelection()"
+    Protected Sub InventoryTypeSelection()
+        Try
+            Dim img As Image
+            Dim lbl As Label
+            Dim brctl As HtmlGenericControl
+            Dim GridRoom As GridView
+            If (chkB2B.Checked = True Or chkFinancial.Checked = True Or chkGeneral.Checked = True Or chkFreeSale.Checked = True Or chkStopSale.Checked = True) Then
+                For Each gvRow As GridViewRow In gvDayView.Rows
+                    If gvRow.RowType = DataControlRowType.DataRow Then
+                        GridRoom = TryCast(gvRow.FindControl("gvRoomType"), GridView)
+                        For Each gvRoomRow As GridViewRow In GridRoom.Rows
+                            If gvRoomRow.RowType = DataControlRowType.DataRow Then
+                                For i As Integer = 2 To GridRoom.Columns.Count - 1
+                                    img = TryCast(gvRoomRow.Cells(i).FindControl("imgB2B" + GridRoom.Columns(i).HeaderText.Trim), Image)
+                                    lbl = TryCast(gvRoomRow.Cells(i).FindControl("lblB2B" + GridRoom.Columns(i).HeaderText.Trim), Label)
+                                    brctl = TryCast(gvRoomRow.Cells(i).FindControl("brB2B" + GridRoom.Columns(i).HeaderText.Trim), HtmlGenericControl)
+                                    If chkB2B.Checked = True And lbl.Text <> "" Then
+                                        img.Visible = True
+                                        lbl.Visible = True
+                                        brctl.Visible = True
+                                    Else
+                                        img.Visible = False
+                                        lbl.Visible = False
+                                        brctl.Visible = False
+                                    End If
+                                    img = TryCast(gvRoomRow.Cells(i).FindControl("imgFinancial" + GridRoom.Columns(i).HeaderText.Trim), Image)
+                                    lbl = TryCast(gvRoomRow.Cells(i).FindControl("lblFinancial" + GridRoom.Columns(i).HeaderText.Trim), Label)
+                                    brctl = TryCast(gvRoomRow.Cells(i).FindControl("brFinancial" + GridRoom.Columns(i).HeaderText.Trim), HtmlGenericControl)
+                                    If chkFinancial.Checked = True And lbl.Text <> "" Then
+                                        img.Visible = True
+                                        lbl.Visible = True
+                                        brctl.Visible = True
+                                    Else
+                                        img.Visible = False
+                                        lbl.Visible = False
+                                        brctl.Visible = False
+                                    End If
+                                    img = TryCast(gvRoomRow.Cells(i).FindControl("imgGeneral" + GridRoom.Columns(i).HeaderText.Trim), Image)
+                                    lbl = TryCast(gvRoomRow.Cells(i).FindControl("lblGeneral" + GridRoom.Columns(i).HeaderText.Trim), Label)
+                                    If chkGeneral.Checked = True And lbl.Text <> "" Then
+                                        img.Visible = True
+                                        lbl.Visible = True
+                                    Else
+                                        img.Visible = False
+                                        lbl.Visible = False
+                                    End If
+                                    img = TryCast(gvRoomRow.Cells(i).FindControl("imgFreeSale" + GridRoom.Columns(i).HeaderText.Trim), Image)
+                                    lbl = TryCast(gvRoomRow.Cells(i).FindControl("lblFreeSale" + GridRoom.Columns(i).HeaderText.Trim), Label)
+                                    brctl = TryCast(gvRoomRow.Cells(i).FindControl("brFreeSale" + GridRoom.Columns(i).HeaderText.Trim), HtmlGenericControl)
+                                    If chkFreeSale.Checked = True And lbl.Text <> "" Then
+                                        img.Visible = True
+                                        If (Convert.ToInt32(lbl.Text) < 100) Then lbl.Visible = True Else lbl.Visible = False
+                                        brctl.Visible = True
+                                    Else
+                                        img.Visible = False
+                                        lbl.Visible = False
+                                        brctl.Visible = False
+                                    End If
+                                    img = TryCast(gvRoomRow.Cells(i).FindControl("imgStopSale" + GridRoom.Columns(i).HeaderText.Trim), Image)
+                                    lbl = TryCast(gvRoomRow.Cells(i).FindControl("lblStopSale" + GridRoom.Columns(i).HeaderText.Trim), Label)
+                                    brctl = TryCast(gvRoomRow.Cells(i).FindControl("brStopSale" + GridRoom.Columns(i).HeaderText.Trim), HtmlGenericControl)
+                                    If chkStopSale.Checked = True And lbl.Text <> "" Then
+                                        img.Visible = True
+                                        brctl.Visible = True
+                                    Else
+                                        img.Visible = False
+                                        brctl.Visible = False
+                                    End If
+                                Next
+                            End If
+                        Next
+                    End If
+                Next
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryDayView.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Inventory Type - Check boxes - checkedchanged Events"
+    Protected Sub chkB2B_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkB2B.CheckedChanged
+        GenerateColumn()
+    End Sub
+
+    Protected Sub chkFinancial_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkFinancial.CheckedChanged
+        GenerateColumn()
+    End Sub
+
+    Protected Sub chkGeneral_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkGeneral.CheckedChanged
+        GenerateColumn()
+    End Sub
+
+    Protected Sub chkFreeSale_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkFreeSale.CheckedChanged
+        GenerateColumn()
+    End Sub
+
+    Protected Sub chkStopSale_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkStopSale.CheckedChanged
+        GenerateColumn()
+    End Sub
+#End Region
+
+End Class
+

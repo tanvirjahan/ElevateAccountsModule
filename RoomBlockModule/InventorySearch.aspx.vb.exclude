@@ -1,0 +1,581 @@
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Partial Class InventorySearch
+    Inherits System.Web.UI.Page
+
+#Region "Global Declaration"
+    Dim objUtils As New clsUtils
+    Dim objUser As New clsUser
+    Dim strSqlQry As String
+    Dim strWhereCond As String
+    Dim SqlConn As SqlConnection
+    Dim myCommand As SqlCommand
+    Dim myDataAdapter As SqlDataAdapter
+#End Region
+
+#Region "Enum GridCol"
+    Enum GridCol
+        Invid = 0
+        hotelName = 1
+        invType = 2
+        applicableto = 3
+        approve = 4
+        adduser = 5
+        addDate = 6
+        moduser = 7
+        moddate = 8
+        Edit = 9
+        View = 10
+    End Enum
+#End Region
+
+#Region "Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load
+        If IsPostBack = False Then
+            Try
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+                Me.whotelatbcontrol.appval = CType(Request.QueryString("appid"), String)
+                Me.whotelatbcontrol.menuidval = objUser.GetMenuId(Session("dbconnectionName"), CType("InventorySearch.aspx?appid=2", String), CType(Request.QueryString("appid"), Integer))
+                Dim strappid As String = ""
+                Dim strappname As String = ""
+                strappid = "2"
+                strappname = objUser.GetAppName(Session("dbconnectionName"), strappid)
+                objUser.CheckUserRight(Session("dbconnectionName"), CType(Session("GlobalUserName"), String), CType(Session("Userpwd"), String), _
+                                                       CType(strappname, String), "~\RoomBlockModule\InventorySearch.aspx", btnAddNew, btnExportToExcel, _
+                                                       btnPrint, gvLogList, GridCol.Edit, 0, GridCol.View)
+                Page.Title = Page.Title + " " + "Inventory Log"
+                Session("sDtInventoryDynamic") = Nothing
+                Dim dtDynamic = New DataTable()
+                Dim dcCode = New DataColumn("Code", GetType(String))
+                Dim dcValue = New DataColumn("Value", GetType(String))
+                Dim dcCodeAndValue = New DataColumn("CodeAndValue", GetType(String))
+                dtDynamic.Columns.Add(dcCode)
+                dtDynamic.Columns.Add(dcValue)
+                dtDynamic.Columns.Add(dcCodeAndValue)
+                Session("sDtInventoryDynamic") = dtDynamic
+
+                Session.Add("strsortExpression", "InventoryID")
+                Session.Add("strsortdirection", SortDirection.Descending)
+                RowsPerPageCUS.SelectedIndex = 1
+                FillGridNew()
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("InventorySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnCloseLog_Click(sender As Object, e As System.EventArgs) Handles btnCloseLog.Click"
+    Protected Sub btnCloseLog_Click(sender As Object, e As System.EventArgs) Handles btnCloseLog.Click
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+    End Sub
+#End Region
+
+#Region "Protected Sub btnvsprocess_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnvsprocess.Click"
+    Protected Sub btnvsprocess_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnvsprocess.Click
+        Try
+            FilterGrid()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventorySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Private Sub FilterGrid()"
+    Private Sub FilterGrid()
+        Dim lsSearchTxt As String = ""
+        lsSearchTxt = txtvsprocesssplit.Text
+        Dim lsProcessInventory As String = ""
+        Dim lsProcessAll As String = ""
+
+        Dim lsMainArr As String()
+        lsMainArr = objUtils.splitWithWords(lsSearchTxt, "|~,")
+        For i = 0 To lsMainArr.GetUpperBound(0)
+            Select Case lsMainArr(i).Split(":")(0).ToString.ToUpper.Trim
+                Case "INVENTORY ID"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("INVENTORY ID", lsProcessInventory, "INVENTORY ID")
+                Case "HOTEL NAME"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("HOTEL NAME", lsProcessInventory, "HOTEL NAME")
+                Case "INVENTORY TYPE"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("INVENTORY TYPE", lsProcessInventory, "INVENTORY TYPE")
+                Case "COUNTRY GROUP"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("COUNTRY GROUP", lsProcessInventory, "COUNTRY GROUP")
+                Case "COUNTRY"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("COUNTRY", lsProcessInventory, "COUNTRY")
+                Case "AGENT"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("AGENT", lsProcessInventory, "AGENT")
+                Case "APPROVED STATUS"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("APPROVED STATUS", lsProcessInventory, "APPROVED STATUS")
+                Case "TEXT"
+                    lsProcessAll = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("TEXT", lsProcessAll, "TEXT")
+            End Select
+        Next
+
+        Dim dtt As DataTable
+        dtt = Session("sDtInventoryDynamic")
+        dlList.DataSource = dtt
+        dlList.DataBind()
+
+        FillGridNew() 'Bind Gird based selection 
+
+    End Sub
+#End Region
+
+#Region " Function sbAddToDataTable(ByVal lsName As String, ByVal lsValue As String, ByVal lsShortCode As String) As Boolean"
+    Function sbAddToDataTable(ByVal lsName As String, ByVal lsValue As String, ByVal lsShortCode As String) As Boolean
+        Dim iFlag As Integer = 0
+        Dim dtt As DataTable
+        dtt = Session("sDtInventoryDynamic")
+        If dtt.Rows.Count >= 0 Then
+            For i = 0 To dtt.Rows.Count - 1
+                If dtt.Rows(i)("Code").ToString.Trim.ToUpper = lsName.Trim.ToUpper And dtt.Rows(i)("Value").ToString.Trim.ToUpper = lsValue.Trim.ToUpper Then
+                    iFlag = 1
+                End If
+            Next
+            If iFlag = 0 Then
+                dtt.NewRow()
+                dtt.Rows.Add(lsName.Trim.ToUpper, lsValue.Trim.ToUpper, lsShortCode.Trim.ToUpper & ": " & lsValue.Trim)
+                Session("sDtInventoryDynamic") = dtt
+            End If
+        End If
+        Return True
+    End Function
+#End Region
+
+#Region "Protected Sub btnResetSelection_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnResetSelection.Click"
+    Protected Sub btnResetSelection_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnResetSelection.Click
+        Dim dtt As DataTable
+        dtt = Session("sDtInventoryDynamic")
+        If dtt.Rows.Count > 0 Then
+            dtt.Clear()
+        End If
+        Session("sDtInventoryDynamic") = dtt
+        dlList.DataSource = dtt
+        dlList.DataBind()
+        FillGridNew()
+    End Sub
+#End Region
+
+#Region "Protected Sub lbClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)"
+    Protected Sub lbClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            Dim myButton As Button = CType(sender, Button)
+            Dim dlItem As DataListItem = CType((CType(sender, Button)).NamingContainer, DataListItem)
+            Dim lnkcode As Button = CType(dlItem.FindControl("lnkcode"), Button)
+            Dim lnkvalue As Button = CType(dlItem.FindControl("lnkvalue"), Button)
+            Dim dtDynamics As New DataTable
+            dtDynamics = Session("sDtInventoryDynamic")
+            If dtDynamics.Rows.Count > 0 Then
+                Dim j As Integer
+                For j = dtDynamics.Rows.Count - 1 To 0 Step j - 1
+                    If lnkcode.Text.Trim.ToUpper = dtDynamics.Rows(j)("code").ToString.Trim.ToUpper And lnkvalue.Text.Trim.ToUpper = dtDynamics.Rows(j)("Value").ToString.Trim.ToUpper Then
+                        dtDynamics.Rows.Remove(dtDynamics.Rows(j))
+                    End If
+                Next
+            End If
+            Session("sDtInventoryDynamic") = dtDynamics
+            dlList.DataSource = dtDynamics
+            dlList.DataBind()
+            FillGridNew()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Sub
+#End Region
+
+#Region "Private Sub FillGridNew()"
+    Private Sub FillGridNew()
+        Try
+            Dim strBindCondition As String = ""
+            strBindCondition = BuildConditionNew()
+            Dim pagevaluecus = RowsPerPageCUS.SelectedValue
+            Dim myDS As New DataSet
+            lblMsg.Visible = False
+            If gvLogList.PageIndex < 0 Then gvLogList.PageIndex = 0
+            strSqlQry = ""
+            Dim strorderby As String = Session("strsortexpression")
+            Dim strsortorder As String = "Desc"
+            strSqlQry = "select InventoryID,(select partyname from partymast where partyCode =Inventory_header.PartyCode) as PartyName,InventoryType,ApplicableTo,Approved,addDate,addUser,modDate,modUser,InventoryStatus from Inventory_Header"
+            If strBindCondition <> "" Then
+                strSqlQry = strSqlQry & " WHERE InventoryType in ('B2B','Financial','General') and " & strBindCondition & " ORDER BY " & strorderby & " " & strsortorder
+            Else
+                strSqlQry = strSqlQry & " WHERE InventoryType in ('B2B','Financial','General') ORDER BY " & strorderby & " " & strsortorder
+            End If
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                gvLogList.DataSource = myDS.Tables(0)
+                gvLogList.PageSize = pagevaluecus
+                gvLogList.DataBind()
+            Else
+                gvLogList.PageIndex = 0
+                gvLogList.DataBind()
+                lblMsg.Visible = True
+                lblMsg.Text = "Records not found, Please redefine search criteria."
+            End If
+            clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            clsDBConnect.dbConnectionClose(SqlConn)
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventorySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            clsDBConnect.dbConnectionClose(SqlConn)
+        End Try
+    End Sub
+#End Region
+
+#Region "Private Function BuildConditionNew() As String"
+    Private Function BuildConditionNew() As String
+        Dim dtt As DataTable
+        dtt = Session("sDtInventoryDynamic")
+        Dim strInventoryIDValue As String = ""
+        Dim strHotelNameValue As String = ""
+        Dim strInventoryTypeValue As String = ""
+        Dim strCountryGroupValue As String = ""
+        Dim strCountryValue As String = ""
+        Dim strAgentValue As String = ""
+        Dim strApprovedValue As String = ""
+        Dim strTextValue As String = ""
+        Try
+            If dtt.Rows.Count > 0 Then
+                For i As Integer = 0 To dtt.Rows.Count - 1
+                    If dtt.Rows(i)("Code").ToString = "INVENTORY ID" Then
+                        If strInventoryIDValue <> "" Then
+                            strInventoryIDValue = strInventoryIDValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strInventoryIDValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "HOTEL NAME" Then
+                        If strHotelNameValue <> "" Then
+                            strHotelNameValue = strHotelNameValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strHotelNameValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "INVENTORY TYPE" Then
+                        If strInventoryTypeValue <> "" Then
+                            strInventoryTypeValue = strInventoryTypeValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strInventoryTypeValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "COUNTRY GROUP" Then
+                        If strCountryGroupValue <> "" Then
+                            strCountryGroupValue = strCountryGroupValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strCountryGroupValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "COUNTRY" Then
+                        If strCountryValue <> "" Then
+                            strCountryValue = strCountryValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strCountryValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "AGENT" Then
+                        If strAgentValue <> "" Then
+                            strAgentValue = strAgentValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strAgentValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "APPROVED STATUS" Then
+                        If strApprovedValue <> "" Then
+                            strApprovedValue = strApprovedValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strApprovedValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "TEXT" Then
+                        If strTextValue <> "" Then
+                            strTextValue = strTextValue + "," + dtt.Rows(i)("Value").ToString
+                        Else
+                            strTextValue = dtt.Rows(i)("Value").ToString
+                        End If
+                    End If
+                Next
+            End If
+            strWhereCond = ""
+            If strInventoryIDValue.Trim <> "" Then
+                strWhereCond = "InventoryID IN (" & Trim(strInventoryIDValue.Trim.ToUpper) & ")"
+            End If
+            If strHotelNameValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "PartyCode in (select PartyCode from PartyMast where PartyName in (" & Trim(strHotelNameValue.Trim.ToUpper) & "))"
+                Else
+                    strWhereCond = strWhereCond & "and PartyCode in (select PartyCode from PartyMast where PartyName in (" & Trim(strHotelNameValue.Trim.ToUpper) & "))"
+                End If
+            End If
+            If strInventoryTypeValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "InventoryType in (" & Trim(strInventoryTypeValue.Trim.ToUpper) & ")"
+                Else
+                    strWhereCond = strWhereCond & "and InventoryType in (" & Trim(strInventoryTypeValue.Trim.ToUpper) & ")"
+                End If
+            End If
+            If strCountryGroupValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "InventoryID in (select distinct(I.InventoryID) from countrygroup g inner join countrygroup_detail d on g.countrygroupcode= d.countrygroupcode and g.countrygroupname in (" & Trim(strCountryGroupValue.Trim.ToUpper) & ") inner join Inventory_Countries I on I.InventoryID like 'INV/%' and i.ctrycode =d.ctrycode)"
+                Else
+                    strWhereCond = strWhereCond & "and InventoryID in (select distinct(I.InventoryID) from countrygroup g inner join countrygroup_detail d on g.countrygroupcode= d.countrygroupcode and g.countrygroupname in (" & Trim(strCountryGroupValue.Trim.ToUpper) & ") inner join Inventory_Countries I on I.InventoryID like 'INV/%' and i.ctrycode =d.ctrycode)"
+                End If
+            End If
+            If strCountryValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "InventoryID in (select distinct(I.InventoryID) from ctrymast C inner join inventory_countries I on i.InventoryID like 'INV/%' and I.CtryCode = C.ctrycode and C.ctryname in (" & Trim(strCountryValue.Trim.ToUpper) & "))"
+                Else
+                    strWhereCond = strWhereCond & "and InventoryID in (select distinct(I.InventoryID) from ctrymast C inner join inventory_countries I on i.InventoryID like 'INV/%' and I.CtryCode = C.ctrycode and C.ctryname in (" & Trim(strCountryValue.Trim.ToUpper) & "))"
+                End If
+            End If
+            If strAgentValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "InventoryID in (select distinct(I.InventoryID) from AgentMast M inner join Inventory_Agents I on I.agentCode = M.agentcode and I.InventoryID like 'INV/%' and ltrim(RTRIM(M.agentname)) in (" & Trim(strAgentValue.Trim.ToUpper) & "))"
+                Else
+                    strWhereCond = strWhereCond & "and InventoryID in (select distinct(I.InventoryID) from AgentMast M inner join Inventory_Agents I on I.agentCode = M.agentcode and I.InventoryID like 'INV/%' and ltrim(RTRIM(M.agentname)) in (" & Trim(strAgentValue.Trim.ToUpper) & "))"
+                End If
+            End If
+            If strApprovedValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = " Approved IN (" & Trim(strApprovedValue.Trim.ToUpper) & ")"
+                Else
+                    strWhereCond = strWhereCond & "and approved IN (" & Trim(strApprovedValue.Trim.ToUpper) & ")"
+                End If
+            End If
+            If strTextValue <> "" Then
+                Dim lsMainArr As String()
+                Dim strValue As String = ""
+                Dim strWhereCond1 As String = ""
+                lsMainArr = objUtils.splitWithWords(strTextValue, ",")
+                For i = 0 To lsMainArr.GetUpperBound(0)
+                    strValue = ""
+                    strValue = lsMainArr(i)
+                    If strValue <> "" Then
+                        If Trim(strWhereCond1) = "" Then
+                            strWhereCond1 = "InventoryType like '%" & Trim(strValue.Trim.ToUpper) & "%' or PartyCode in (select PartyCode from PartyMast where PartyName like '%" & Trim(strValue.Trim.ToUpper) & "%') or InventoryID in (select distinct(I.InventoryID) from countrygroup g inner join countrygroup_detail d on g.countrygroupcode= d.countrygroupcode and g.countrygroupname like '%" & Trim(strValue.Trim.ToUpper) & "%' inner join Inventory_Countries I on I.InventoryID like 'INV/%' and i.ctrycode =d.ctrycode) or " &
+                            "InventoryID in (select distinct(I.InventoryID) from ctrymast C inner join inventory_countries I on i.InventoryID like 'INV/%' and I.CtryCode = C.ctrycode and C.ctryname like '%" & Trim(strValue.Trim.ToUpper) & "%') or InventoryID in (select distinct(I.InventoryID) from AgentMast M inner join Inventory_Agents I on I.agentCode = M.agentcode and I.InventoryID like 'INV/%' and ltrim(RTRIM(M.agentname)) like '%" & Trim(strValue.Trim.ToUpper) & "%') or applicableTo like '%" & Trim(strValue.Trim.ToUpper) & "%'"
+                        Else
+                            strWhereCond1 = strWhereCond1 & "or InventoryType like '%" & Trim(strValue.Trim.ToUpper) & "%' or PartyCode in (select PartyCode from PartyMast where PartyName like '%" & Trim(strValue.Trim.ToUpper) & "%') or InventoryID in (select distinct(I.InventoryIDs) from countrygroup g inner join countrygroup_detail d on g.countrygroupcode= d.countrygroupcode and g.countrygroupname like '%" & Trim(strValue.Trim.ToUpper) & "%' inner join Inventory_Countries I on I.InventoryID like 'INV/%' and i.ctrycode =d.ctrycode) or " &
+                            "InventoryID in (select distinct(I.InventoryID) from ctrymast C inner join inventory_countries I on i.InventoryID like 'INV/%' and I.CtryCode = C.ctrycode and C.ctryname like '%" & Trim(strValue.Trim.ToUpper) & "%') or InventoryID in (select distinct(I.InventoryID) from AgentMast M inner join Inventory_Agents I on I.agentCode = M.agentcode and I.InventoryID like 'INV/%' and ltrim(RTRIM(M.agentname)) like '%" & Trim(strValue.Trim.ToUpper) & "%') or applicableTo like '%" & Trim(strValue.Trim.ToUpper) & "%'"
+                        End If
+                    End If
+                Next
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = "(" & strWhereCond1 & ")"
+                Else
+                    strWhereCond = strWhereCond & " AND (" & strWhereCond1 & ")"
+                End If
+            End If
+            If txtFromDate.Text.Trim <> "" And txtToDate.Text <> "" Then
+                If ddlOrder.SelectedValue = "C" Then
+                    If Trim(strWhereCond) = "" Then
+
+                        strWhereCond = " (CONVERT(datetime, convert(varchar(10),adddate,103),103) between CONVERT(datetime, '" + txtFromDate.Text + "',103) and CONVERT(datetime, '" + txtToDate.Text + "',103)) "
+                    Else
+                        strWhereCond = strWhereCond & "  and (CONVERT(datetime, convert(varchar(10),adddate,103),103)  between CONVERT(datetime, '" + txtFromDate.Text + "',103) and CONVERT(datetime,'" + txtToDate.Text + "',103)) "
+                    End If
+                ElseIf ddlOrder.SelectedValue = "M" Then
+                    If Trim(strWhereCond) = "" Then
+
+                        strWhereCond = " (CONVERT(datetime, convert(varchar(10), moddate,103),103)  between CONVERT(datetime, '" + txtFromDate.Text + "',103) and CONVERT(datetime,  '" + txtToDate.Text + "',103)) "
+                    Else
+                        strWhereCond = strWhereCond & "  and (CONVERT(datetime, convert(varchar(10), moddate,103),103)  between CONVERT(datetime, '" + txtFromDate.Text + "',103) and CONVERT(datetime,  '" + txtToDate.Text + "',103)) "
+                    End If
+                End If
+            End If
+            BuildConditionNew = strWhereCond
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventorySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            BuildConditionNew = ""
+        End Try
+    End Function
+#End Region
+
+#Region "Protected Sub btnFilter_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnFilter.Click"
+    Protected Sub btnFilter_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnFilter.Click
+        Try
+            FillGridNew()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventorySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnClearDate_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnClearDate.Click"
+    Protected Sub btnClearDate_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnClearDate.Click
+        txtFromDate.Text = ""
+        txtToDate.Text = ""
+        FillGridNew()
+    End Sub
+#End Region
+
+#Region "Protected Sub RowsPerPageCS_SelectedIndexChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles RowsPerPageCUS.SelectedIndexChanged"
+    Protected Sub RowsPerPageCS_SelectedIndexChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles RowsPerPageCUS.SelectedIndexChanged
+        FillGridNew()
+    End Sub
+#End Region
+
+#Region "Protected Sub gvLogList_PageIndexChanging(sender As Object, e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gvLogList.PageIndexChanging"
+    Protected Sub gvLogList_PageIndexChanging(sender As Object, e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gvLogList.PageIndexChanging
+        gvLogList.PageIndex = e.NewPageIndex
+        FillGridNew()
+    End Sub
+#End Region
+
+#Region "Protected Sub gvLogList_RowCommand(sender As Object, e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gvLogList.RowCommand"
+    Protected Sub gvLogList_RowCommand(sender As Object, e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gvLogList.RowCommand
+        Try
+            If e.CommandName = "Page" Then Exit Sub
+            If e.CommandName = "Sort" Then Exit Sub
+            Dim lblInventoryID As Label
+            lblInventoryID = gvLogList.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblInventoryID")
+            lblInventoryID.Text = lblInventoryID.Text.Replace("<span style = 'background-color:#ffcc99'>", "")
+            lblInventoryID.Text = lblInventoryID.Text.Replace("</span>", "")
+            If e.CommandName = "Edit" Then
+                Dim str = "InventoryEdit.aspx?appid=2&State=Edit&InventoryID=" + lblInventoryID.Text.Trim
+                Response.Redirect(str)
+            ElseIf e.CommandName = "View" Then
+                Dim InvID() As String = lblInventoryID.Text.Trim.Split("/")
+                If (InvID.GetUpperBound(0) = 1) Then
+                    Dim strpop As String = ""
+                    strpop = "window.open('InventoryCreate.aspx?appid=2&State=View&InventoryID=" + CType(lblInventoryID.Text.Trim, String) + "','Inventory');"
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup1", strpop, True)
+                Else
+                    Dim strpop As String = ""
+                    strpop = "window.open('InventoryEdit.aspx?appid=2&State=View&InventoryID=" + CType(lblInventoryID.Text.Trim, String) + "','Inventory');"
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup1", strpop, True)
+                End If
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventorySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub gvLogList_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvLogList.RowDataBound"
+    Protected Sub gvLogList_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvLogList.RowDataBound
+        If e.Row.RowType = DataControlRowType.DataRow Then
+            Dim hdAmend As HiddenField = e.Row.FindControl("hdAmend")
+            Dim lblInventoryID As Label = e.Row.FindControl("lblInventoryID")
+            Dim lblPartyName As Label = e.Row.FindControl("lblPartyName")
+            Dim lblInventoryType As Label = e.Row.FindControl("lblInventoryType")
+            Dim lblApplicableTo As Label = e.Row.FindControl("lblApplicableTo")
+            Dim lblApproved As Label = e.Row.FindControl("lblApproved")
+            Dim lbtnEdit As LinkButton = CType(e.Row.FindControl("lbtnEdit"), LinkButton)
+            If lblApproved.Text.Trim = "0" Then
+                lbtnEdit.Text = "Pending for Approval"
+                lbtnEdit.Enabled = False
+            End If
+            If (hdAmend.Value = "Amended") Then
+                lbtnEdit.Visible = False
+            End If
+            Dim lsMatchSearchItem As String = ""
+            Dim dtDynamics As New DataTable
+            dtDynamics = Session("sDtInventoryDynamic")
+            If Session("sDtInventoryDynamic") IsNot Nothing Then
+                If dtDynamics.Rows.Count > 0 Then
+                    For i As Integer = 0 To dtDynamics.Rows.Count - 1
+                        lsMatchSearchItem = ""
+                        If dtDynamics.Rows(i)("Code").ToString.Trim.ToUpper = "INVENTORY ID" Then
+                            lsMatchSearchItem = dtDynamics.Rows(i)("Value").ToString.Trim.ToUpper
+                        End If
+                        If dtDynamics.Rows(i)("Code").ToString.Trim.ToUpper = "HOTEL NAME" Then
+                            lsMatchSearchItem = dtDynamics.Rows(i)("Value").ToString.Trim.ToUpper
+                        End If
+                        If dtDynamics.Rows(i)("Code").ToString.Trim.ToUpper = "INVENTORY TYPE" Then
+                            lsMatchSearchItem = dtDynamics.Rows(i)("Value").ToString.Trim.ToUpper
+                        End If
+                        If dtDynamics.Rows(i)("Code").ToString.Trim.ToUpper = "TEXT" Then
+                            lsMatchSearchItem = dtDynamics.Rows(i)("Value").ToString.Trim.ToUpper
+                        End If
+
+                        If lsMatchSearchItem.Trim <> "" Then
+                            lblInventoryID.Text = Regex.Replace(lblInventoryID.Text.Trim, lsMatchSearchItem.Trim(), _
+                                Function(match As Match) String.Format("<span style = 'background-color:#ffcc99'>{0}</span>", match.Value), RegexOptions.IgnoreCase)
+                            lblPartyName.Text = Regex.Replace(lblPartyName.Text.Trim, lsMatchSearchItem.Trim(), _
+                                Function(match As Match) String.Format("<span style = 'background-color:#ffcc99'>{0}</span>", match.Value), RegexOptions.IgnoreCase)
+                            lblInventoryType.Text = Regex.Replace(lblInventoryType.Text.Trim, lsMatchSearchItem.Trim(), _
+                                Function(match As Match) String.Format("<span style = 'background-color:#ffcc99'>{0}</span>", match.Value), RegexOptions.IgnoreCase)
+                            lblApplicableTo.Text = Regex.Replace(lblApplicableTo.Text.Trim, lsMatchSearchItem.Trim(), _
+                                Function(match As Match) String.Format("<span style = 'background-color:#ffcc99'>{0}</span>", match.Value), RegexOptions.IgnoreCase)
+                            lblApproved.Text = Regex.Replace(lblApproved.Text.Trim, lsMatchSearchItem.Trim(), _
+                                Function(match As Match) String.Format("<span style = 'background-color:#ffcc99'>{0}</span>", match.Value), RegexOptions.IgnoreCase)
+                        End If
+                    Next
+                End If
+            End If
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub gvLogList_Sorting(sender As Object, e As System.Web.UI.WebControls.GridViewSortEventArgs) Handles gvLogList.Sorting"
+    Protected Sub gvLogList_Sorting(sender As Object, e As System.Web.UI.WebControls.GridViewSortEventArgs) Handles gvLogList.Sorting
+        Session.Add("strsortexpression", e.SortExpression)
+        SortGridColoumn()
+    End Sub
+#End Region
+
+#Region "Public Sub SortGridColoumn()"
+    Public Sub SortGridColoumn()
+        Dim DataTable As DataTable
+        FillGridNew()
+        DataTable = gvLogList.DataSource
+        If IsDBNull(DataTable) = False Then
+            Dim dataView As DataView = DataTable.DefaultView
+            Session.Add("strsortdirection", objUtils.SwapSortDirection(Session("strsortdirection")))
+            dataView.Sort = Session("strsortexpression") & " " & objUtils.ConvertSortDirectionToSql(Session("strsortdirection"))
+            gvLogList.DataSource = dataView
+            gvLogList.DataBind()
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnExportToExcel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnExportToExcel.Click"
+    Protected Sub btnExportToExcel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnExportToExcel.Click
+        Dim DS As New DataSet
+        Dim DA As SqlDataAdapter
+        Dim con As SqlConnection
+        Dim objcon As New clsDBConnect
+        Dim strBindCondition As String = ""
+        Try
+            If gvLogList.Rows.Count > 0 Then
+                strBindCondition = BuildConditionNew()
+                strSqlQry = "select InventoryID as [Inventory ID],(select partyname from partymast where partyCode =Inventory_header.PartyCode) as [Party Name],InventoryType as [Inventory Type],ApplicableTo as [Applicable To],Approved as [Approved Status],addUser as [User Created],(Convert(Varchar, Datepart(DD,adddate))+ '/'+ Convert(Varchar, Datepart(MM,adddate))+ '/'+ Convert(Varchar, Datepart(YY,adddate)) + ' ' + Convert(Varchar, Datepart(hh,adddate))+ ':' + Convert(Varchar, Datepart(m,adddate))+ ':'+ Convert(Varchar, Datepart(ss,adddate))) as [Date Created],modUser as [User Modified],(Convert(Varchar, Datepart(DD,moddate))+ '/'+ Convert(Varchar, Datepart(MM,moddate))+ '/'+ Convert(Varchar, Datepart(YY,moddate)) + ' ' + Convert(Varchar, Datepart(hh,moddate))+ ':' + Convert(Varchar, Datepart(m,moddate))+ ':'+ Convert(Varchar, Datepart(ss,moddate))) as [Date Modified] from Inventory_Header"
+                If strBindCondition <> "" Then
+                    strSqlQry = strSqlQry & " WHERE InventoryType in ('B2B','Financial','General') and " & strBindCondition & " ORDER BY InventoryID Desc"
+                Else
+                    strSqlQry = strSqlQry & " WHERE InventoryType in ('B2B','Financial','General') ORDER BY InventoryID Desc"
+                End If
+                con = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+                DA = New SqlDataAdapter(strSqlQry, con)
+                DA.Fill(DS, "Inventory_Header")
+                objUtils.ExportToExcel(DS, Response)
+                con.Close()
+            Else
+                objUtils.MessageBox("Sorry , No data availabe for export to excel.", Page)
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Sub
+#End Region
+
+End Class

@@ -1,0 +1,1508 @@
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Drawing.Color
+Imports System.Collections.ArrayList
+Imports System.Collections.Generic
+Partial Class InventoryCreate
+    Inherits System.Web.UI.Page
+
+#Region "Global Declaration"
+    Dim objUser As New clsUser
+    Dim objUtils As New clsUtils
+    Dim strSqlQry As String
+    Dim mySqlCmd As SqlCommand
+    Dim mySqlReader As SqlDataReader
+    Dim mySqlConn As SqlConnection
+    Dim sqlTrans As SqlTransaction
+    Dim iCurrecntIndex As Integer = 30
+#End Region
+
+#Region "related to user control wucCountrygroup"
+    Protected Sub btnvsprocess_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnvsprocess.Click
+        wucCountrygroup.fnbtnVsProcess(txtvsprocesssplit, dlList)
+    End Sub
+
+    Protected Sub lnkCodeAndValue_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            wucCountrygroup.fnCodeAndValue_ButtonClick(sender, e, dlList, Nothing, Nothing)
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub lbClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            wucCountrygroup.fnCloseButtonClick(sender, e, dlList)
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    <System.Web.Script.Services.ScriptMethod()> _
+   <System.Web.Services.WebMethod()> _
+    Public Shared Function GetAgentListSearch(ByVal prefixText As String) As List(Of String)
+
+        Dim strSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim lsAgentNames As New List(Of String)
+        Dim lsCountryList As String
+        Try
+
+            strSqlQry = "select a.agentname, a.ctrycode from agentmast a where a.active=1 and a.agentname like  '%" & Trim(prefixText) & "%'"
+
+            'Dim wc As New PriceListModule_Countrygroup
+            'wc = wucCountrygroup
+            'lsCountryList = wc.fnGetSelectedCountriesList
+            If HttpContext.Current.Session("SelectedCountriesList_WucCountryGroupUserControl") IsNot Nothing Then
+                lsCountryList = HttpContext.Current.Session("SelectedCountriesList_WucCountryGroupUserControl").ToString.Trim
+                If lsCountryList <> "" Then
+                    'strSqlQry += " and a.ctrycode in (" & lsCountryList & ")"
+                End If
+
+            End If
+
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            ' SqlConn = clsDBConnect.dbConnectionnew(objclsConnectionName.ConnectionName)
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    'lsAgentNames.Add(myDS.Tables(0).Rows(i)("agentname").ToString())
+                    lsAgentNames.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("agentname").ToString(), myDS.Tables(0).Rows(i)("ctrycode").ToString()))
+                Next
+            End If
+
+            Return lsAgentNames
+        Catch ex As Exception
+
+            Return lsAgentNames
+        End Try
+
+    End Function
+#End Region
+
+#Region "Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        If IsPostBack = False Then
+            Try
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+                Me.whotelatbcontrol.appval = CType(Request.QueryString("appid"), String)
+                Me.whotelatbcontrol.menuidval = objUser.GetMenuId(Session("dbconnectionName"), CType("InventorySearch.aspx?appid=2", String), CType(Request.QueryString("appid"), Integer))
+
+                If Convert.ToString(Request.QueryString("State")) = "Edit" Then
+                    Session("InventoryCreateState") = "Edit"
+                ElseIf Convert.ToString(Request.QueryString("State")) = "View" Then
+                    Session("InventoryCreateState") = "View"
+                Else
+                    Session("InventoryCreateState") = "New"
+                End If
+                '' Create a Dynamic datatable ---- Start
+                Session("sDtDynamic") = Nothing
+                Dim dtDynamic = New DataTable()
+                Dim dcCode = New DataColumn("Code", GetType(String))
+                Dim dcValue = New DataColumn("Value", GetType(String))
+                Dim dcCodeAndValue = New DataColumn("CodeAndValue", GetType(String))
+                dtDynamic.Columns.Add(dcCode)
+                dtDynamic.Columns.Add(dcValue)
+                dtDynamic.Columns.Add(dcCodeAndValue)
+                Session("sDtDynamic") = dtDynamic
+                hdCurrentDate.Value = Date.Now.ToString("dd/MM/yyyy")
+                txtHotelName.Attributes.Add("onblur", "return ValidateHotelName()")
+                txtFillNoRooms.Attributes.Add("onkeypress", "return validateDigitOnly(event)")
+                txtFillReleasePeriod.Attributes.Add("onkeypress", "return validateDigitOnly(event)")
+                btnFillRooms.Attributes.Add("onclick", "return ValidateFillNoOfRooms()")
+                btnFillRPeriod.Attributes.Add("onclick", "return ValidateFillReleasePeriod()")
+                txtMaterial.Attributes.Add("onkeypress", "return validateDigitOnly(event)")
+                txtMaterial.Attributes.Add("onchange", "ClearCommitRoomNight()")
+                txtMinRoomNight.Attributes.Add("onkeypress", "return validateDigitOnly(event)")
+                txtMaxRoomNight.Attributes.Add("onkeypress", "return validateDigitOnly(event)")
+                btnCommitRoomNight.Attributes.Add("onclick", "return ValidateRequiredField()")
+                txtAllotBal.Attributes.Add("onkeypress", "return validateDigitOnly(event)")
+                txtReleasePeriodBal.Attributes.Add("onkeypress", "return validateDigitOnly(event)")
+                btnCopyRow.Attributes.Add("onclick", "ClearCommitRoomNight()")
+                btnDeleteRow.Attributes.Add("onclick", "ClearCommitRoomNight()")
+                btnSelect.Attributes.Add("onclick", "ClearCommitRoomNight()")
+                btnSaveAndSameHotel.Attributes.Add("onclick", "return CompleteValidation()")
+                btnSaveAndAnotherHotel.Attributes.Add("onclick", "return CompleteValidation()")
+                btnSave.Attributes.Add("onclick", "return CompleteValidation()")
+                If Convert.ToString(Session("InventoryCreateState")) = "Edit" Then
+                    Page.Title = Page.Title + " " + "Inventory"
+                    Dim inventoryID As String
+                    inventoryID = CType(Request.QueryString("InventoryID"), String)
+                    FillToApproval(inventoryID)
+                    lblHeading.Text = "Pending Inventory"
+                    DisableControl()
+                ElseIf Convert.ToString(Session("InventoryCreateState")) = "View" Then
+                    Page.Title = Page.Title + " " + "View Inventory"
+                    Dim inventoryID As String
+                    inventoryID = CType(Request.QueryString("InventoryID"), String)
+                    FillToApproval(inventoryID)
+                    Me.whotelatbcontrol.Visible = False
+                    lblHeading.Text = "Inventory View"
+                    DisableControl()
+                Else
+                    Page.Title = Page.Title + " " + "New Inventory"
+                    wucCountrygroup.sbSetPageState("", "InventoryCreate", CType(Session("InventoryCreateState"), String))
+                    Session("isAutoTick_wuccountrygroupusercontrol") = 1
+                    wucCountrygroup.sbShowCountry()
+                    lblHeading.Text = "Add New Inventory"
+                    ddlInventoryType.SelectedValue = "General"
+                    ddlMealPlan.SelectedValue = "0"
+                    FillRoomType()
+                    GenerateGridColumns("BeLoad")
+                    txtHotelName.Focus()
+                End If
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+        End If
+    End Sub
+#End Region
+
+#Region "Web Service Methods"
+    <System.Web.Script.Services.ScriptMethod()> _
+     <System.Web.Services.WebMethod()> _
+    Public Shared Function GetHotelsList(ByVal prefixText As String) As List(Of String)
+        Dim bstrSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim PartyName As New List(Of String)
+        Try
+            bstrSqlQry = "select partycode,partyname from partymast where sptypecode='HOT' and active=1 and partyName like  '" & Trim(prefixText) & "%' order by partyname"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            myDataAdapter = New SqlDataAdapter(bstrSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    PartyName.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("partyname").ToString(), myDS.Tables(0).Rows(i)("partycode").ToString()))
+                Next
+            End If
+            Return PartyName
+        Catch ex As Exception
+            Return PartyName
+        End Try
+
+    End Function
+
+    <System.Web.Script.Services.ScriptMethod()> _
+     <System.Web.Services.WebMethod()> _
+    Public Shared Function GetMealsList(count As Integer, contextKey As String) As List(Of String)
+        Dim bstrSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim MealName As New List(Of String)
+        Try
+            bstrSqlQry = "select p.mealcode as mealcode,m.mealname mealname from  partymeal p(nolock),mealmast m(nolock) where p.mealcode=m.mealcode and p.partycode='" & contextKey & "' order by isnull(m.rankorder,999)"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            myDataAdapter = New SqlDataAdapter(bstrSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    MealName.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("mealname").ToString(), myDS.Tables(0).Rows(i)("mealcode").ToString()))
+                Next
+            End If
+            Return MealName
+        Catch ex As Exception
+            Return MealName
+        End Try
+    End Function
+
+    <System.Web.Script.Services.ScriptMethod()> _
+    <System.Web.Services.WebMethod()> _
+    Public Shared Function GetRoomList(ByVal prefixText As String, count As Integer, contextKey As String) As List(Of String)
+        Dim bstrSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim RoomName As New List(Of String)
+        Try
+            bstrSqlQry = "select rmtypcode,rmtypname from  partyrmtyp(nolock) where  inactive=0 and partycode='" & contextKey & "' and  rmtypname like  '" & Trim(prefixText) & "%'  order by isnull(rankord,999)"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            myDataAdapter = New SqlDataAdapter(bstrSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    RoomName.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("rmtypname").ToString(), myDS.Tables(0).Rows(i)("rmtypcode").ToString()))
+                Next
+            End If
+            Return RoomName
+        Catch ex As Exception
+            Return RoomName
+        End Try
+    End Function
+#End Region
+
+#Region "Private Sub FillRoomType()"
+    Private Sub FillRoomType()
+        Dim myDataAdapter As New SqlDataAdapter
+        Try
+            Dim myDS As New DataSet
+            strSqlQry = ""
+            strSqlQry = "select rmtypcode,rmtypname from  partyrmtyp(nolock) where  inactive=0 and partycode='" & txtHotelCode.Text.Trim() & "' order by isnull(rankord,999)"
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+            myDataAdapter.Fill(myDS)
+            grdroomtype.DataSource = myDS
+            grdroomtype.DataBind()
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            clsDBConnect.dbConnectionClose(mySqlConn)                          'Close connection       
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnRoomUpdate_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnRoomUpdate.Click"
+    Protected Sub btnRoomUpdate_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnRoomUpdate.Click
+        Dim bstrSqlQry As String = ""
+        Try
+            bstrSqlQry = "select partycode,partyname from partymast where sptypecode='HOT' and active=1 and partyName like  '" & Trim(txtHotelName.Text) & "' order by partyname"
+            Dim myReader As SqlDataReader
+            mySqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            mySqlCmd = New SqlCommand(bstrSqlQry, mySqlConn)
+            myReader = mySqlCmd.ExecuteReader()
+            If myReader.Read() Then
+                txtHotelName.Text = myReader("partyName")
+                txtHotelCode.Text = myReader("PartyCode")
+                FillRoomType()
+                GenerateGridColumns("BeLoad")
+                txtHotelName.Enabled = False
+                ddlInventoryType.Focus()
+            Else
+                txtHotelName.Text = ""
+                txtHotelCode.Text = ""
+                txtHotelName.Focus()
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbConnectionClose(mySqlConn)
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub ddlMealPlan_SelectedIndexChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles ddlMealPlan.SelectedIndexChanged"
+    Protected Sub ddlMealPlan_SelectedIndexChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles ddlMealPlan.SelectedIndexChanged
+        If ddlMealPlan.SelectedItem.Value = "1" Then
+            txtMealPlan.Enabled = True
+        Else
+            txtMealPlan.Enabled = False
+            txtMealPlan.Text = ""
+            txtMealCode.Text = ""
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub ddlInventoryType_SelectedIndexChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles ddlInventoryType.SelectedIndexChanged"
+    Protected Sub ddlInventoryType_SelectedIndexChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles ddlInventoryType.SelectedIndexChanged
+        If ddlInventoryType.SelectedValue = "B2B" Then
+            divITypeCond.Style("display") = "block"
+            txtMaterial.Text = "100"
+            txtMaterial.Enabled = True
+            txtAllotBal.Text = ""
+            txtAllotBal.Enabled = False
+            txtReleasePeriodBal.Text = ""
+            txtReleasePeriodBal.Enabled = False
+        ElseIf ddlInventoryType.SelectedValue = "Financial" Then
+            divITypeCond.Style("display") = "block"
+            txtMaterial.Text = ""
+            txtMaterial.Enabled = True
+            txtAllotBal.Text = ""
+            txtAllotBal.Enabled = True
+            txtReleasePeriodBal.Text = ""
+            txtReleasePeriodBal.Enabled = True
+        Else
+            divITypeCond.Style("display") = "none"
+            txtMaterial.Text = ""
+            txtMaterial.Enabled = True
+            txtAllotBal.Text = ""
+            txtAllotBal.Enabled = True
+            txtReleasePeriodBal.Text = ""
+            txtReleasePeriodBal.Enabled = True
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub txtMaterial_TextChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles txtMaterial.TextChanged"
+    Protected Sub txtMaterial_TextChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles txtMaterial.TextChanged
+        If IsNumeric(txtMaterial.Text) Then
+            If Convert.ToInt32(txtMaterial.Text) <= 100 Then
+                If CType(txtMaterial.Text.Trim, Integer) = 100 Then
+                    txtAllotBal.Text = ""
+                    txtAllotBal.Enabled = False
+                    txtReleasePeriodBal.Text = ""
+                    txtReleasePeriodBal.Enabled = False
+                ElseIf CType(txtMaterial.Text.Trim, Integer) < 100 Then
+                    txtAllotBal.Text = CType(100 - CType(txtMaterial.Text, Integer), String)
+                    txtAllotBal.Enabled = True
+                    txtReleasePeriodBal.Enabled = True
+                End If
+            Else
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Percentage Can not be greater than 100');", True)
+                txtMaterial.Text = ""
+                txtMaterial.Focus()
+            End If
+        End If
+    End Sub
+#End Region
+
+#Region "Save Button Events"
+    Protected Sub btnSave_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSave.Click
+        Try
+            If ValidatePage() = False Then Exit Sub
+            If InsertRecord() = False Then Exit Sub
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Saved Successfully' );", True)
+            If Session("InventoryCreateState") = "New" Then
+                Dim strscript As String = ""
+                strscript = "window.opener.__doPostBack('InventoryWindowPostBack', '');window.opener.focus();window.close();"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+            Else
+                Response.Redirect("PendingInventory.aspx?appid=2", False)
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub btnSaveAndAnotherHotel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSaveAndAnotherHotel.Click
+        Try
+            If ValidatePage() = False Then Exit Sub
+            If InsertRecord() = False Then Exit Sub
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Saved Successfully' );", True)
+            ClearControl()
+            txtHotelName.Text = ""
+            txtHotelCode.Text = ""
+            txtHotelName.Enabled = True
+            FillRoomType()
+            txtApplicableTo.Text = ""
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub btnSaveAndSameHotel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSaveAndSameHotel.Click
+        Try
+            If ValidatePage() = False Then Exit Sub
+            If InsertRecord() = False Then Exit Sub
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Saved Successfully' );", True)
+            ClearControl()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Validation and Insert Record Methods"
+    Public Function ValidatePage() As Boolean
+        If wucCountrygroup.checkcountrylist.ToString = "" And wucCountrygroup.checkagentlist.ToString = "" Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select any one of the Country or Agent');", True)
+            wucCountrygroup.Focus()
+            ValidatePage = False
+            Exit Function
+        End If
+        Dim txtRoomType As TextBox
+        Dim txtStayfromDate As TextBox
+        Dim txtStayToDate As TextBox
+        Dim txtRoomTypeCode As TextBox
+        Dim txtRooms As TextBox
+        Dim txtReleasePeriod As TextBox
+        Dim DtSP As New DataTable
+        Dim DrSP As DataRow
+        DtSP.Columns.Add(New DataColumn("RoomTypeCode", GetType(String)))
+        DtSP.Columns.Add(New DataColumn("FromDate", GetType(Date)))
+        DtSP.Columns.Add(New DataColumn("ToDate", GetType(Date)))
+        DtSP.Columns.Add(New DataColumn("NoRooms", GetType(Integer)))
+        DtSP.Columns.Add(New DataColumn("ReleasePeriod", GetType(Integer)))
+        Dim lnCnt As Integer = 0
+        For Each lRow As GridViewRow In gvStayPeriod.Rows
+            lnCnt += 1
+
+            txtRoomType = lRow.FindControl("txtRoomType")
+            txtRoomTypeCode = lRow.FindControl("txtRoomTypeCode")
+            txtStayfromDate = lRow.FindControl("txtStayfromDate")
+            txtStayToDate = lRow.FindControl("txtStayToDate")
+            txtRooms = lRow.FindControl("txtNoRooms")
+            txtReleasePeriod = lRow.FindControl("txtReleasePeriod")
+            If Not IsDate(txtStayfromDate.Text) Or Not IsDate(txtStayToDate.Text) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Invalid stay period date');", True)
+                txtStayfromDate.Focus()
+                ValidatePage = False
+                Exit Function
+            End If
+            If txtRoomTypeCode.Text.Trim() = "" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Room Type can not be empty');", True)
+                txtRoomType.Focus()
+                ValidatePage = False
+                Exit Function
+            End If
+            If Not IsNumeric(txtRooms.Text) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('No. of Rooms can not be empty');", True)
+                txtRooms.Focus()
+                ValidatePage = False
+                Exit Function
+            End If
+            If Not IsNumeric(txtReleasePeriod.Text) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Release period can not be empty');", True)
+                txtReleasePeriod.Focus()
+                ValidatePage = False
+                Exit Function
+            End If
+            If (ddlInventoryType.SelectedValue = "B2B" Or ddlInventoryType.SelectedValue = "Financial") And Convert.ToInt32(txtReleasePeriod.Text) < 0 Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Release Period should be greater than or equal to zero');", True)
+                txtReleasePeriod.Focus()
+                ValidatePage = False
+                Exit Function
+            ElseIf ddlInventoryType.SelectedValue = "General" And Convert.ToInt32(txtReleasePeriod.Text) <= 0 Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Release Period should be greater than zero');", True)
+                txtReleasePeriod.Focus()
+                ValidatePage = False
+                Exit Function
+            End If
+            Dim DtOverLap As DataRow()
+            ''' Added shahul ReleasePeriod to check 04/09/17 
+            Dim OverLapCond As String = "RoomTypeCode='" + txtRoomTypeCode.Text.Trim + "' and Fromdate <='" + Convert.ToDateTime(txtStayToDate.Text.Trim) + "' and ToDate >='" + Convert.ToDateTime(txtStayfromDate.Text.Trim) + "' and ReleasePeriod =" & Convert.ToInt32(txtReleasePeriod.Text.Trim)
+            DtOverLap = DtSP.Select(OverLapCond)
+            If (DtOverLap.Length > 0) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Date overlapping in this Room Type for line no :" & lnCnt & "');", True)
+
+                txtRoomType.Focus()
+                ValidatePage = False
+                Exit Function
+            End If
+            DrSP = DtSP.NewRow()
+            DrSP("RoomTypeCode") = txtRoomTypeCode.Text.Trim
+            DrSP("FromDate") = txtStayfromDate.Text.Trim
+            DrSP("ToDate") = txtStayToDate.Text.Trim
+            DrSP("NoRooms") = Convert.ToInt32(txtRooms.Text.Trim)
+            DrSP("ReleasePeriod") = Convert.ToInt32(txtReleasePeriod.Text.Trim)
+            DtSP.Rows.Add(DrSP)
+        Next
+        ValidatePage = True
+    End Function
+
+    Public Function InsertRecord() As Boolean
+        Try
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))          'connection open
+            sqlTrans = mySqlConn.BeginTransaction
+            Dim InventoryID As String
+            If Session("InventoryCreateState") = "New" Then
+                InventoryID = objUtils.GetAutoDocNo("INVENTORY", mySqlConn, sqlTrans)
+            ElseIf Session("InventoryCreateState") = "Edit" Then
+                InventoryID = txtInventoryID.Text.Trim
+            Else
+                sqlTrans.Rollback()
+                clsDBConnect.dbSqlTransation(sqlTrans)
+                clsDBConnect.dbConnectionClose(mySqlConn)
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Inventory ID can not be empty');", True)
+                InsertRecord = False
+                Exit Function
+            End If
+            If Session("InventoryCreateState") = "New" Then
+                mySqlCmd = New SqlCommand("sp_add_Inventory_Header", mySqlConn, sqlTrans)
+            ElseIf Session("InventoryCreateState") = "Edit" Then
+                mySqlCmd = New SqlCommand("sp_mod_Inventory_Header", mySqlConn, sqlTrans)
+            End If
+            mySqlCmd.CommandType = CommandType.StoredProcedure
+            mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+            mySqlCmd.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = CType(txtHotelCode.Text.Trim, String)
+            mySqlCmd.Parameters.Add(New SqlParameter("@InventoryType", SqlDbType.VarChar, 100)).Value = ddlInventoryType.SelectedValue.Trim
+            mySqlCmd.Parameters.Add(New SqlParameter("@ApplicableTo", SqlDbType.VarChar, -1)).Value = txtApplicableTo.Text.Trim
+            If ddlInventoryType.SelectedValue = "B2B" Or ddlInventoryType.SelectedValue = "Financial" Then
+                mySqlCmd.Parameters.Add(New SqlParameter("@MaterializationPerc", SqlDbType.Decimal, 10)).Value = CType(txtMaterial.Text, Decimal)
+                mySqlCmd.Parameters("@MaterializationPerc").Precision = 10
+                mySqlCmd.Parameters("@MaterializationPerc").Scale = 2
+                mySqlCmd.Parameters.Add(New SqlParameter("@MaterializationBasis", SqlDbType.VarChar, 20)).Value = ddlMaterialBasis.SelectedValue
+                mySqlCmd.Parameters.Add(New SqlParameter("@MinNightsPerDay", SqlDbType.Int, 4)).Value = CType(txtMinRoomNight.Text, Integer)
+                mySqlCmd.Parameters.Add(New SqlParameter("@MaxNightsPerDay", SqlDbType.Int, 4)).Value = CType(txtMaxRoomNight.Text, Integer)
+                mySqlCmd.Parameters.Add(New SqlParameter("@CommitmentNightsPerMonth", SqlDbType.Int, 4)).Value = CType(txtCommitRoomNight.Text, Integer)
+                mySqlCmd.Parameters.Add(New SqlParameter("@LinkMealPlan", SqlDbType.Int, 4)).Value = CType(If(ddlMealPlan.SelectedValue.Trim = "1", 1, 0), Integer)
+                mySqlCmd.Parameters.Add(New SqlParameter("@MealCode", SqlDbType.VarChar, 20)).Value = CType(txtMealCode.Text.Trim, String)
+                mySqlCmd.Parameters.Add(New SqlParameter("@AllotmentPercBal", SqlDbType.Decimal, 10)).Value = If(IsNumeric(txtAllotBal.Text), CType(txtAllotBal.Text, Decimal), 0)
+                mySqlCmd.Parameters("@AllotmentPercBal").Precision = 10
+                mySqlCmd.Parameters("@AllotmentPercBal").Scale = 2
+                mySqlCmd.Parameters.Add(New SqlParameter("@ReleasePeriodBal", SqlDbType.Int, 4)).Value = If(IsNumeric(txtReleasePeriodBal.Text), CType(txtReleasePeriodBal.Text, Integer), 0)
+            Else
+                mySqlCmd.Parameters.Add(New SqlParameter("@MaterializationPerc", SqlDbType.Decimal, 10)).Value = DBNull.Value
+                mySqlCmd.Parameters("@MaterializationPerc").Precision = 10
+                mySqlCmd.Parameters("@MaterializationPerc").Scale = 2
+                mySqlCmd.Parameters.Add(New SqlParameter("@MaterializationBasis", SqlDbType.VarChar, 20)).Value = DBNull.Value
+                mySqlCmd.Parameters.Add(New SqlParameter("@MinNightsPerDay", SqlDbType.Int, 4)).Value = DBNull.Value
+                mySqlCmd.Parameters.Add(New SqlParameter("@MaxNightsPerDay", SqlDbType.Int, 4)).Value = DBNull.Value
+                mySqlCmd.Parameters.Add(New SqlParameter("@CommitmentNightsPerMonth", SqlDbType.Int, 4)).Value = DBNull.Value
+                mySqlCmd.Parameters.Add(New SqlParameter("@LinkMealPlan", SqlDbType.Int, 4)).Value = DBNull.Value
+                mySqlCmd.Parameters.Add(New SqlParameter("@MealCode", SqlDbType.VarChar, 20)).Value = DBNull.Value
+                mySqlCmd.Parameters.Add(New SqlParameter("@AllotmentPercBal", SqlDbType.Decimal, 10)).Value = DBNull.Value
+                mySqlCmd.Parameters("@AllotmentPercBal").Precision = 10
+                mySqlCmd.Parameters("@AllotmentPercBal").Scale = 2
+                mySqlCmd.Parameters.Add(New SqlParameter("@ReleasePeriodBal", SqlDbType.Int, 4)).Value = DBNull.Value
+            End If
+            mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+            mySqlCmd.Parameters.Add(New SqlParameter("@Approved", SqlDbType.Int, 4)).Value = If(chkApprove.Checked = True, 1, 0)
+            mySqlCmd.ExecuteNonQuery()
+            mySqlCmd.Dispose()
+
+            If Session("InventoryCreateState") = "Edit" Then
+                mySqlCmd = New SqlCommand("sp_del_Inventory_Countries", mySqlConn, sqlTrans)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                mySqlCmd.ExecuteNonQuery()
+                mySqlCmd.Dispose()
+
+                mySqlCmd = New SqlCommand("sp_del_Inventory_Agents", mySqlConn, sqlTrans)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                mySqlCmd.ExecuteNonQuery()
+                mySqlCmd.Dispose()
+
+                mySqlCmd = New SqlCommand("sp_del_Inventory_Dates", mySqlConn, sqlTrans)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                mySqlCmd.ExecuteNonQuery()
+                mySqlCmd.Dispose()
+
+                mySqlCmd = New SqlCommand("sp_del_Inventory_CommitRoomNights", mySqlConn, sqlTrans)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                mySqlCmd.ExecuteNonQuery()
+                mySqlCmd.Dispose()
+            End If
+            
+            If wucCountrygroup.checkcountrylist.ToString <> "" Then
+                Dim arrcountry As String() = wucCountrygroup.checkcountrylist.ToString.Trim.Split(",")
+                For i = 0 To arrcountry.Length - 1
+                    If arrcountry(i) <> "" Then
+                        mySqlCmd = New SqlCommand("sp_add_Inventory_Countries", mySqlConn, sqlTrans)
+                        mySqlCmd.CommandType = CommandType.StoredProcedure
+                        mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                        mySqlCmd.Parameters.Add(New SqlParameter("@CtryCode", SqlDbType.VarChar, 20)).Value = CType(arrcountry(i), String)
+                        mySqlCmd.ExecuteNonQuery()
+                        mySqlCmd.Dispose()
+                    End If
+                Next
+            End If
+
+            If wucCountrygroup.checkagentlist.ToString <> "" Then
+                Dim arragents As String() = wucCountrygroup.checkagentlist.ToString.Trim.Split(",")
+                For i = 0 To arragents.Length - 1
+                    If arragents(i) <> "" Then
+                        mySqlCmd = New SqlCommand("sp_add_Inventory_Agents", mySqlConn, sqlTrans)
+                        mySqlCmd.CommandType = CommandType.StoredProcedure
+                        mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                        mySqlCmd.Parameters.Add(New SqlParameter("@AgentCode", SqlDbType.VarChar, 20)).Value = CType(arragents(i), String)
+                        mySqlCmd.ExecuteNonQuery()
+                        mySqlCmd.Dispose()
+                    End If
+                Next
+            End If
+
+            Dim LineNo As Integer = 1
+            Dim txtStayfromDate As TextBox
+            Dim txtStayToDate As TextBox
+            Dim txtRoomTypeCode As TextBox
+            Dim txtNoRooms As TextBox
+            Dim txtReleasePeriod As TextBox
+            For Each lRow As GridViewRow In gvStayPeriod.Rows
+                txtRoomTypeCode = lRow.FindControl("txtRoomTypeCode")
+                txtStayfromDate = lRow.FindControl("txtStayfromDate")
+                txtStayToDate = lRow.FindControl("txtStayToDate")
+                txtNoRooms = lRow.FindControl("txtNoRooms")
+                txtReleasePeriod = lRow.FindControl("txtReleasePeriod")
+                If IsDate(txtStayfromDate.Text) And IsDate(txtStayToDate.Text) Then
+                    mySqlCmd = New SqlCommand("sp_add_Inventory_Dates", mySqlConn, sqlTrans)
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                    mySqlCmd.Parameters.Add(New SqlParameter("@ILineNo", SqlDbType.Int, 4)).Value = LineNo
+                    mySqlCmd.Parameters.Add(New SqlParameter("@FromDate", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtStayfromDate.Text).ToString("yyyy/MM/dd"))
+                    mySqlCmd.Parameters.Add(New SqlParameter("@ToDate", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtStayToDate.Text).ToString("yyyy/MM/dd"))
+                    mySqlCmd.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = CType(txtHotelCode.Text.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@InventoryType", SqlDbType.VarChar, 100)).Value = ddlInventoryType.SelectedValue.Trim
+                    mySqlCmd.Parameters.Add(New SqlParameter("@ApplicableTo", SqlDbType.VarChar, -1)).Value = txtApplicableTo.Text.Trim
+                    mySqlCmd.Parameters.Add(New SqlParameter("@Countries", SqlDbType.VarChar, -1)).Value = wucCountrygroup.checkcountrylist.ToString().Trim
+                    mySqlCmd.Parameters.Add(New SqlParameter("@Agents", SqlDbType.VarChar, -1)).Value = wucCountrygroup.checkagentlist.ToString().Trim
+                    mySqlCmd.Parameters.Add(New SqlParameter("@RmTypCode", SqlDbType.VarChar, 20)).Value = txtRoomTypeCode.Text.Trim
+                    mySqlCmd.Parameters.Add(New SqlParameter("@RoomsAlloted", SqlDbType.Int, 4)).Value = CType(txtNoRooms.Text, Integer)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@ReleaseDays", SqlDbType.Int, 4)).Value = CType(txtReleasePeriod.Text, Integer)
+                    If CType(txtMealCode.Text.Trim, String) <> "" Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@MealCode", SqlDbType.VarChar, 20)).Value = CType(txtMealCode.Text.Trim, String)
+                    Else
+                        mySqlCmd.Parameters.Add(New SqlParameter("@MealCode", SqlDbType.VarChar, 20)).Value = DBNull.Value
+                    End If
+                    If IsNumeric(txtMaterial.Text) Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@MaterializationPerc", SqlDbType.Decimal, 10)).Value = CType(txtMaterial.Text, Decimal)
+                    Else
+                        mySqlCmd.Parameters.Add(New SqlParameter("@MaterializationPerc", SqlDbType.Decimal, 10)).Value = 0
+                    End If
+                    mySqlCmd.Parameters("@MaterializationPerc").Precision = 10
+                    mySqlCmd.Parameters("@MaterializationPerc").Scale = 2
+                    If IsNumeric(txtReleasePeriodBal.Text) Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@ReleasePeriodBal", SqlDbType.Int, 4)).Value = CType(txtReleasePeriodBal.Text, Integer)
+                    Else
+                        mySqlCmd.Parameters.Add(New SqlParameter("@ReleasePeriodBal", SqlDbType.Int, 4)).Value = DBNull.Value
+                    End If
+                    mySqlCmd.Parameters.Add(New SqlParameter("@Approved", SqlDbType.Int, 4)).Value = If(chkApprove.Checked = True, 1, 0)
+                    mySqlCmd.ExecuteNonQuery()
+                    LineNo = LineNo + 1
+                    mySqlCmd.Dispose()
+                End If
+            Next
+            If ddlInventoryType.SelectedValue = "B2B" Or ddlInventoryType.SelectedValue = "Financial" Then
+                LineNo = 1
+                Dim lblMonthName As Label
+                Dim lblYear As Label
+                Dim lblRoomTypeCode As Label
+                Dim lblFromDate As Label
+                Dim lblToDate As Label
+                Dim lblRooms As Label
+                Dim lblMaterialization As Label
+                Dim lblDays As Label
+                Dim lblCommitRooms As Label
+                For Each lRow As GridViewRow In gvCommitRooms.Rows
+                    lblMonthName = lRow.FindControl("lblMonthName")
+                    lblYear = lRow.FindControl("lblYear")
+                    lblRoomTypeCode = lRow.FindControl("lblRoomTypeCode")
+                    lblFromDate = lRow.FindControl("lblFromDate")
+                    lblToDate = lRow.FindControl("lblToDate")
+                    lblRooms = lRow.FindControl("lblRooms")
+                    lblMaterialization = lRow.FindControl("lblMaterialization")
+                    lblDays = lRow.FindControl("lblDays")
+                    lblCommitRooms = lRow.FindControl("lblCommitRooms")
+                    mySqlCmd = New SqlCommand("sp_add_Inventory_CommitRoomNights", mySqlConn, sqlTrans)
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                    mySqlCmd.Parameters.Add(New SqlParameter("@ILineNo", SqlDbType.Int, 4)).Value = LineNo
+                    mySqlCmd.Parameters.Add(New SqlParameter("@RmTypCode", SqlDbType.VarChar, 20)).Value = lblRoomTypeCode.Text.Trim
+                    mySqlCmd.Parameters.Add(New SqlParameter("@CommitMonth", SqlDbType.VarChar, 20)).Value = lblMonthName.Text.Trim
+                    mySqlCmd.Parameters.Add(New SqlParameter("@CommitYear", SqlDbType.Int, 4)).Value = CType(lblYear.Text.Trim, Integer)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@FromDate", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(lblFromDate.Text).ToString("yyyy/MM/dd"))
+                    mySqlCmd.Parameters.Add(New SqlParameter("@ToDate", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(lblToDate.Text).ToString("yyyy/MM/dd"))
+                    mySqlCmd.Parameters.Add(New SqlParameter("@NoOfRooms", SqlDbType.Int, 4)).Value = CType(lblRooms.Text, Integer)
+                    If IsNumeric(lblMaterialization.Text) Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@MaterializationPerc", SqlDbType.Decimal, 10)).Value = CType(lblMaterialization.Text, Decimal)
+                    Else
+                        mySqlCmd.Parameters.Add(New SqlParameter("@MaterializationPerc", SqlDbType.Decimal, 10)).Value = 0
+                    End If
+                    mySqlCmd.Parameters("@MaterializationPerc").Precision = 10
+                    mySqlCmd.Parameters("@MaterializationPerc").Scale = 2
+                    mySqlCmd.Parameters.Add(New SqlParameter("@CommitDays", SqlDbType.Int, 4)).Value = CType(lblDays.Text, Integer)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@CommitmentNightsPerMonth", SqlDbType.Int, 4)).Value = CType(lblCommitRooms.Text, Integer)
+                    mySqlCmd.ExecuteNonQuery()
+                    LineNo = LineNo + 1
+                    mySqlCmd.Dispose()
+                Next
+            End If
+            sqlTrans.Commit()    'SQl Tarn Commit
+            clsDBConnect.dbSqlTransation(sqlTrans)
+            clsDBConnect.dbCommandClose(mySqlCmd)
+            clsDBConnect.dbConnectionClose(mySqlConn)
+            InsertRecord = True
+        Catch ex As Exception
+            If mySqlConn.State = ConnectionState.Open Then
+                sqlTrans.Rollback()
+                clsDBConnect.dbSqlTransation(sqlTrans)
+                clsDBConnect.dbCommandClose(mySqlCmd)
+                clsDBConnect.dbConnectionClose(mySqlConn)
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            InsertRecord = False
+        End Try
+    End Function
+#End Region
+
+#Region "Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click"
+    Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+    End Sub
+#End Region
+
+#Region "Protected Sub ClearControl()"
+    Protected Sub ClearControl()
+        txtInventoryID.Text = ""
+        If (Session("InventoryCreateState") = "Edit") Then
+            'wucCountrygroup.clearsessions()
+            Session("InventoryCreateState") = "New"
+            wucCountrygroup.sbSetPageState("", "InventoryCreate", CType(Session("InventoryCreateState"), String))
+            wucCountrygroup.sbShowCountry()
+            lblHeading.Text = "Add New Inventory"
+        End If
+        ddlInventoryType.SelectedValue = "General"
+        gvStayPeriod.DataSource = Nothing
+        gvStayPeriod.DataBind()
+        GenerateGridColumns("BeLoad")
+        txtFillNoRooms.Text = ""
+        txtFillReleasePeriod.Text = ""
+        txtMaterial.Text = ""
+        txtMaterial.Enabled = True
+        ddlMaterialBasis.SelectedIndex = 0
+        txtMinRoomNight.Text = ""
+        ddlMealPlan.SelectedValue = "0"
+        txtMaxRoomNight.Text = ""
+        txtMealPlan.Enabled = False
+        txtMealPlan.Text = ""
+        txtMealCode.Text = ""
+        txtCommitRoomNight.Text = ""
+        txtAllotBal.Text = ""
+        txtAllotBal.Enabled = True
+        txtReleasePeriodBal.Text = ""
+        txtReleasePeriodBal.Enabled = True
+        divITypeCond.Style("display") = "none"
+        gvCommitRooms.DataSource = Nothing
+        gvCommitRooms.DataBind()
+        gvMonthwise.DataSource = Nothing
+        gvMonthwise.DataBind()
+        chkApprove.Checked = False
+    End Sub
+#End Region
+
+#Region "Protected Sub txtAllotBal_TextChanged(sender As Object, e As System.EventArgs) Handles txtAllotBal.TextChanged"
+    Protected Sub txtAllotBal_TextChanged(sender As Object, e As System.EventArgs) Handles txtAllotBal.TextChanged
+        If CType(txtAllotBal.Text, Integer) <= 100 Then
+            txtMaterial.Text = CType(100 - CType(txtAllotBal.Text, Integer), String)
+        Else
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Percent Can not be greater than 100');", True)
+            txtAllotBal.Text = ""
+            txtAllotBal.Focus()
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub GenerateGridColumns(ByVal lsMode As String, Optional ByVal selectDt As DataTable = Nothing)"
+    Protected Sub GenerateGridColumns(ByVal lsMode As String, Optional ByVal selectDt As DataTable = Nothing)
+        Dim dtStayPeriod As New DataTable
+        Dim drStayPeriod As DataRow
+
+        dtStayPeriod.Columns.Add(New DataColumn("RoomType", GetType(String)))
+        dtStayPeriod.Columns.Add(New DataColumn("RoomTypeCode", GetType(String)))
+        dtStayPeriod.Columns.Add(New DataColumn("FromDate", GetType(Date)))
+        dtStayPeriod.Columns.Add(New DataColumn("ToDate", GetType(Date)))
+        dtStayPeriod.Columns.Add(New DataColumn("NoRooms", GetType(Integer)))
+        dtStayPeriod.Columns.Add(New DataColumn("ReleasePeriod", GetType(Integer)))
+        Dim txtRoomType As TextBox
+        Dim txtRoomTypeCode As TextBox
+        Dim txtStayfromDate As TextBox
+        Dim txtStayToDate As TextBox
+        Dim txtNoRooms As TextBox
+        Dim txtReleasePeriod As TextBox
+        If lsMode.Trim.ToUpper = "ADD" Or lsMode.Trim.ToUpper = "SELECT" Then
+            For Each lRow As GridViewRow In gvStayPeriod.Rows
+                txtRoomType = lRow.FindControl("txtRoomType")
+                txtRoomTypeCode = lRow.FindControl("txtRoomTypeCode")
+                txtStayfromDate = lRow.FindControl("txtStayfromDate")
+                txtStayToDate = lRow.FindControl("txtStayToDate")
+                txtNoRooms = lRow.FindControl("txtNoRooms")
+                txtReleasePeriod = lRow.FindControl("txtReleasePeriod")
+                If IsDate(txtStayfromDate.Text) And IsDate(txtStayToDate.Text) Then
+                    drStayPeriod = dtStayPeriod.NewRow()
+                    drStayPeriod("RoomType") = txtRoomType.Text.Trim
+                    drStayPeriod("RoomTypeCode") = txtRoomTypeCode.Text.Trim
+                    drStayPeriod("FromDate") = txtStayfromDate.Text
+                    drStayPeriod("ToDate") = txtStayToDate.Text
+                    If Not String.IsNullOrEmpty(txtNoRooms.Text.Trim) Then drStayPeriod("NoRooms") = Convert.ToInt32(txtNoRooms.Text)
+                    If Not String.IsNullOrEmpty(txtReleasePeriod.Text.Trim) Then drStayPeriod("ReleasePeriod") = Convert.ToInt32(txtReleasePeriod.Text)
+                    dtStayPeriod.Rows.Add(drStayPeriod)
+                End If
+            Next
+            If lsMode.Trim.ToUpper = "SELECT" Then
+                dtStayPeriod.Merge(selectDt)
+            End If
+        ElseIf lsMode.Trim.ToUpper = "DELETE" Then
+            For Each lRow As GridViewRow In gvStayPeriod.Rows
+                If (CType(lRow.FindControl("chkDeletion"), CheckBox).Checked = False) Then
+                    txtRoomType = lRow.FindControl("txtRoomType")
+                    txtRoomTypeCode = lRow.FindControl("txtRoomTypeCode")
+                    txtStayfromDate = lRow.FindControl("txtStayfromDate")
+                    txtStayToDate = lRow.FindControl("txtStayToDate")
+                    txtNoRooms = lRow.FindControl("txtNoRooms")
+                    txtReleasePeriod = lRow.FindControl("txtReleasePeriod")
+                    drStayPeriod = dtStayPeriod.NewRow()
+                    drStayPeriod("RoomType") = txtRoomType.Text.Trim
+                    drStayPeriod("RoomTypeCode") = txtRoomTypeCode.Text.Trim
+                    If IsDate(txtStayfromDate.Text) Then drStayPeriod("FromDate") = txtStayfromDate.Text
+                    If IsDate(txtStayToDate.Text) Then drStayPeriod("ToDate") = txtStayToDate.Text
+                    If Not String.IsNullOrEmpty(txtNoRooms.Text.Trim) Then drStayPeriod("NoRooms") = Convert.ToInt32(txtNoRooms.Text)
+                    If Not String.IsNullOrEmpty(txtReleasePeriod.Text.Trim) Then drStayPeriod("ReleasePeriod") = Convert.ToInt32(txtReleasePeriod.Text)
+                    dtStayPeriod.Rows.Add(drStayPeriod)
+                End If
+            Next
+        ElseIf lsMode.Trim.ToUpper = "COPY" Then
+            dtStayPeriod.Columns.Add(New DataColumn("CopySelection", GetType(Boolean)))
+            For Each lRow As GridViewRow In gvStayPeriod.Rows
+                txtRoomType = lRow.FindControl("txtRoomType")
+                txtRoomTypeCode = lRow.FindControl("txtRoomTypeCode")
+                txtStayfromDate = lRow.FindControl("txtStayfromDate")
+                txtStayToDate = lRow.FindControl("txtStayToDate")
+                txtNoRooms = lRow.FindControl("txtNoRooms")
+                txtReleasePeriod = lRow.FindControl("txtReleasePeriod")
+                drStayPeriod = dtStayPeriod.NewRow()
+                drStayPeriod("RoomType") = txtRoomType.Text.Trim
+                drStayPeriod("RoomTypeCode") = txtRoomTypeCode.Text.Trim
+                If IsDate(txtStayfromDate.Text) Then drStayPeriod("FromDate") = txtStayfromDate.Text
+                If IsDate(txtStayToDate.Text) Then drStayPeriod("ToDate") = txtStayToDate.Text
+                If Not String.IsNullOrEmpty(txtNoRooms.Text.Trim) Then drStayPeriod("NoRooms") = Convert.ToInt32(txtNoRooms.Text)
+                If Not String.IsNullOrEmpty(txtReleasePeriod.Text.Trim) Then drStayPeriod("ReleasePeriod") = Convert.ToInt32(txtReleasePeriod.Text)
+                drStayPeriod("CopySelection") = Convert.ToBoolean(CType(lRow.FindControl("chkDeletion"), CheckBox).Checked)
+                dtStayPeriod.Rows.Add(drStayPeriod)
+            Next
+            Dim CopyRow As DataRow()
+            CopyRow = dtStayPeriod.Select("CopySelection=true")
+            If CopyRow.Length > 0 Then
+                Dim copyDt As DataTable
+                copyDt = dtStayPeriod.Select("CopySelection=true").CopyToDataTable()
+                dtStayPeriod.Merge(copyDt)
+            Else
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select the Rows' );", True)
+                Exit Sub
+            End If
+        End If
+        If lsMode.Trim.ToUpper = "ADD" Or dtStayPeriod.Rows.Count = 0 Then
+            drStayPeriod = dtStayPeriod.NewRow()
+            drStayPeriod("RoomType") = DBNull.Value
+            drStayPeriod("RoomTypeCode") = DBNull.Value
+            drStayPeriod("FromDate") = DBNull.Value
+            drStayPeriod("ToDate") = DBNull.Value
+            drStayPeriod("NoRooms") = DBNull.Value
+            If ddlInventoryType.SelectedValue = "B2B" Then
+                drStayPeriod("ReleasePeriod") = 0
+            Else
+                drStayPeriod("ReleasePeriod") = DBNull.Value
+            End If
+            dtStayPeriod.Rows.Add(drStayPeriod)
+        End If
+
+        gvStayPeriod.DataSource = dtStayPeriod
+        gvStayPeriod.DataBind()
+
+        Dim gridNewRow As GridViewRow
+        gridNewRow = gvStayPeriod.Rows(gvStayPeriod.Rows.Count - 1)
+        Dim strRowId As String = gridNewRow.ClientID
+        Dim str As String = String.Format("javascript:LastSelectRow('" + strRowId + "','" + CType(gvStayPeriod.Rows.Count - 1, String) + "');")
+        ScriptManager.RegisterStartupScript(Page, GetType(Page), "Script", str, True)
+    End Sub
+#End Region
+
+#Region "Protected Sub gvStayPeriod_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvStayPeriod.RowDataBound"
+    Protected Sub gvStayPeriod_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvStayPeriod.RowDataBound
+        Try
+            If e.Row.RowType = DataControlRowType.DataRow Then
+                Dim dtrow As DataRow = objUtils.fnGridViewRowToDataRow(CType(e.Row, GridViewRow))
+                Dim txtRoomtype As TextBox
+                Dim txtStayfromDate As TextBox
+                Dim txtStayToDate As TextBox
+                Dim txtNoRooms As TextBox
+                Dim txtReleasePeriod As TextBox
+                Dim btnAddRow2 As Button
+                txtRoomtype = CType(e.Row.FindControl("txtRoomType"), TextBox)
+                txtStayfromDate = CType(e.Row.FindControl("txtStayfromDate"), TextBox)
+                txtStayToDate = CType(e.Row.FindControl("txtStayToDate"), TextBox)
+                txtNoRooms = CType(e.Row.FindControl("txtNoRooms"), TextBox)
+                txtReleasePeriod = CType(e.Row.FindControl("txtReleasePeriod"), TextBox)
+                btnAddRow2 = CType(e.Row.FindControl("btnAddRow"), Button)
+                txtRoomtype.Attributes.Add("onchange", "ClearCommitRoomNight()")
+                txtStayfromDate.Attributes.Add("onchange", "fillStayToDate('" & txtStayfromDate.ClientID & "','" & txtStayToDate.ClientID & "')")
+                txtStayToDate.Attributes.Add("onchange", "ValidateStayChkInDate('" & txtStayfromDate.ClientID & "','" & txtStayToDate.ClientID & "')")
+                txtNoRooms.Attributes.Add("onkeypress", "return validationDigitOnly(event)")
+                txtNoRooms.Attributes.Add("onchange", "ClearCommitRoomNight()")
+                txtReleasePeriod.Attributes.Add("onkeypress", "return validationDigitOnly(event)")
+
+                If Not dtrow.IsNull("FromDate") Then txtStayfromDate.Text = dtrow("FromDate")
+                If Not dtrow.IsNull("ToDate") Then txtStayToDate.Text = dtrow("ToDate")
+
+                iCurrecntIndex = iCurrecntIndex + 1
+                txtRoomtype.TabIndex = iCurrecntIndex
+                iCurrecntIndex = iCurrecntIndex + 1
+                txtStayfromDate.TabIndex = iCurrecntIndex
+                iCurrecntIndex = iCurrecntIndex + 1
+                txtStayToDate.TabIndex = iCurrecntIndex
+                iCurrecntIndex = iCurrecntIndex + 1
+                txtNoRooms.TabIndex = iCurrecntIndex
+                iCurrecntIndex = iCurrecntIndex + 1
+                txtReleasePeriod.TabIndex = iCurrecntIndex
+                iCurrecntIndex = iCurrecntIndex + 1
+                btnAddRow2.TabIndex = iCurrecntIndex
+
+                If e.Row.RowType = DataControlRowType.DataRow AndAlso (e.Row.RowState = DataControlRowState.Normal OrElse e.Row.RowState = DataControlRowState.Alternate) Then
+                    e.Row.Attributes("onclick") = String.Format("javascript:SelectRow(this, {0});", e.Row.RowIndex)
+                    e.Row.Attributes("onkeydown") = "javascript:return SelectSibling(event);"
+                    e.Row.Attributes("onselectstart") = "javascript:return false;"
+                End If
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnCopyRow_Click(sender As Object, e As System.EventArgs) Handles btnCopyRow.Click"
+    Protected Sub btnCopyRow_Click(sender As Object, e As System.EventArgs) Handles btnCopyRow.Click
+        Try
+            GenerateGridColumns("COPY")
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnDeleteRow_Click(sender As Object, e As System.EventArgs) Handles btnDeleteRow.Click"
+    Protected Sub btnDeleteRow_Click(sender As Object, e As System.EventArgs) Handles btnDeleteRow.Click
+        Try
+            GenerateGridColumns("DELETE")
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnAddRow_Click(sender As Object, e As System.EventArgs)"
+    Protected Sub btnAddRow_Click(sender As Object, e As System.EventArgs)
+        Try
+            GenerateGridColumns("ADD")
+            txtCommitRoomNight.Text = ""
+            Dim txtRoomType As TextBox
+            txtRoomType = TryCast(gvStayPeriod.Rows(gvStayPeriod.Rows.Count - 1).FindControl("txtRoomType"), TextBox)
+            txtRoomType.Focus()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub FillToApproval(ByVal InventoryID As String)"
+    Protected Sub FillToApproval(ByVal InventoryID As String)
+        Dim myCmd As SqlCommand
+        Dim myReader As SqlDataReader
+        txtInventoryID.Text = InventoryID
+        Try
+            strSqlQry = "select *,(select partyname from partymast where sptypecode='HOT' and active=1 and partyCode =Inventory_header.PartyCode) as PartyName,(select m.mealname from  partymeal p(nolock),mealmast m(nolock) where p.mealcode=m.mealcode and p.mealcode= Inventory_Header.MealCode and p.partycode=Inventory_Header.PartyCode) as MealName from Inventory_Header where InventoryID ='" + InventoryID + "'"
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myCmd = New SqlCommand(strSqlQry, mySqlConn)
+            myReader = myCmd.ExecuteReader()
+            If myReader.Read() Then
+                If Not IsDBNull(myReader("PartyCode")) Then
+                    txtHotelCode.Text = CType(myReader("PartyCode"), String)
+                Else
+                    txtHotelCode.Text = ""
+                End If
+                If Not IsDBNull(myReader("PartyName")) Then
+                    txtHotelName.Text = CType(myReader("PartyName"), String)
+                    FillRoomType()
+                Else
+                    txtHotelName.Text = ""
+                End If
+                If Not IsDBNull(myReader("InventoryType")) Then
+                    ddlInventoryType.ClearSelection()
+                    ddlInventoryType.Items.FindByValue(myReader("InventoryType")).Selected = True
+                    ddlInventoryType_SelectedIndexChanged(ddlInventoryType, EventArgs.Empty)
+                End If
+                If Not IsDBNull(myReader("ApplicableTo")) Then
+                    txtApplicableTo.Text = CType(myReader("ApplicableTo"), String)
+                Else
+                    txtApplicableTo.Text = ""
+                End If
+
+                GenerateGridColumns("BeLoad")
+
+                If Not IsDBNull(myReader("MaterializationPerc")) Then
+                    txtMaterial.Text = CType(Convert.ToInt32(myReader("MaterializationPerc")), String)
+                Else
+                    txtMaterial.Text = ""
+                End If
+                If Not IsDBNull(myReader("MaterializationBasis")) Then
+                    ddlMaterialBasis.ClearSelection()
+                    ddlMaterialBasis.Items.FindByValue(myReader("MaterializationBasis")).Selected = True
+                Else
+                    ddlMaterialBasis.SelectedIndex = 0
+                End If
+                If Not IsDBNull(myReader("MinNightsPerDay")) Then
+                    txtMinRoomNight.Text = CType(myReader("MinNightsPerDay"), String)
+                Else
+                    txtMinRoomNight.Text = ""
+                End If
+                If Not IsDBNull(myReader("MaxNightsPerDay")) Then
+                    txtMaxRoomNight.Text = CType(myReader("MaxNightsPerDay"), String)
+                Else
+                    txtMaxRoomNight.Text = ""
+                End If
+                If Not IsDBNull(myReader("CommitmentNightsPerMonth")) Then
+                    txtCommitRoomNight.Text = CType(myReader("CommitmentNightsPerMonth"), String)
+                Else
+                    txtCommitRoomNight.Text = ""
+                End If
+                If Not IsDBNull(myReader("LinkMealPlan")) Then
+                    ddlMealPlan.ClearSelection()
+                    ddlMealPlan.Items.FindByValue(CType(myReader("LinkMealPlan"), String)).Selected = True
+                    ddlMealPlan_SelectedIndexChanged(ddlMealPlan, EventArgs.Empty)
+                Else
+                    ddlMealPlan.SelectedIndex = 1
+                End If
+                If Not IsDBNull(myReader("MealCode")) Then
+                    txtMealCode.Text = CType(myReader("MealCode"), String)
+                Else
+                    txtMealCode.Text = ""
+                End If
+                If Not IsDBNull(myReader("MealName")) Then
+                    txtMealPlan.Text = CType(myReader("MealName"), String)
+                Else
+                    txtMealPlan.Text = ""
+                End If
+                If Not IsDBNull(myReader("AllotmentPercBal")) Then
+                    txtAllotBal.Text = CType(Convert.ToInt32(myReader("AllotmentPercBal")), String)
+                Else
+                    txtAllotBal.Text = ""
+                End If
+                If Not IsDBNull(myReader("ReleasePeriodBal")) Then
+                    txtReleasePeriodBal.Text = CType(myReader("ReleasePeriodBal"), String)
+                Else
+                    txtReleasePeriodBal.Text = ""
+                End If
+                If Not IsDBNull(myReader("Approved")) Then
+                    If CType(myReader("Approved"), Integer) = 1 Then
+                        chkApprove.Checked = True
+                    Else
+                        chkApprove.Checked = False
+                    End If
+                End If
+            End If
+            wucCountrygroup.sbSetPageState(InventoryID, "InventoryCreate", CType(Session("InventoryCreateState"), String))
+            Session("isAutoTick_wuccountrygroupusercontrol") = 1
+            wucCountrygroup.sbShowCountry()
+            Dim myDataAdapter As New SqlDataAdapter
+            Dim dtStayPeriod As New DataTable
+            dtStayPeriod.Columns.Add(New DataColumn("RoomType", GetType(String)))
+            dtStayPeriod.Columns.Add(New DataColumn("RoomTypeCode", GetType(String)))
+            dtStayPeriod.Columns.Add(New DataColumn("FromDate", GetType(Date)))
+            dtStayPeriod.Columns.Add(New DataColumn("ToDate", GetType(Date)))
+            dtStayPeriod.Columns.Add(New DataColumn("NoRooms", GetType(Integer)))
+            dtStayPeriod.Columns.Add(New DataColumn("ReleasePeriod", GetType(Integer)))
+            strSqlQry = "select P.RmTypName as RoomType, D.RmTypCode as RoomTypeCode, D.FromDate,D.ToDate,D.NoOfRooms as NoRooms, D.ReleasePeriod from Inventory_Dates D inner Join PartyRmTyp P(nolock) on D.PartyCode=P.PartyCode and D.RmTypCode=P.rmtypcode and D.InventoryID ='" + InventoryID + "' order by D.ILineNo"
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+            myDataAdapter.Fill(dtStayPeriod)
+            If dtStayPeriod.Rows.Count = 0 Then
+                dtStayPeriod.Rows.Add(dtStayPeriod.NewRow)
+            End If
+            gvStayPeriod.DataSource = dtStayPeriod
+            gvStayPeriod.DataBind()
+            If ddlInventoryType.SelectedValue = "B2B" Or ddlInventoryType.SelectedValue = "Financial" Then CalculateCommitRoomNight()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbConnectionClose(mySqlConn)                          'Close connection       
+        End Try
+    End Sub
+#End Region
+
+#Region "Private Sub DisableControl()"
+    Private Sub DisableControl()
+        If CType(Session("InventoryCreateState"), String) = "View" Then
+            txtInventoryID.Enabled = False
+            txtHotelName.Enabled = False
+            ddlInventoryType.Enabled = False
+            txtApplicableTo.Enabled = False
+            btnvsprocess.Enabled = False
+            dlList.Enabled = False
+            wucCountrygroup.Disable(False)
+            Dim txt As TextBox
+            txt = TryCast(wucCountrygroup.FindControl("txtSearchAgent"), TextBox)
+            txt.Enabled = False
+            gvStayPeriod.Enabled = False
+            txtFillNoRooms.Enabled = False
+            txtFillReleasePeriod.Enabled = False
+            btnFillRooms.Enabled = False
+            btnFillRPeriod.Enabled = False
+            btnCopyRow.Enabled = False
+            btnDeleteRow.Enabled = False
+            btnSelect.Enabled = False
+            txtMaterial.Enabled = False
+            ddlMaterialBasis.Enabled = False
+            txtMinRoomNight.Enabled = False
+            ddlMealPlan.Enabled = False
+            txtMaxRoomNight.Enabled = False
+            txtMealPlan.Enabled = False
+            txtCommitRoomNight.Enabled = False
+            txtAllotBal.Enabled = False
+            txtReleasePeriodBal.Enabled = False
+            chkApprove.Enabled = False
+            btnSave.Visible = False
+            btnSaveAndAnotherHotel.Visible = False
+            btnSaveAndSameHotel.Visible = False
+        ElseIf CType(Session("InventoryCreateState"), String) = "Edit" Then
+            txtInventoryID.Enabled = False
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnselect_Click(ByVal sender As Object, ByVal e As System.EventArgs)"
+    Protected Sub btnselect_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        If (txtHotelCode.Text.Trim <> "") Then
+            If grdroomtype.Rows.Count > 0 Then
+                Dim chk As CheckBox
+                For Each drRType As GridViewRow In grdroomtype.Rows
+                    chk = CType(drRType.FindControl("chkrmtyp"), CheckBox)
+                    chk.Checked = False
+                Next
+            End If
+            Dim myDataAdapter As SqlDataAdapter
+            gvShowdates.Visible = True
+            chkSeason.Checked = False
+            chkApplicable.Checked = False
+            Dim MyDs As New DataTable
+            Dim countryList As String = ""
+            Dim agentList As String = ""
+            Dim filterCond As String = ""
+            If wucCountrygroup.checkcountrylist.ToString().Trim <> "" Then
+                countryList = wucCountrygroup.checkcountrylist.ToString().Trim.Replace(",", "','")
+                filterCond = "c.contractid  in (select contractid from view_contractcountry where ctrycode in (' " + countryList + "'))"
+            End If
+            If wucCountrygroup.checkagentlist.ToString().Trim <> "" Then
+                agentList = wucCountrygroup.checkagentlist.ToString().Trim.Replace(",", "','")
+                If filterCond <> "" Then
+                    filterCond = filterCond + " or c.contractid  in (select contractid from view_contractagents where agentcode in ( '" + agentList + "'))"
+                Else
+                    filterCond = "c.contractid  in (select contractid from view_contractagents where agentcode in ( '" + agentList + "'))"
+                End If
+            End If
+            If filterCond <> "" Then
+                filterCond = " and (" + filterCond + ")"
+            End If
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+            strSqlQry = " select c.contractid ,c.applicableto,v.SeasonName ,convert(varchar(10),v.fromdate,103) fromdate ,convert(varchar(10),v.todate,103) todate  from view_contractseasons v ,view_contracts_search c " _
+            & " where v.contractid =c.contractid  and c.partycode ='" + txtHotelCode.Text.Trim + "' and convert(varchar(10),v.fromdate,111) >=GETDATE() " + filterCond + " order by convert(varchar(10),v.fromdate,111),convert(varchar(10),v.todate,111)"
+            mySqlCmd = New SqlCommand(strSqlQry, mySqlConn)
+            myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+            myDataAdapter.Fill(MyDs)
+            If MyDs.Rows.Count > 0 Then
+                gvShowdates.DataSource = MyDs
+                gvShowdates.DataBind()
+                gvShowdates.Visible = True
+            Else
+                gvShowdates.Visible = False
+            End If
+            ModalExtraPopup.Show()
+        Else
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Hotel Name' );", True)
+            Exit Sub
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnSelectDate_Click(sender As Object, e As System.EventArgs) Handles btnSelectDate.Click"
+    Protected Sub btnSelectDate_Click(sender As Object, e As System.EventArgs) Handles btnSelectDate.Click
+
+        Dim dtStayPeriod As New DataTable
+        Dim drStayPeriod As DataRow
+        dtStayPeriod.Columns.Add(New DataColumn("RoomType", GetType(String)))
+        dtStayPeriod.Columns.Add(New DataColumn("RoomTypeCode", GetType(String)))
+        dtStayPeriod.Columns.Add(New DataColumn("FromDate", GetType(Date)))
+        dtStayPeriod.Columns.Add(New DataColumn("ToDate", GetType(Date)))
+        dtStayPeriod.Columns.Add(New DataColumn("NoRooms", GetType(Integer)))
+        dtStayPeriod.Columns.Add(New DataColumn("ReleasePeriod", GetType(Integer)))
+        Dim chkRoomSelect As CheckBox
+        Dim chkSelect As CheckBox
+        Dim rmTypeCode As Label
+        For Each rtRow As GridViewRow In grdroomtype.Rows
+            chkRoomSelect = CType(rtRow.FindControl("chkrmtyp"), CheckBox)
+            If (chkRoomSelect.Checked = True) Then
+                rmTypeCode = CType(rtRow.FindControl("txtrmtypcode"), Label)
+                For Each sdRow As GridViewRow In gvShowdates.Rows
+                    chkSelect = CType(sdRow.FindControl("chkdateselect"), CheckBox)
+                    If (chkSelect.Checked = True) Then
+                        drStayPeriod = dtStayPeriod.NewRow
+                        drStayPeriod("RoomTypeCode") = rmTypeCode.Text.Trim()
+                        drStayPeriod("RoomType") = CType(rtRow.Cells(2).Text.Trim(), String)
+                        drStayPeriod("FromDate") = CType(sdRow.Cells(5).Text, Date)
+                        drStayPeriod("ToDate") = CType(sdRow.Cells(6).Text, Date)
+                        dtStayPeriod.Rows.Add(drStayPeriod)
+                    End If
+                Next
+            End If
+        Next
+        If dtStayPeriod.Rows.Count > 0 Then
+            GenerateGridColumns("SELECT", dtStayPeriod)
+            ModalExtraPopup.Hide()
+        Else
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Room and Season Dates' );", True)
+            ModalExtraPopup.Show()
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnclose_Click(sender As Object, e As System.EventArgs) Handles btnclose.Click"
+    Protected Sub btnclose_Click(sender As Object, e As System.EventArgs) Handles btnclose.Click
+        ModalExtraPopup.Hide()
+    End Sub
+#End Region
+
+#Region "Protected Sub chkSeason_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkSeason.CheckedChanged"
+    Protected Sub chkSeason_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkSeason.CheckedChanged
+        Dim chk As CheckBox
+        Dim seasonList As New List(Of String)
+        For Each gr As GridViewRow In gvShowdates.Rows
+            If gr.RowType = DataControlRowType.DataRow Then
+                chk = CType(gr.FindControl("chkdateselect"), CheckBox)
+                If chk.Checked = True Then
+                    If Not seasonList.Contains(gr.Cells(4).Text.Trim) Then
+                        seasonList.Add(gr.Cells(4).Text.Trim)
+                    End If
+                End If
+            End If
+        Next
+        If seasonList.Count > 0 Then
+            For Each gr As GridViewRow In gvShowdates.Rows
+                If seasonList.Contains(gr.Cells(4).Text.Trim) Then
+                    chk = CType(gr.FindControl("chkdateselect"), CheckBox)
+                    If chkSeason.Checked = True Then
+                        chk.Checked = True
+                    Else
+                        chk.Checked = False
+                    End If
+                End If
+            Next
+        End If
+        ModalExtraPopup.Show()
+    End Sub
+#End Region
+
+#Region "Protected Sub chkApplicable_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkApplicable.CheckedChanged"
+    Protected Sub chkApplicable_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkApplicable.CheckedChanged
+        Dim chk As CheckBox
+        Dim ApplicableToList As New List(Of String)
+        For Each gr As GridViewRow In gvShowdates.Rows
+            If gr.RowType = DataControlRowType.DataRow Then
+                chk = CType(gr.FindControl("chkdateselect"), CheckBox)
+                If chk.Checked = True Then
+                    If Not ApplicableToList.Contains(gr.Cells(3).Text.Trim + " ! " + gr.Cells(4).Text.Trim) Then
+                        ApplicableToList.Add(gr.Cells(3).Text.Trim + " ! " + gr.Cells(4).Text.Trim)
+                    End If
+                End If
+            End If
+        Next
+        If ApplicableToList.Count > 0 Then
+            For Each gr As GridViewRow In gvShowdates.Rows
+                If ApplicableToList.Contains(gr.Cells(3).Text.Trim + " ! " + gr.Cells(4).Text.Trim) Then
+                    chk = CType(gr.FindControl("chkdateselect"), CheckBox)
+                    If chkApplicable.Checked = True Then
+                        chk.Checked = True
+                    Else
+                        chk.Checked = False
+                    End If
+                End If
+            Next
+        End If
+        ModalExtraPopup.Show()
+    End Sub
+#End Region
+
+#Region "Protected Sub btnCommitRoomNight_Click(sender As Object, e As System.EventArgs) Handles btnCommitRoomNight.Click"
+    Protected Sub btnCommitRoomNight_Click(sender As Object, e As System.EventArgs) Handles btnCommitRoomNight.Click
+        Try
+            If (Session("InventoryCreateState") <> "View") Then CalculateCommitRoomNight()
+            ModalPopupCommitRooms.Show()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub CalculateCommitRoomNight()"
+    Protected Sub CalculateCommitRoomNight()
+        Try
+            Dim dtCommitRooms As New DataTable
+            Dim drCommitRooms As DataRow
+            dtCommitRooms.Columns.Add(New DataColumn("MonthName", GetType(String)))
+            dtCommitRooms.Columns.Add(New DataColumn("Year", GetType(Integer)))
+            dtCommitRooms.Columns.Add(New DataColumn("RoomType", GetType(String)))
+            dtCommitRooms.Columns.Add(New DataColumn("RoomTypeCode", GetType(String)))
+            dtCommitRooms.Columns.Add(New DataColumn("FromDate", GetType(Date)))
+            dtCommitRooms.Columns.Add(New DataColumn("ToDate", GetType(Date)))
+            dtCommitRooms.Columns.Add(New DataColumn("Rooms", GetType(Integer)))
+            dtCommitRooms.Columns.Add(New DataColumn("Materialization", GetType(Integer)))
+            dtCommitRooms.Columns.Add(New DataColumn("Days", GetType(Integer)))
+            dtCommitRooms.Columns.Add(New DataColumn("CommitRooms", GetType(Integer)))
+            If (Session("InventoryCreateState") = "View") Then
+                Dim myDataAdapter As New SqlDataAdapter
+                strSqlQry = "Select P.rmtypname as RoomType,CommitMonth as MonthName,CommitYear as [Year],FromDate,ToDate,NoOfRooms as Rooms,MaterializationPerc as Materialization ,CommitDays as Days,CommitmentNightsPerMonth as CommitRooms from Inventory_CommitRoomNights C inner join PartyRmTyp P(nolock) on P.PartyCode='" + txtHotelCode.Text.Trim + "' and C.RmTypCode=P.rmtypcode and C.InventoryID ='" + txtInventoryID.Text.Trim + "' order by C.ILineNo"
+                mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+                myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+                myDataAdapter.Fill(dtCommitRooms)
+                myDataAdapter.Dispose()
+                clsDBConnect.dbConnectionClose(mySqlConn)
+            Else
+                Dim RoomType As String
+                Dim RoomTypeCode As String
+                Dim FromDate As Date
+                Dim ToDate As Date
+                Dim NoOfRooms As Integer
+                Dim MonthStartDate, MonthEndDate As Date
+                For Each drDates As GridViewRow In gvStayPeriod.Rows
+                    If drDates.RowType = DataControlRowType.DataRow Then
+                        If CType(drDates.FindControl("txtRoomType"), TextBox).Text.Trim() <> "" And IsDate(CType(drDates.FindControl("txtStayfromDate"), TextBox).Text) And IsDate(CType(drDates.FindControl("txtStayToDate"), TextBox).Text) And IsNumeric(CType(drDates.FindControl("txtNoRooms"), TextBox).Text) Then
+                            RoomType = CType(drDates.FindControl("txtRoomType"), TextBox).Text.Trim()
+                            RoomTypeCode = CType(drDates.FindControl("txtRoomTypeCode"), TextBox).Text.Trim()
+                            FromDate = Convert.ToDateTime(CType(drDates.FindControl("txtStayfromDate"), TextBox).Text)
+                            ToDate = Convert.ToDateTime(CType(drDates.FindControl("txtStayToDate"), TextBox).Text)
+                            NoOfRooms = Convert.ToInt32(CType(drDates.FindControl("txtNoRooms"), TextBox).Text)
+                            MonthStartDate = FromDate.AddDays(-1 * FromDate.Day + 1)
+                            MonthEndDate = MonthStartDate.AddMonths(1).AddDays(-1)
+                            If (MonthEndDate < ToDate) Then
+                                While (MonthEndDate < ToDate)
+                                    drCommitRooms = dtCommitRooms.NewRow
+                                    drCommitRooms("MonthName") = FromDate.ToString("MMMM")
+                                    drCommitRooms("Year") = FromDate.Year
+                                    drCommitRooms("RoomType") = RoomType
+                                    drCommitRooms("RoomTypeCode") = RoomTypeCode
+                                    drCommitRooms("FromDate") = FromDate
+                                    drCommitRooms("ToDate") = MonthEndDate
+                                    drCommitRooms("Rooms") = NoOfRooms
+                                    drCommitRooms("Materialization") = Convert.ToInt32(txtMaterial.Text)
+                                    drCommitRooms("Days") = ((MonthEndDate - FromDate).TotalDays) + 1
+                                    drCommitRooms("CommitRooms") = Math.Round(NoOfRooms * Convert.ToInt32(txtMaterial.Text) / 100) * (((MonthEndDate - FromDate).TotalDays) + 1)
+                                    dtCommitRooms.Rows.Add(drCommitRooms)
+                                    FromDate = MonthEndDate.AddDays(1)
+                                    MonthStartDate = FromDate
+                                    MonthEndDate = MonthStartDate.AddMonths(1).AddDays(-1)
+                                End While
+                                drCommitRooms = dtCommitRooms.NewRow
+                                drCommitRooms("MonthName") = MonthStartDate.ToString("MMMM")
+                                drCommitRooms("Year") = MonthStartDate.Year
+                                drCommitRooms("RoomType") = RoomType
+                                drCommitRooms("RoomTypeCode") = RoomTypeCode
+                                drCommitRooms("FromDate") = MonthStartDate
+                                drCommitRooms("ToDate") = ToDate
+                                drCommitRooms("Rooms") = NoOfRooms
+                                drCommitRooms("Materialization") = Convert.ToInt32(txtMaterial.Text)
+                                drCommitRooms("Days") = ((ToDate - MonthStartDate).TotalDays) + 1
+                                drCommitRooms("CommitRooms") = Math.Round(NoOfRooms * Convert.ToInt32(txtMaterial.Text) / 100) * (((ToDate - MonthStartDate).TotalDays) + 1)
+                                dtCommitRooms.Rows.Add(drCommitRooms)
+                            Else
+                                drCommitRooms = dtCommitRooms.NewRow
+                                drCommitRooms("MonthName") = FromDate.ToString("MMMM")
+                                drCommitRooms("Year") = FromDate.Year
+                                drCommitRooms("RoomType") = RoomType
+                                drCommitRooms("RoomTypeCode") = RoomTypeCode
+                                drCommitRooms("FromDate") = FromDate
+                                drCommitRooms("ToDate") = ToDate
+                                drCommitRooms("Rooms") = NoOfRooms
+                                drCommitRooms("Materialization") = Convert.ToInt32(txtMaterial.Text)
+                                drCommitRooms("Days") = ((ToDate - FromDate).Days) + 1
+                                drCommitRooms("CommitRooms") = Math.Round(NoOfRooms * Convert.ToInt32(txtMaterial.Text) / 100) * (((ToDate - FromDate).Days) + 1)
+                                dtCommitRooms.Rows.Add(drCommitRooms)
+                            End If
+                        Else
+                            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('The fields Can not be empty in the Room Booking grid' );", True)
+                            Exit Sub
+                        End If
+                    End If
+                Next
+            End If
+            gvCommitRooms.DataSource = dtCommitRooms
+            gvCommitRooms.DataBind()
+            If dtCommitRooms.Rows.Count > 0 Then
+                Dim FilterDt As DataTable = dtCommitRooms.DefaultView.ToTable(True, {"MonthName", "Year"})
+                Dim dtMonthwise As New DataTable
+                Dim drMonthwise As DataRow
+                dtMonthwise.Columns.Add(New DataColumn("MonthName", GetType(String)))
+                dtMonthwise.Columns.Add(New DataColumn("Year", GetType(String)))
+                dtMonthwise.Columns.Add(New DataColumn("CommitmentRooms", GetType(Integer)))
+                Dim strFilter As String
+                For Each dtFr As DataRow In FilterDt.Rows
+                    strFilter = "MonthName='" + dtFr("MonthName").ToString() + "' and Year = " + dtFr("Year").ToString()
+                    drMonthwise = dtMonthwise.NewRow
+                    drMonthwise("MonthName") = dtFr("MonthName").ToString()
+                    drMonthwise("Year") = dtFr("Year").ToString()
+                    drMonthwise("CommitmentRooms") = dtCommitRooms.Compute("sum(CommitRooms)", strFilter)
+                    dtMonthwise.Rows.Add(drMonthwise)
+                Next
+                gvMonthwise.DataSource = dtMonthwise
+                gvMonthwise.DataBind()
+                txtCommitRoomNight.Text = dtCommitRooms.Compute("sum(CommitRooms)", "")
+                lblCommitmentRooms.Text = "Total Commitment Room Nights : " + txtCommitRoomNight.Text.Trim()
+                lblCommitmentRooms.Style("font-weight") = "bold"
+                If (Session("InventoryCreateState") = "View") Then
+                    lblCommitmentRooms.Text = "Total Commitment Room Nights : " + Convert.ToString(dtCommitRooms.Compute("sum(CommitRooms)", ""))
+                    lblCommitmentRooms.Style("font-weight") = "bold"
+                End If
+            Else
+                gvMonthwise.DataSource = Nothing
+                gvMonthwise.DataBind()
+                lblCommitmentRooms.Text = "Total Commitment Room Nights : "
+                lblCommitmentRooms.Style("font-weight") = "bold"
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnCommitRoomClose_Click(sender As Object, e As System.EventArgs) Handles btnclose.Click"
+    Protected Sub btnCommitRoomClose_Click(sender As Object, e As System.EventArgs) Handles btnclose.Click
+        ModalPopupCommitRooms.Hide()
+    End Sub
+#End Region
+
+#Region "Protected Sub btnAddRow_Click1(sender As Object, e As System.EventArgs)"
+    Protected Sub btnAddRow_Click1(sender As Object, e As System.EventArgs)
+        Try
+            GenerateGridColumns("ADD")
+            txtCommitRoomNight.Text = ""
+            Dim txtRoomType As TextBox
+            txtRoomType = TryCast(gvStayPeriod.Rows(gvStayPeriod.Rows.Count - 1).FindControl("txtRoomType"), TextBox)
+            txtRoomType.Focus()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnFillRooms_Click(sender As Object, e As System.EventArgs) Handles btnFillRooms.Click"
+    Protected Sub btnFillRooms_Click(sender As Object, e As System.EventArgs) Handles btnFillRooms.Click
+        Try
+            For Each rt As GridViewRow In gvStayPeriod.Rows
+                If rt.RowType = DataControlRowType.DataRow Then CType(rt.FindControl("txtNoRooms"), TextBox).Text = txtFillNoRooms.Text.Trim()
+            Next
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnFillRPeriod_Click(sender As Object, e As System.EventArgs) Handles btnFillRPeriod.Click"
+    Protected Sub btnFillRPeriod_Click(sender As Object, e As System.EventArgs) Handles btnFillRPeriod.Click
+        Try
+            For Each rt As GridViewRow In gvStayPeriod.Rows
+                If rt.RowType = DataControlRowType.DataRow Then CType(rt.FindControl("txtReleasePeriod"), TextBox).Text = txtFillReleasePeriod.Text.Trim()
+            Next
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryCreate.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+End Class

@@ -1,0 +1,64 @@
+﻿<%@ Control Language="VB" AutoEventWireup="false" CodeFile="InventoryView.ascx.vb" Inherits="InventoryView" %>
+<link href="../CSS/Styles.css" rel="stylesheet" type="text/css" />
+     <script language="javascript" src="../js/date-picker.js" type="text/javascript"></script>
+	 <script language="javascript" src="../js/datefun.js" type="text/javascript"></script>
+    
+
+
+   <style>
+
+ .menuTabs
+        {
+            position:relative;
+            top:1px;
+            left:10px;                                          
+        }
+        .tab 
+        {           
+            border:Solid 1px #2fa4e7;
+            padding: 5px 5px 5px 5px;            
+            border-style:outset;
+            /*background-color:#2fa4e7;*/
+            color :white; 
+        }
+      
+        .selectedTab
+        {
+            border:Solid 1px black;
+            border-bottom:Solid 1px white;
+            padding:0px 10px;
+            background-color:white;
+            
+        }
+        .tabBody
+        {
+            border:Solid 1px black;
+            padding:20px;
+            background-color:white;
+        }
+
+     </style>
+<style>
+
+         .btnnew 
+         {
+         	border-top-color: #c0ced6;
+             background: #c0ced6;
+             color: #5b98a3;
+         }
+    </style>
+<table>
+    <tr>
+        <td>
+            <asp:Menu ID="Menu1" runat="server" CssClass="menuTabs" 
+                DynamicHorizontalOffset="4" EnableViewState="true" Font-Bold="True" 
+                Font-Names="Verdana" Font-Size="10pt" ForeColor="White"
+                Orientation="Horizontal"  StaticMenuItemStyle-BackColor="#2fa4e7" 
+                StaticMenuItemStyle-BorderStyle="Outset" StaticMenuItemStyle-HorizontalPadding="5px" 
+                StaticMenuItemStyle-VerticalPadding="5px" >
+                <StaticMenuItemStyle Cssclass="tab" />
+            </asp:Menu>
+        </td>
+    </tr>
+</table>
+

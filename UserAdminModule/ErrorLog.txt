@@ -1,0 +1,5 @@
+PrivilegeRightsforGroup.aspx || 10/09/2019 13:05:01 || Violation of PRIMARY KEY constraint 'PK_grpprivilege'. Cannot insert duplicate key in object 'dbo.group_privilege'. The duplicate key value is (3, 1014).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+GroupRight.aspx || 10/09/2019 13:14:44 || This constraint cannot be enabled as not all values have corresponding parent values. || admin
+--------------------------------------------------------------------------------------------------------------

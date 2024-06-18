@@ -1,0 +1,918 @@
+Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Linq
+
+Partial Class MainPageInventory
+    Inherits System.Web.UI.Page
+#Region "Global Decalration"
+    Dim objUtils As New clsUtils
+    Dim objUser As New clsUser
+    Dim SqlConn As SqlConnection
+    Dim mySqlCmd As SqlCommand
+    Dim myDataAdapter As SqlDataAdapter
+#End Region
+
+#Region "Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        Try
+            If Page.IsPostBack = False Then
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("Login.aspx", False)
+                    Exit Sub
+                End If
+                Me.InventoryView1.appval = CType(Request.QueryString("appid"), String)
+                Me.InventoryView1.menuidval = objUser.GetMenuId(Session("dbconnectionName"), CType("MainPageInventory.aspx", String), CType(Request.QueryString("appid"), Integer))
+                Dim PreviousPage As String = Request.UrlReferrer.ToString()
+                Dim selMonthArr() As String = {"", ""}
+                Dim dtt As DataTable
+                Dim dtAgt As DataTable
+                If PreviousPage.Contains("InventoryDayView.aspx") = True Then
+                    If (Not String.IsNullOrEmpty(Convert.ToString(Session("SelectedInventoryMonth")))) Then
+                        Dim selMonth As String = Convert.ToString(Session("SelectedInventoryMonth"))
+                        selMonthArr = selMonth.Split(",")
+                    End If
+                    dtt = TryCast(Session("sDtHotel"), DataTable)
+                    dtAgt = TryCast(Session("sDtAgent"), DataTable)
+                Else
+                    Session("SelectedInventoryMonth") = ""
+                    dtt = Nothing
+                    dtAgt = Nothing
+                End If
+                If IsNumeric(selMonthArr(0)) And IsNumeric(selMonthArr(1)) Then
+                    txtMonthYear.Text = MonthName(Convert.ToInt32(selMonthArr(0)), False) + ", " + Convert.ToString(selMonthArr(1))
+                    FillMonthlycalendar(Convert.ToInt32(selMonthArr(0)), Convert.ToInt32(selMonthArr(1)))
+                Else
+                    txtMonthYear.Text = MonthName(Now.Date.Month(), False) + ", " + Now.Date.Year().ToString
+                    FillMonthlycalendar(Now.Date.Month(), Now.Date.Year())
+                End If
+                hfMonthGrid.Value = 0
+                If dtt Is Nothing Then
+                    Session("sDtHotel") = Nothing
+                    Dim dtHotel = New DataTable()
+                    Dim dhCode = New DataColumn("Code", GetType(String))
+                    Dim dhValue = New DataColumn("Value", GetType(String))
+                    Dim dhCodeAndValue = New DataColumn("CodeAndValue", GetType(String))
+                    dtHotel.Columns.Add(dhCode)
+                    dtHotel.Columns.Add(dhValue)
+                    dtHotel.Columns.Add(dhCodeAndValue)
+                    Session("sDtHotel") = dtHotel
+                Else
+                    dlHotels.DataSource = dtt
+                    dlHotels.DataBind()
+                End If
+                If dtAgt Is Nothing Then
+                    Dim dtAgent = New DataTable()
+                    Dim daCode = New DataColumn("Code", GetType(String))
+                    Dim daValue = New DataColumn("Value", GetType(String))
+                    Dim daCodeAndValue = New DataColumn("CodeAndValue", GetType(String))
+                    dtAgent.Columns.Add(daCode)
+                    dtAgent.Columns.Add(daValue)
+                    dtAgent.Columns.Add(daCodeAndValue)
+                    Session("sDtAgent") = dtAgent
+                Else
+                    dlAgents.DataSource = dtAgt
+                    dlAgents.DataBind()
+                End If
+                txtReleaseDays.Attributes.Add("onkeypress", "return validateDigitOnly(event)")
+                FillGridNew()
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("MainPageInventory.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+        If (Me.IsPostBack And Me.Request("__EVENTTARGET") = "InventoryWindowPostBack") Then
+            
+        End If
+    End Sub
+
+#End Region
+
+    Private Sub FillMonthlycalendar(ByVal iMonth As Integer, ByVal iYear As Integer)
+        Dim myDS As New DataSet
+        Dim da As New SqlDataAdapter
+        Try
+            Dim constring As String = ConfigurationManager.ConnectionStrings("strDBConnection").ConnectionString
+            Using con As New SqlConnection(constring)
+                Using cmd As New SqlCommand("SP_MONTHLYDAYS", con)
+                    cmd.CommandType = CommandType.StoredProcedure
+                    cmd.Parameters.AddWithValue("@month", iMonth)
+                    cmd.Parameters.AddWithValue("@year", iYear)
+                    con.Open()
+                    da.SelectCommand = cmd
+                    da.Fill(myDS, "Details")
+                End Using
+                dlMonthlyCalendar.DataSource = myDS
+                dlMonthlyCalendar.DataBind()
+                con.Close()
+            End Using
+        Catch ex As Exception
+        End Try
+    End Sub
+
+    Protected Sub FillExhibition()
+        Dim dtExhibition = New DataTable()
+        Dim dt = New DataColumn("mDate", GetType(Date))
+        Dim dtDay = New DataColumn("mDay", GetType(String))
+        Dim dcExhibition = New DataColumn("Exhibition", GetType(String))
+        dtExhibition.Columns.Add(dt)
+        dtExhibition.Columns.Add(dtDay)
+        dtExhibition.Columns.Add(dcExhibition)
+        Dim strDate As String = ""
+        Dim strMonthNo As String = ""
+        Dim strDates As String()
+        strDate = txtMonthYear.Text
+        strDates = strDate.Split(",")
+        strMonthNo = GetMonthNo(strDates(0))
+        Dim fDate As Date
+        Dim eDate As Date
+        fDate = Convert.ToDateTime("01/" & strMonthNo & "/" & strDates(1))
+        eDate = fDate.AddMonths(1)
+        eDate = eDate.AddDays(-1)
+        While (fDate <= eDate)
+            Dim ed As DataRow = dtExhibition.NewRow()
+            ed("mDate") = fDate
+            ed("mDay") = fDate.Day.ToString("00")
+            dtExhibition.Rows.Add(ed)
+            fDate = fDate.AddDays(1)
+        End While
+        Dim constring As String = ConfigurationManager.ConnectionStrings("strDBConnection").ConnectionString
+        Using con As New SqlConnection(constring)
+            Dim cmd1 As New SqlCommand
+            cmd1.CommandText = "sp_ExhibitionDays"
+            cmd1.CommandType = CommandType.StoredProcedure
+            cmd1.Parameters.AddWithValue("@month", Convert.ToInt32(strMonthNo))
+            cmd1.Parameters.AddWithValue("@year", Convert.ToInt32(strDates(1)))
+            cmd1.Connection = con
+            con.Open()
+            Dim dr As SqlDataReader
+            dr = cmd1.ExecuteReader()
+            Dim sday As Date
+            Dim eday As Date
+            While (dr.Read)
+                sday = dr.GetDateTime(1)
+                eday = dr.GetDateTime(2)
+                Dim drow As DataRow
+                For Each drow In dtExhibition.Rows
+                    If Convert.ToDateTime(drow("mDate")) = sday Then
+                        If Convert.ToString(drow("Exhibition")) <> "" Then
+                            drow("Exhibition") = Convert.ToString(drow("Exhibition")) + ", " + dr.GetString(0)
+                        Else
+                            drow("Exhibition") = dr.GetString(0)
+                        End If
+                        sday = sday.AddDays(1)
+                        If sday > eday Then
+                            Exit For
+                        End If
+                    End If
+                Next
+            End While
+        End Using
+        Dim lblDate As Label
+        Dim divExhibition As HtmlControl
+        Dim lblExhibition As Label
+        For Each dlrow As DataListItem In dlMonthlyCalendar.Items
+            lblDate = TryCast(dlrow.FindControl("lblDate"), Label)
+            divExhibition = TryCast(dlrow.FindControl("divExhibition"), HtmlControl)
+            lblExhibition = TryCast(dlrow.FindControl("lblExhibition"), Label)
+            If (lblDate.Text <> "") Then
+                Dim drarray() As DataRow
+                drarray = dtExhibition.Select("mDay = " + lblDate.Text.Trim)
+                If drarray(0)("Exhibition").ToString() <> "" Then
+                    lblExhibition.Text = drarray(0)("Exhibition").ToString()
+                    lblExhibition.ToolTip = drarray(0)("Exhibition").ToString()
+                    divExhibition.Attributes.Add("style", "background-color:#D3AEF2; margin-left:-2px;padding-right:6px;padding-top:3px;text-align:center; font: small Arial, Helvetica, sans-serif;overflow:hidden;height:16px;")
+                Else
+                    lblExhibition.Text = ""
+                    divExhibition.Attributes.Remove("style")
+                End If
+            Else
+                lblExhibition.Text = ""
+                divExhibition.Attributes.Remove("style")
+            End If
+        Next
+    End Sub
+    Protected Sub btnMonth_Click(sender As Object, e As System.EventArgs) Handles btnMonth.Click
+        Try
+            Dim strDate As String = ""
+            Dim strMonthNo As String = ""
+            Dim strDates As String()
+            strDate = txtMonthYear.Text
+            strDates = strDate.Split(",")
+            strMonthNo = GetMonthNo(strDates(0))
+            Dim dtDay As DateTime
+            dtDay = Convert.ToDateTime("01/" & strMonthNo & "/" & strDates(1))
+            txtMonthYear.Text = MonthName(dtDay.Month(), False) + ", " + dtDay.Year().ToString
+            FillMonthlycalendar(dtDay.Month(), dtDay.Year())
+            Session("SelectedInventoryMonth") = dtDay.Month().ToString() + "," + dtDay.Year().ToString()
+            FillGridNew()
+        Catch ex As Exception
+
+        End Try
+    End Sub
+    Protected Sub btnNext_Click(sender As Object, e As System.EventArgs) Handles btnNext.Click
+        Try
+            Dim strDate As String = ""
+            Dim strMonthNo As String = ""
+            Dim strDates As String()
+            strDate = txtMonthYear.Text
+            strDates = strDate.Split(",")
+            strMonthNo = GetMonthNo(strDates(0))
+            Dim dtDay As DateTime
+            dtDay = Convert.ToDateTime("01/" & strMonthNo & "/" & strDates(1))
+            dtDay = dtDay.AddMonths(1)
+            txtMonthYear.Text = MonthName(dtDay.Month(), False) + ", " + dtDay.Year().ToString
+            FillMonthlycalendar(dtDay.Month(), dtDay.Year())
+            Session("SelectedInventoryMonth") = dtDay.Month().ToString() + "," + dtDay.Year().ToString()
+            FillGridNew()
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+
+    Private Function GetMonthNo(strDates As String) As String
+        Dim strMonthNo As String = ""
+        Select (strDates)
+            Case "January"
+                strMonthNo = "01"
+            Case "February"
+                strMonthNo = "02"
+            Case "March"
+                strMonthNo = "03"
+            Case "April"
+                strMonthNo = "04"
+            Case "May"
+                strMonthNo = "05"
+            Case "June"
+                strMonthNo = "06"
+            Case "July"
+                strMonthNo = "07"
+            Case "August"
+                strMonthNo = "08"
+            Case "September"
+                strMonthNo = "09"
+            Case "October"
+                strMonthNo = "10"
+            Case "November"
+                strMonthNo = "11"
+            Case "December"
+                strMonthNo = "12"
+
+        End Select
+
+        Return strMonthNo
+
+    End Function
+    
+    Protected Sub btnBack_Click(sender As Object, e As System.EventArgs) Handles btnBack.Click
+        Try
+            Dim strDate As String = ""
+            Dim strMonthNo As String = ""
+            Dim strDates As String()
+            strDate = txtMonthYear.Text
+            strDates = strDate.Split(",")
+            strMonthNo = GetMonthNo(strDates(0))
+            Dim dtDay As DateTime
+            dtDay = Convert.ToDateTime("01/" & strMonthNo & "/" & strDates(1))
+            dtDay = dtDay.AddMonths(-1)
+            txtMonthYear.Text = MonthName(dtDay.Month(), False) + ", " + dtDay.Year().ToString
+            FillMonthlycalendar(dtDay.Month(), dtDay.Year())
+            Session("SelectedInventoryMonth") = dtDay.Month().ToString() + "," + dtDay.Year().ToString()
+            FillGridNew()
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+    Protected Sub dlMonthlyCalendar_ItemDataBound(sender As Object, e As System.Web.UI.WebControls.DataListItemEventArgs) Handles dlMonthlyCalendar.ItemDataBound
+        If e.Item.ItemType = ListItemType.Item Or e.Item.ItemType = ListItemType.AlternatingItem Then
+            Dim lblDate As Label = CType(e.Item.FindControl("lblDate"), Label)
+            Dim lblDay As Label = CType(e.Item.FindControl("lblDay"), Label)
+            'If lblDay.Text = "Friday" Then
+            '    lblDate.BackColor = Drawing.Color.Gray
+            'Else
+            '    '  lblDate.Attributes.Add("style", "background=#CC3300;")
+            '    lblDate.BackColor = Drawing.Color.IndianRed
+            'End If
+            lblDate.BackColor = Drawing.Color.Gray
+            Dim i As Integer = e.Item.ItemIndex
+            If i < 7 Then
+                lblDay.Visible = True
+                lblDay.Text = lblDay.Text.Substring(0, 3).ToUpper
+            Else
+                lblDay.Visible = False
+            End If
+            Dim dvDay As HtmlControl = CType(e.Item.FindControl("dvDay"), HtmlControl)
+            If lblDate.Text = "" Then
+                dvDay.Attributes.Add("style", "border: 1px solid #ccc; width:90%;height:80px;margin-bottom:18px;background:#F1F1F1;")
+            Else
+                dvDay.Attributes.Add("style", "border: 1px solid #ccc; width:90%;height:80px;margin-bottom:18px;background:#FFFFFF;")
+            End If
+        End If
+    End Sub
+
+    Protected Sub btnvsprocess_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnvsprocess.Click
+        Try
+            FilterGrid("Hotel")
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("MainPageInventory.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub btnResetAgent_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnResetAgent.Click
+        Dim dtt As DataTable
+        dtt = Session("sDtAgent")
+        If dtt.Rows.Count > 0 Then
+            dtt.Clear()
+        End If
+        Session("sDtAgent") = dtt
+        dlAgents.DataSource = dtt
+        dlAgents.DataBind()
+        If hfMonthGrid.Value = 1 Then
+            ClearMonthGrid()
+        End If
+    End Sub
+
+    Protected Sub btnvsprocessAgent_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnvsprocessAgent.Click
+        Try
+            FilterGrid("Agent")
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("MainPageInventory.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub lbClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            Dim myButton As Button = CType(sender, Button)
+            Dim dlItem As DataListItem = CType((CType(sender, Button)).NamingContainer, DataListItem)
+            Dim lnkcode As Button = CType(dlItem.FindControl("lnkcode"), Button)
+            Dim lnkvalue As Button = CType(dlItem.FindControl("lnkvalue"), Button)
+            Dim dtHotels As New DataTable
+            dtHotels = Session("sDtHotel")
+            If dtHotels.Rows.Count > 0 Then
+                Dim j As Integer
+                For j = dtHotels.Rows.Count - 1 To 0 Step j - 1
+                    If lnkcode.Text.Trim.ToUpper = dtHotels.Rows(j)("code").ToString.Trim.ToUpper And lnkvalue.Text.Trim.ToUpper = dtHotels.Rows(j)("Value").ToString.Trim.ToUpper Then
+                        dtHotels.Rows.Remove(dtHotels.Rows(j))
+                    End If
+                Next
+            End If
+            Session("sDtHotel") = dtHotels
+            dlHotels.DataSource = dtHotels
+            dlHotels.DataBind()
+
+            If hfMonthGrid.Value = 1 Then
+                ClearMonthGrid()
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Sub
+
+    Protected Sub lbAgentClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            Dim myButton As Button = CType(sender, Button)
+            Dim dlItem As DataListItem = CType((CType(sender, Button)).NamingContainer, DataListItem)
+            Dim lnkcode As Button = CType(dlItem.FindControl("lnkAgentCode"), Button)
+            Dim lnkvalue As Button = CType(dlItem.FindControl("lnkAgentValue"), Button)
+            Dim dtAgents As New DataTable
+            dtAgents = Session("sDtAgent")
+            If dtAgents.Rows.Count > 0 Then
+                Dim j As Integer
+                For j = dtAgents.Rows.Count - 1 To 0 Step j - 1
+                    If lnkcode.Text.Trim.ToUpper = dtAgents.Rows(j)("code").ToString.Trim.ToUpper And lnkvalue.Text.Trim.ToUpper = dtAgents.Rows(j)("Value").ToString.Trim.ToUpper Then
+                        dtAgents.Rows.Remove(dtAgents.Rows(j))
+                    End If
+                Next
+            End If
+            Session("sDtAgent") = dtAgents
+            dlAgents.DataSource = dtAgents
+            dlAgents.DataBind()
+
+            If hfMonthGrid.Value = 1 Then
+                ClearMonthGrid()
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Sub
+
+    Private Sub FilterGrid(ByVal FilterType As String)
+        Dim lsSearchTxt As String = ""
+        If FilterType = "Hotel" Then
+            lsSearchTxt = txtvsprocesssplit.Text
+            Dim lsProcessText As String = ""
+            Dim lsProcessHotels As String = ""
+
+            Dim lsMainArr As String()
+            lsMainArr = objUtils.splitWithWords(lsSearchTxt, "|~,")
+            For i = 0 To lsMainArr.GetUpperBound(0)
+                Select Case lsMainArr(i).Split(":")(0).ToString.ToUpper.Trim
+                    Case "CITY"
+                        lsProcessHotels = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("CITY", lsProcessHotels, "CT", FilterType)
+                    Case "TEXT"
+                        lsProcessText = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("TEXT", lsProcessText, "T", FilterType)
+                    Case "COUNTRY"
+                        lsProcessHotels = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("COUNTRY", lsProcessHotels, "C", FilterType)
+                    Case "SECTOR"
+                        lsProcessHotels = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("SECTOR", lsProcessHotels, "S", FilterType)
+                    Case "CATEGORY"
+                        lsProcessHotels = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("CATEGORY", lsProcessHotels, "CTG", FilterType)
+                    Case "HOTEL GROUP"
+                        lsProcessHotels = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("HOTEL GROUP", lsProcessHotels, "HG", FilterType)
+                    Case "HOTELS"
+                        lsProcessHotels = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("HOTELS", lsProcessHotels, "H", FilterType)
+                End Select
+            Next
+            Dim dtt As DataTable
+            dtt = Session("sDtHotel")
+            dlHotels.DataSource = dtt
+            dlHotels.DataBind()
+        Else
+            lsSearchTxt = txtvsprocesssplitAgent.Text
+            Dim lsProcessText As String = ""
+            Dim lsProcessAgents As String = ""
+
+            Dim lsMainArr As String()
+            lsMainArr = objUtils.splitWithWords(lsSearchTxt, "|~,")
+            For i = 0 To lsMainArr.GetUpperBound(0)
+                Select Case lsMainArr(i).Split(":")(0).ToString.ToUpper.Trim
+                    Case "CITY"
+                        lsProcessAgents = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("CITY", lsProcessAgents, "CT", FilterType)
+                    Case "TEXT"
+                        lsProcessText = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("TEXT", lsProcessText, "T", FilterType)
+                    Case "COUNTRY"
+                        lsProcessAgents = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("COUNTRY", lsProcessAgents, "C", FilterType)
+                    Case "SECTOR"
+                        lsProcessAgents = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("SECTOR", lsProcessAgents, "S", FilterType)
+                    Case "CATEGORY"
+                        lsProcessAgents = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("CATEGORY", lsProcessAgents, "CTG", FilterType)
+                    Case "COUNTRY GROUP"
+                        lsProcessAgents = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("COUNTRY GROUP", lsProcessAgents, "CG", FilterType)
+                    Case "AGENT"
+                        lsProcessAgents = lsMainArr(i).Split(":")(1)
+                        sbAddToDataTable("AGENT", lsProcessAgents, "A", FilterType)
+                End Select
+            Next
+            Dim dtt As DataTable
+            dtt = Session("sDtAgent")
+            dlAgents.DataSource = dtt
+            dlAgents.DataBind()
+        End If
+        If hfMonthGrid.Value = 1 Then
+            ClearMonthGrid()
+        End If
+    End Sub
+
+    Function sbAddToDataTable(ByVal lsName As String, ByVal lsValue As String, ByVal lsShortCode As String, ByVal FilterType As String) As Boolean
+        Dim iFlag As Integer = 0
+        Dim dtt As DataTable
+        If FilterType = "Hotel" Then
+            dtt = Session("sDtHotel")
+        Else
+            dtt = Session("sDtAgent")
+        End If
+        If dtt.Rows.Count >= 0 Then
+            For i = 0 To dtt.Rows.Count - 1
+                If dtt.Rows(i)("Code").ToString.Trim.ToUpper = lsName.Trim.ToUpper And dtt.Rows(i)("Value").ToString.Trim.ToUpper = lsValue.Trim.ToUpper Then
+                    iFlag = 1
+                End If
+            Next
+            If iFlag = 0 Then
+                dtt.NewRow()
+                dtt.Rows.Add(lsName.Trim.ToUpper, lsValue.Trim.ToUpper, lsShortCode.Trim.ToUpper & ": " & lsValue.Trim)
+                If FilterType = "Hotel" Then
+                    Session("sDtHotel") = dtt
+                Else
+                    Session("sDtAgent") = dtt
+                End If
+            End If
+        End If
+        Return True
+    End Function
+
+    Protected Sub btnResetSelection_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnResetSelection.Click
+        Dim dtt As DataTable
+        dtt = Session("sDtHotel")
+        If dtt.Rows.Count > 0 Then
+            dtt.Clear()
+        End If
+        Session("sDtHotel") = dtt
+        dlHotels.DataSource = dtt
+        dlHotels.DataBind()
+        If hfMonthGrid.Value = 1 Then
+            ClearMonthGrid()
+        End If
+    End Sub
+
+    Protected Sub ClearMonthGrid()
+        chkB2B.Checked = False
+        chkFinancial.Checked = False
+        chkGeneral.Checked = False
+        chkDummy.Checked = False
+        chkFreeSale.Checked = False
+        chkStopSale.Checked = False
+        Dim img As Image
+        Dim lbl As Label
+        Dim brctl As HtmlGenericControl
+        Dim lblDate As Label
+        For Each dlrow As DataListItem In dlMonthlyCalendar.Items
+            img = TryCast(dlrow.FindControl("imgB2B"), Image)
+            img.Visible = False
+            lbl = TryCast(dlrow.FindControl("lblB2B"), Label)
+            lbl.Visible = True
+            lbl.Text = ""
+            brctl = TryCast(dlrow.FindControl("brB2B"), HtmlGenericControl)
+            brctl.Style("display") = "none"
+            brctl.Visible = False
+            img = TryCast(dlrow.FindControl("imgFinancial"), Image)
+            img.Visible = False
+            lbl = TryCast(dlrow.FindControl("lblFinancial"), Label)
+            lbl.Visible = True
+            lbl.Text = ""
+            brctl = TryCast(dlrow.FindControl("brFinancial"), HtmlGenericControl)
+            brctl.Style("display") = "none"
+            brctl.Visible = False
+            img = TryCast(dlrow.FindControl("imgGeneral"), Image)
+            img.Visible = False
+            lbl = TryCast(dlrow.FindControl("lblGeneral"), Label)
+            lbl.Visible = True
+            lbl.Text = ""
+            img = TryCast(dlrow.FindControl("imgFreeSale"), Image)
+            img.Visible = False
+            lbl = TryCast(dlrow.FindControl("lblFreeSale"), Label)
+            lbl.Visible = False
+            lbl.Text = ""
+            brctl = TryCast(dlrow.FindControl("brFreeSale"), HtmlGenericControl)
+            brctl.Style("display") = "none"
+            brctl.Visible = False
+            img = TryCast(dlrow.FindControl("imgStopSale"), Image)
+            img.Visible = False
+            lbl = TryCast(dlrow.FindControl("lblStopSale"), Label)
+            lbl.Visible = False
+            lbl.Text = ""
+            brctl = TryCast(dlrow.FindControl("brStopSale"), HtmlGenericControl)
+            brctl.Style("display") = "none"
+            brctl.Visible = False
+            lblDate = TryCast(dlrow.FindControl("lblDate"), Label)
+            lblDate.BackColor = Drawing.Color.Gray
+        Next
+    End Sub
+
+    Protected Sub FillGridNew()
+        If hfMonthGrid.Value = 1 Then
+            ClearMonthGrid()
+        End If
+        FillExhibition()
+        Dim lblDate As Label
+        Dim img As Image
+        Dim lbl As Label
+        Dim brctl As HtmlGenericControl
+        Dim tdCol As HtmlControl
+        Dim strMon As String = txtMonthYear.Text
+        Dim strMonSplit = strMon.Split(",")
+        Dim strMonthNo As String = GetMonthNo(strMonSplit(0))
+        Dim FromDate As DateTime
+        Dim Todate As DateTime
+        Dim FilterTable As New DataTable
+        FromDate = Convert.ToDateTime("01/" & strMonthNo & "/" & strMonSplit(1))
+        Todate = FromDate.AddMonths(1)
+        Todate = Todate.AddDays(-1)
+        Dim dtHotel As DataTable
+        dtHotel = Session("sDtHotel")
+        Dim HotelCountry As String = ""
+        Dim HotelCity As String = ""
+        Dim HotelSector As String = ""
+        Dim HotelCategory As String = ""
+        Dim HotelGroup As String = ""
+        Dim HotelCode As String = ""
+        Dim HotelText As String = ""
+        If Not dtHotel Is Nothing Then
+            For Each dth As DataRow In dtHotel.Rows
+                If dth("Code") = "COUNTRY" Then
+                    If HotelCountry = "" Then HotelCountry = "'" + dth("value") + "'" Else HotelCountry = HotelCountry + ",'" + dth("value") + "'"
+                ElseIf dth("Code") = "CITY" Then
+                    If HotelCity = "" Then HotelCity = "'" + dth("value") + "'" Else HotelCity = HotelCity + ",'" + dth("value") + "'"
+                ElseIf dth("Code") = "SECTOR" Then
+                    If HotelSector = "" Then HotelSector = "'" + dth("value") + "'" Else HotelSector = HotelSector + ",'" + dth("value") + "'"
+                ElseIf dth("Code") = "CATEGORY" Then
+                    If HotelCategory = "" Then HotelCategory = "'" + dth("value") + "'" Else HotelCategory = HotelCategory + ",'" + dth("value") + "'"
+                ElseIf dth("Code") = "HOTEL GROUP" Then
+                    If HotelGroup = "" Then HotelGroup = "'" + dth("value") + "'" Else HotelGroup = HotelGroup + ",'" + dth("value") + "'"
+                ElseIf dth("Code") = "HOTELS" Then
+                    If HotelCode = "" Then HotelCode = "'" + dth("value") + "'" Else HotelCode = HotelCode + ",'" + dth("value") + "'"
+                ElseIf dth("Code") = "TEXT" Then
+                    If HotelText = "" Then HotelText = dth("value") Else HotelText = HotelText + "," + dth("value")
+                End If
+            Next
+            'If HotelText <> "" Then HotelText = HotelText + "'"
+        End If
+        Dim dtAgent As DataTable
+        dtAgent = Session("sDtAgent")
+        Dim AgentCountry As String = ""
+        Dim AgentCity As String = ""
+        Dim AgentSector As String = ""
+        Dim AgentCategory As String = ""
+        Dim CountryGroup As String = ""
+        Dim AgentCode As String = ""
+        Dim AgentText As String = ""
+
+        If Not dtAgent Is Nothing Then
+            For Each dtA As DataRow In dtAgent.Rows
+                If dtA("Code") = "COUNTRY" Then
+                    If AgentCountry = "" Then AgentCountry = "'" + dtA("value") + "'" Else AgentCountry = AgentCountry + ",'" + dtA("value") + "'"
+                ElseIf dtA("Code") = "CITY" Then
+                    If AgentCity = "" Then AgentCity = "'" + dtA("value") + "'" Else AgentCity = AgentCity + ",'" + dtA("value") + "'"
+                ElseIf dtA("Code") = "SECTOR" Then
+                    If AgentSector = "" Then AgentSector = "'" + dtA("value") + "'" Else AgentSector = AgentSector + ",'" + dtA("value") + "'"
+                ElseIf dtA("Code") = "CATEGORY" Then
+                    If AgentCategory = "" Then AgentCategory = "'" + dtA("value") + "'" Else AgentCategory = AgentCategory + ",'" + dtA("value") + "'"
+                ElseIf dtA("Code") = "COUNTRY GROUP" Then
+                    If CountryGroup = "" Then CountryGroup = dtA("value") Else CountryGroup = CountryGroup + "," + dtA("value")
+                ElseIf dtA("Code") = "AGENT" Then
+                    If AgentCode = "" Then AgentCode = "'" + dtA("value") + "'" Else AgentCode = AgentCode + ",'" + dtA("value") + "'"
+                ElseIf dtA("Code") = "TEXT" Then
+                    If AgentText = "" Then AgentText = dtA("value") Else AgentText = AgentText + "," + dtA("value")
+                End If
+            Next
+            'If AgentText <> "" Then AgentText = AgentText + "'"
+        End If
+
+        SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+        mySqlCmd = New SqlCommand("sp_InventoryView", SqlConn)
+        mySqlCmd.CommandType = CommandType.StoredProcedure
+        mySqlCmd.Parameters.Add(New SqlParameter("@FromDate", SqlDbType.VarChar, 10)).Value = Convert.ToDateTime(FromDate).ToString("yyyy/MM/dd")
+        mySqlCmd.Parameters.Add(New SqlParameter("@ToDate", SqlDbType.VarChar, 10)).Value = Convert.ToDateTime(Todate).ToString("yyyy/MM/dd")
+        mySqlCmd.Parameters.Add(New SqlParameter("@HotelCountry", SqlDbType.VarChar, -1)).Value = HotelCountry
+        mySqlCmd.Parameters.Add(New SqlParameter("@HotelCity", SqlDbType.VarChar, -1)).Value = HotelCity
+        mySqlCmd.Parameters.Add(New SqlParameter("@HotelSector", SqlDbType.VarChar, -1)).Value = HotelSector
+        mySqlCmd.Parameters.Add(New SqlParameter("@HotelCategory", SqlDbType.VarChar, -1)).Value = HotelCategory
+        mySqlCmd.Parameters.Add(New SqlParameter("@HotelGroup", SqlDbType.VarChar, -1)).Value = HotelGroup
+        mySqlCmd.Parameters.Add(New SqlParameter("@HotelCode", SqlDbType.VarChar, -1)).Value = HotelCode
+        mySqlCmd.Parameters.Add(New SqlParameter("@HotelText", SqlDbType.VarChar, -1)).Value = HotelText
+        mySqlCmd.Parameters.Add(New SqlParameter("@AgentCountry", SqlDbType.VarChar, -1)).Value = AgentCountry
+        mySqlCmd.Parameters.Add(New SqlParameter("@AgentCity", SqlDbType.VarChar, -1)).Value = AgentCity
+        mySqlCmd.Parameters.Add(New SqlParameter("@AgentSector", SqlDbType.VarChar, -1)).Value = AgentSector
+        mySqlCmd.Parameters.Add(New SqlParameter("@AgentCategory", SqlDbType.VarChar, -1)).Value = AgentCategory
+        mySqlCmd.Parameters.Add(New SqlParameter("@CountryGroup", SqlDbType.VarChar, -1)).Value = CountryGroup
+        mySqlCmd.Parameters.Add(New SqlParameter("@AgentCode", SqlDbType.VarChar, -1)).Value = AgentCode
+        mySqlCmd.Parameters.Add(New SqlParameter("@AgentText", SqlDbType.VarChar, -1)).Value = AgentText
+        If IsNumeric(txtReleaseDays.Text.Trim) Then
+            mySqlCmd.Parameters.Add(New SqlParameter("@NearReleaseDay", SqlDbType.VarChar, 3)).Value = CType(txtReleaseDays.Text.Trim, String)
+        Else
+            mySqlCmd.Parameters.Add(New SqlParameter("@NearReleaseDay", SqlDbType.VarChar, 3)).Value = "0"
+        End If
+        Dim myDataReader As SqlDataReader
+        myDataReader = mySqlCmd.ExecuteReader()
+        If myDataReader.HasRows Then
+            While (myDataReader.Read())
+                For Each dlrow As DataListItem In dlMonthlyCalendar.Items
+                    lblDate = TryCast(dlrow.FindControl("lblDate"), Label)
+
+                    If (lblDate.Text = Convert.ToDateTime(myDataReader("InventoryDate")).Day.ToString("00")) Then
+                        If (myDataReader("InventoryType") = "B2B" And Not IsDBNull(myDataReader("RoomsAvailable"))) Then
+                            img = TryCast(dlrow.FindControl("imgB2B"), Image)
+                            img.Visible = True
+                            lbl = TryCast(dlrow.FindControl("lblB2B"), Label)
+                            lbl.Text = myDataReader("RoomsAvailable")
+                            brctl = TryCast(dlrow.FindControl("brB2B"), HtmlGenericControl)
+                            brctl.Visible = True
+                            brctl.Style("display") = "none"
+                            tdCol = TryCast(dlrow.FindControl("col1"), HtmlControl)
+                            tdCol.Style.Clear()
+                            tdCol.Style.Add("width", "50%")
+                        ElseIf (myDataReader("InventoryType") = "Financial" And Not IsDBNull(myDataReader("RoomsAvailable"))) Then
+                            img = TryCast(dlrow.FindControl("imgFinancial"), Image)
+                            img.Visible = True
+                            lbl = TryCast(dlrow.FindControl("lblFinancial"), Label)
+                            lbl.Text = myDataReader("RoomsAvailable")
+                            brctl = TryCast(dlrow.FindControl("brFinancial"), HtmlControl)
+                            brctl.Visible = True
+                            brctl.Style("display") = "none"
+                            tdCol = TryCast(dlrow.FindControl("col1"), HtmlControl)
+                            tdCol.Style.Clear()
+                            tdCol.Style.Add("width", "50%")
+                        ElseIf (myDataReader("InventoryType") = "General" And Not IsDBNull(myDataReader("RoomsAvailable"))) Then
+                            img = TryCast(dlrow.FindControl("imgGeneral"), Image)
+                            img.Visible = True
+                            lbl = TryCast(dlrow.FindControl("lblGeneral"), Label)
+                            lbl.Text = myDataReader("RoomsAvailable")
+                            brctl = TryCast(dlrow.FindControl("brGeneral"), HtmlControl)
+                            brctl.Visible = True
+                            brctl.Style("display") = "none"
+                            tdCol = TryCast(dlrow.FindControl("col1"), HtmlControl)
+                            tdCol.Style.Clear()
+                            tdCol.Style.Add("width", "50%")
+                        ElseIf (myDataReader("InventoryType") = "Free Sale" And Not IsDBNull(myDataReader("RoomsAvailable"))) Then
+                            img = TryCast(dlrow.FindControl("imgFreeSale"), Image)
+                            img.Visible = True
+                            lbl = TryCast(dlrow.FindControl("lblFreeSale"), Label)
+                            lbl.Text = myDataReader("RoomsAvailable")
+                            brctl = TryCast(dlrow.FindControl("brFreeSale"), HtmlControl)
+                            brctl.Visible = True
+                            brctl.Style("display") = "none"
+                        ElseIf (myDataReader("InventoryType") = "Stop Sale" And Not IsDBNull(myDataReader("RoomsAvailable"))) Then
+                            img = TryCast(dlrow.FindControl("imgStopSale"), Image)
+                            img.Visible = True
+                            lbl = TryCast(dlrow.FindControl("lblStopSale"), Label)
+                            lbl.Text = myDataReader("RoomsAvailable")
+                            brctl = TryCast(dlrow.FindControl("brStopSale"), HtmlControl)
+                            brctl.Visible = True
+                            brctl.Style("display") = "none"
+                        End If
+                        If myDataReader("NearRelease") = "Red" And (myDataReader("InventoryType") = "B2B" Or myDataReader("InventoryType") = "Financial") Then
+                            lblDate.BackColor = Drawing.Color.Red
+                        End If
+                        Exit For
+                    End If
+                Next
+            End While
+            hfMonthGrid.Value = 1
+        End If
+    End Sub
+
+    Protected Sub btnSearch_Click(sender As Object, e As System.EventArgs) Handles btnSearch.Click
+        FillGridNew()
+    End Sub
+
+    Protected Sub chkB2B_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkB2B.CheckedChanged
+        InventoryTypeSelection()
+    End Sub
+
+    Protected Sub InventoryTypeSelection()
+        Dim lblDate As Label
+        Dim img As Image
+        Dim lbl As Label
+        Dim brctl As HtmlGenericControl
+        Dim tdCol As HtmlControl
+        Dim colStatus As Integer
+        If (chkB2B.Checked = True Or chkFinancial.Checked = True Or chkGeneral.Checked = True Or chkFreeSale.Checked = True Or chkStopSale.Checked = True) Then
+            For Each dlrow As DataListItem In dlMonthlyCalendar.Items
+                colStatus = 0
+                lblDate = TryCast(dlrow.FindControl("lblDate"), Label)
+                If (lblDate.Text <> "") Then
+                    lbl = TryCast(dlrow.FindControl("lblB2B"), Label)
+                    img = TryCast(dlrow.FindControl("imgB2B"), Image)
+                    brctl = TryCast(dlrow.FindControl("brB2B"), HtmlGenericControl)
+                    tdCol = TryCast(dlrow.FindControl("col1"), HtmlControl)
+                    If chkB2B.Checked = True Then
+                        If lbl.Text <> "" Then
+                            img.Visible = True
+                            lbl.Visible = True
+                            brctl.Visible = True
+                            brctl.Style("display") = "none"
+                            colStatus = 1
+                        End If
+                    Else
+                        img.Visible = False
+                        lbl.Visible = False
+                        brctl.Visible = False
+                        brctl.Style("display") = "none"
+                    End If
+                    lbl = TryCast(dlrow.FindControl("lblFinancial"), Label)
+                    img = TryCast(dlrow.FindControl("imgFinancial"), Image)
+                    brctl = TryCast(dlrow.FindControl("brFinancial"), HtmlGenericControl)
+                    If chkFinancial.Checked = True Then
+                        If lbl.Text <> "" Then
+                            img.Visible = True
+                            lbl.Visible = True
+                            brctl.Visible = True
+                            brctl.Style("display") = "none"
+                            colStatus = 1
+                        End If
+                    Else
+                        img.Visible = False
+                        lbl.Visible = False
+                        brctl.Visible = False
+                        brctl.Style("display") = "none"
+                    End If
+                    lbl = TryCast(dlrow.FindControl("lblGeneral"), Label)
+                    img = TryCast(dlrow.FindControl("imgGeneral"), Image)
+                    If chkGeneral.Checked = True Then
+                        If lbl.Text <> "" Then
+                            img.Visible = True
+                            lbl.Visible = True
+                            colStatus = 1
+                        End If
+                    Else
+                        img.Visible = False
+                        lbl.Visible = False
+                    End If
+                    lbl = TryCast(dlrow.FindControl("lblFreeSale"), Label)
+                    img = TryCast(dlrow.FindControl("imgFreeSale"), Image)
+                    If chkFreeSale.Checked = True Then
+                        If lbl.Text <> "" Then
+                            img.Visible = True
+                            'lbl.Visible = True
+                        End If
+                    Else
+                        img.Visible = False
+                        'lbl.Visible = False
+                    End If
+                    lbl = TryCast(dlrow.FindControl("lblStopSale"), Label)
+                    img = TryCast(dlrow.FindControl("imgStopSale"), Image)
+                    If chkStopSale.Checked = True Then
+                        If lbl.Text <> "" Then
+                            img.Visible = True
+                        End If
+                    Else
+                        img.Visible = False
+                    End If
+                    If colStatus = 1 Then
+                        tdCol.Style.Clear()
+                        tdCol.Style.Add("width", "50%")
+                    Else
+                        tdCol.Style.Clear()
+                        tdCol.Style.Remove("width")
+                    End If
+                End If
+            Next
+        Else
+            For Each dlrow As DataListItem In dlMonthlyCalendar.Items
+                colStatus = 0
+                lblDate = TryCast(dlrow.FindControl("lblDate"), Label)
+                If (lblDate.Text <> "") Then
+                    tdCol = TryCast(dlrow.FindControl("col1"), HtmlControl)
+                    lbl = TryCast(dlrow.FindControl("lblB2B"), Label)
+                    img = TryCast(dlrow.FindControl("imgB2B"), Image)
+                    brctl = TryCast(dlrow.FindControl("brB2B"), HtmlGenericControl)
+                    If lbl.Text <> "" Then
+                        img.Visible = True
+                        lbl.Visible = True
+                        brctl.Visible = True
+                        brctl.Style("display") = "none"
+                        colStatus = 1
+                    End If
+                    lbl = TryCast(dlrow.FindControl("lblFinancial"), Label)
+                    img = TryCast(dlrow.FindControl("imgFinancial"), Image)
+                    brctl = TryCast(dlrow.FindControl("brFinancial"), HtmlGenericControl)
+                    If lbl.Text <> "" Then
+                        img.Visible = True
+                        lbl.Visible = True
+                        brctl.Visible = True
+                        brctl.Style("display") = "none"
+                        colStatus = 1
+                    End If
+                    lbl = TryCast(dlrow.FindControl("lblGeneral"), Label)
+                    img = TryCast(dlrow.FindControl("imgGeneral"), Image)
+                    If lbl.Text <> "" Then
+                        img.Visible = True
+                        lbl.Visible = True
+                        colStatus = 1
+                    End If
+                    lbl = TryCast(dlrow.FindControl("lblFreeSale"), Label)
+                    img = TryCast(dlrow.FindControl("imgFreeSale"), Image)
+                    If lbl.Text <> "" Then
+                        img.Visible = True
+                        'lbl.Visible = True
+                    End If
+                    lbl = TryCast(dlrow.FindControl("lblStopSale"), Label)
+                    img = TryCast(dlrow.FindControl("imgStopSale"), Image)
+                    If lbl.Text <> "" Then
+                        img.Visible = True
+                    End If
+                    If colStatus = 1 Then
+                        tdCol.Style.Clear()
+                        tdCol.Style.Add("width", "50%")
+                    Else
+                        tdCol.Style.Clear()
+                        tdCol.Style.Remove("width")
+                    End If
+                End If
+            Next
+        End If
+    End Sub
+
+    Protected Sub chkFinancial_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkFinancial.CheckedChanged
+        InventoryTypeSelection()
+    End Sub
+
+    Protected Sub chkGeneral_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkGeneral.CheckedChanged
+        InventoryTypeSelection()
+    End Sub
+
+    Protected Sub chkFreeSale_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkFreeSale.CheckedChanged
+        InventoryTypeSelection()
+    End Sub
+
+    Protected Sub chkStopSale_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkStopSale.CheckedChanged
+        InventoryTypeSelection()
+    End Sub
+    
+End Class
+

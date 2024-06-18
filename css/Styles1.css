@@ -1,0 +1,296 @@
+﻿body
+{
+}
+.search_button
+{
+	font-family: Arial;
+	font-size: 9pt;
+	font-weight: bold;
+	width: auto;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	background-color: White;
+	color:Black;
+	border-right: #280000 1px solid;
+	border-top: #280000 1px solid;
+	border-left: #280000 1px solid;
+	border-bottom: #280000 1px solid;
+}
+
+.td_cell
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 8pt;
+	font-weight: normal;
+}
+
+.td_cell_web
+{
+	font-family: Tahoma;
+	font-size: 11pt;
+	background-color: #ffffff;
+	color: windowframe;
+	text-align: left;
+}
+
+.td_columnhead_web
+{
+	font-family: Verdana;
+	font-size: 8pt;
+	font-weight: normal;
+	font-weight: bold;
+	background-color: #ffe0c0;
+	color: black;
+	text-align: left;
+}
+
+
+.field_button{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 9pt;
+	font-weight: bold;
+	width: auto;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	background-color:White;
+	color:#4169e1;
+	border-color:#507CD1;
+	border-style:solid;
+	border-width : 1px;
+	
+}
+ 
+ .field_button_agent
+{
+	font-family: Tahoma;
+	font-size: 11pt;
+	width: auto;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	background-color: #0e7aa8;
+	color: #ffffff;
+	border-color: #507CD1;
+	border-style: solid;
+	border-width: 1px;
+	text-align: left;
+}
+	
+.field_heading 
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 9pt;
+	font-weight: bold;
+	background-color: #507CD1;
+	color: #ffffff;
+}
+
+
+.field_heading_agent
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 10pt;
+	font-weight: bold;
+	background-color: #0e7aa8;
+	color: white;
+}
+
+.field_input 
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 8pt;
+	font-weight: normal;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	}
+	
+.field_input_agent
+{
+	font-family: Tahoma;
+	font-size: 11pt;
+	font-weight: normal;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	color: windowframe;
+}	
+	
+.field_error
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 7pt;
+	color:Red;
+	
+}
+
+.field_caption
+{	
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 8pt;
+	font-weight: normal;
+}
+.tdred
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 10pt;
+	font-weight: normal;
+	color :Red 
+}
+.lblblack
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 10pt;
+	font-weight: normal;
+	color :Black  
+}
+.divSt
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 10pt;
+	font-weight: normal;
+	color :Black  
+}
+.lblblackhead
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 11pt;
+	font-weight: normal;
+	color :Black  
+}
+.grdstyle
+{
+	font-family: Tahoma;
+	font-size: 8px;
+	background: White;
+	border: #999999;
+	border-width: 1px;
+	color: windowframe;
+}
+.grdstyle1
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size :10px;
+	background :White;
+}
+
+.grdstyle1_agent
+{
+	font-family: Tahoma;
+	font-size: 11pt;
+	background-color: #ffffff;
+	color: windowframe;
+	text-align: left;
+}
+
+.grdheader
+{
+	background :#084573;
+	color :White ;
+	font-weight:bold ;
+	}
+
+
+.grdAternaterow
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	background:Transparent;
+	Font-Size:10px;	
+}
+.collapsePanelHeader{
+	width:100%;
+	height:30px;
+	background-image:url(~/images/bg-menu-main.png);
+	background-repeat:repeat-x;
+	color:#FFF;
+	font-weight:bold;
+}
+.lblheader
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 10pt;
+	font-weight: normal;
+	color :White   
+}
+.background
+{
+	background: #ffffff;
+}
+
+.heading_backgroud
+{
+	background: #ccccff;
+}
+
+.child_heading_backgroud
+{
+background:#b0c4de
+}
+
+.agentmenu
+{
+	font-weight: bold;
+	font-size: 14px;
+	vertical-align: middle;
+	text-transform: uppercase;
+	color: windowframe;
+	font-family: Tahoma;
+	background-color: white;
+	text-align: center;
+	direction: ltr;
+	table-layout: auto;
+	font-variant: normal;
+	cursor: hand;
+}
+
+/*start*/
+
+.MenuStyle
+{
+font-family :Tahoma ;	
+width: 99%;
+font-weight: bold;
+font-size :14pt;
+border: 1px solid #BBB;
+
+height :20pt;
+
+}
+.HoverStyle
+{
+	height:12pt;	
+	/*background: url(chromebg4-over.gif) center center repeat-x; THEME CHANGE HERE*/
+}
+.MenuItemHoverStyle
+{
+	/*THEME CHANGE HERE*/
+	background-color: #dcdcdc;
+}
+.MenuItemStyle
+{
+	font-family: Tahoma;
+	font-size: 14px;
+	width: 100%;
+	display: block;
+	padding: 2px 0;
+	text-decoration: none;
+	font-weight: bold;
+	color: windowframe;
+	border-right: #a3a3a3 1px solid;
+	border-top: #a3a3a3 1px solid;
+	border-left: #a3a3a3 1px solid;
+	border-bottom: #a3a3a3 1px solid;
+}
+
+.IE8Fix
+{
+	z-index: 100;
+}
+
+
+.Agentmodule_backgroud
+{
+	background: #f9f9fc;
+}

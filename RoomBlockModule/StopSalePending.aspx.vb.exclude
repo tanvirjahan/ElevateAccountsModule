@@ -1,0 +1,75 @@
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Partial Class StopSalePending
+    Inherits System.Web.UI.Page
+#Region "Global Declaration"
+    Dim objUser As New clsUser
+    Dim objUtils As New clsUtils
+    Dim strSqlQry As String
+    Dim mySqlCmd As SqlCommand
+    Dim mySqlReader As SqlDataReader
+    Dim mySqlConn As SqlConnection
+    Dim sqlTrans As SqlTransaction
+#End Region
+
+#Region "Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load
+        If IsPostBack = False Then
+            Try
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+                Me.whotelatbcontrol.appval = CType(Request.QueryString("appid"), String)
+                Me.whotelatbcontrol.menuidval = objUser.GetMenuId(Session("dbconnectionName"), CType("StopSaleSearch.aspx?appid=2", String), CType(Request.QueryString("appid"), Integer))
+                Page.Title = Page.Title + " " + "Pending Stop Sale"
+                Dim myDataAdapter As New SqlDataAdapter
+                Dim myDS As New DataSet
+                strSqlQry = "select InventoryID,(select partyname from partymast where sptypecode='HOT' and active=1 and partyCode =Inventory_header.PartyCode) as PartyName,InventoryType,ApplicableTo,addDate,addUser,modDate,modUser from Inventory_Header where Approved=0 and InventoryType='Stop Sale' order by InventoryID"
+                mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+                myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+                myDataAdapter.Fill(myDS)
+                gvPendingList.DataSource = myDS
+                gvPendingList.DataBind()
+                myDataAdapter.Dispose()
+                myDS.Clear()
+                strSqlQry = "select I.InventoryID, P.partyname as PartyName,I.ApplicableTo,I.WithdrawType,I.OriginalInventoryID,I.addDate,I.addUser,I.modDate,I.modUser from " &
+                "InventoryWithdraw_Header I inner join partymast P on I.PartyCode=P.partycode and P.sptypecode='HOT' and I.Approved=0 and I.InventoryType='Stop Sale' order by I.InventoryID "
+                mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+                myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+                myDataAdapter.Fill(myDS)
+                gvSSWdrlPending.DataSource = myDS
+                gvSSWdrlPending.DataBind()
+                clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+                clsDBConnect.dbConnectionClose(mySqlConn)
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("StopSalePending.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub PendingInventorySelection(ByVal sender As Object, ByVal e As EventArgs)"
+    Protected Sub PendingInventorySelection(ByVal sender As Object, ByVal e As EventArgs)
+        Dim rowIndex As Integer = TryCast(TryCast(sender, Button).NamingContainer, GridViewRow).RowIndex
+        Dim lblInventoryID As Label = CType(gvPendingList.Rows(rowIndex).FindControl("lblInventoryID"), Label)
+        Response.Redirect("StopSale.aspx?appid=2&State=Edit&InventoryID=" + lblInventoryID.Text.Trim, False)
+    End Sub
+#End Region
+
+#Region "Protected Sub PendingWdrlSelection(ByVal sender As Object, ByVal e As EventArgs)"
+    Protected Sub PendingWdrlSelection(ByVal sender As Object, ByVal e As EventArgs)
+        Dim rowIndex As Integer = TryCast(TryCast(sender, Button).NamingContainer, GridViewRow).RowIndex
+        Dim lblInventoryID As Label = CType(gvSSWdrlPending.Rows(rowIndex).FindControl("lblInventoryID"), Label)
+        Response.Redirect("StopSaleWithdraw.aspx?appid=2&State=Edit&InventoryID=" + lblInventoryID.Text.Trim, False)
+    End Sub
+#End Region
+
+#Region "Protected Sub btnClosePending_Click(sender As Object, e As System.EventArgs) Handles btnClosePending.Click"
+    Protected Sub btnClosePending_Click(sender As Object, e As System.EventArgs) Handles btnClosePending.Click
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+    End Sub
+#End Region
+
+End Class

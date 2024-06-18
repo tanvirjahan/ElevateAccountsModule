@@ -1,0 +1,48 @@
+
+ContractMain.aspx || 23/04/2019 11:45:11 || Input array is longer than the number of columns in this table. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 12/06/2019 18:01:08 || Input array is longer than the number of columns in this table. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 13/06/2019 12:19:27 || Input array is longer than the number of columns in this table. || admin
+--------------------------------------------------------------------------------------------------------------
+OthPricelistSearch.aspx || 13/06/2019 12:34:33 || Invalid column name 'gpcode'.
+Could not use view or function 'Excursion_plist_cost' because of binding errors. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 13/06/2019 14:27:56 || Input array is longer than the number of columns in this table. || admin
+--------------------------------------------------------------------------------------------------------------
+ExcursionStopSalesSearch.aspx || 13/06/2019 14:46:03 || Invalid object name 'view_stopSale'. || admin
+--------------------------------------------------------------------------------------------------------------
+SupplierGroups.aspx || 24/07/2019 12:41:00 || Cannot find either column "dbo" or the user-defined function or aggregate "dbo.fn_get_suppliergroups", or the name is ambiguous. || admin
+--------------------------------------------------------------------------------------------------------------
+SupplierGroups.aspx || 24/07/2019 12:42:45 || Invalid object name 'suppliergrps_detail'. || admin
+--------------------------------------------------------------------------------------------------------------
+SupplierGroups.aspx || 24/07/2019 12:43:36 || Invalid object name 'suppliergroups'. || admin
+--------------------------------------------------------------------------------------------------------------
+SupplierGroups.aspx || 24/07/2019 12:56:57 || Invalid object name 'suppliergroups'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 12/10/2019 14:19:06 || Input array is longer than the number of columns in this table. || admin
+--------------------------------------------------------------------------------------------------------------
+ExcursionMulticostSearch.aspx || 15/12/2019 17:32:04 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 19/01/2020 23:53:33 || Input array is longer than the number of columns in this table. || admin
+--------------------------------------------------------------------------------------------------------------
+OTHPriceList1.aspx || 20/01/2020 22:07:04 || A transport-level error has occurred when receiving results from the server. (provider: TCP Provider, error: 0 - The specified network name is no longer available.) || admin
+--------------------------------------------------------------------------------------------------------------
+Excursionsupplliercostpricelist.aspx || 20/01/2020 22:07:04 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 21/01/2020 23:05:42 || Input array is longer than the number of columns in this table. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 22/01/2020 22:08:00 || Input array is longer than the number of columns in this table. || admin
+--------------------------------------------------------------------------------------------------------------
+OTHPriceList1.aspx || 24/01/2020 06:36:36 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+OthPricesList1.aspx || 24/01/2020 06:36:36 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+OTHPriceList1.aspx || 24/01/2020 06:36:36 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+OTHPriceList1.aspx || 24/01/2020 06:36:46 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+OthPricesList1.aspx || 24/01/2020 06:36:46 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+OTHPriceList1.aspx || 24/01/2020 06:36:46 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------

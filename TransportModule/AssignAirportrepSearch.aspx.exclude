@@ -1,0 +1,1052 @@
+﻿<%@ Page Title="" Language="VB" MasterPageFile="~/TransferMaster.master" AutoEventWireup="false" CodeFile="AssignAirportrepSearch.aspx.vb"   Inherits="TransportModule_AssignAirportrepSearch" %>
+<%@ Register Assembly="System.Web.Extensions, Version=1.0.61025.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+    Namespace="System.Web.UI" TagPrefix="asp" %>
+    
+ <%@ Register Assembly="EclipseWebSolutions.DatePicker" Namespace="EclipseWebSolutions.DatePicker"
+    TagPrefix="ews" %>
+ <%@ OutputCache location="none" %> 
+    
+<%@ Register assembly="AjaxControlToolkit" namespace="AjaxControlToolkit" tagprefix="cc1" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" Runat="Server">
+    <script src="../Content/js/jquery-1.5.1.min.js" type="text/javascript"></script>
+<script src="../Content/js/JqueryUI.js" type="text/javascript"></script>
+<script src="../Content/js/AutoComplete.js" type="text/javascript"></script>
+<link type ="text/css" href ="../Content/css/JqueryUI.css" rel ="Stylesheet" />
+
+<style type="text/css" >
+            
+            .TextBoxRightAlign
+            {
+                text-align:right;
+            }
+
+
+              .ModalPopupBG
+            {
+                background-color: gray;
+                filter: alpha(opacity=50);
+                opacity: 0.9;
+            }
+            
+            .TextBoxRightAlign
+            {
+                text-align:right;
+            }
+            
+</style>
+
+<script type="text/javascript">
+
+    function confirmarrival(txtMsg) {
+        var x = confirm(txtMsg);
+       
+        if (x==true) {
+
+            var btn = document.getElementById("<%=btnRemove.ClientID%>");
+            
+            btn.click();
+        }
+        else
+            return false;
+
+    }
+
+
+
+    function removeassign() {
+
+        var confirmornot = confirm('Request has been assigned,remove assign and continue');
+
+        if (confirmornot == true)
+            return true;
+        else
+            return false;
+    }
+
+    function filltextbox() {
+        var index = document.getElementById("<%=ddlTransferType.ClientID%>").selectedIndex;
+        var txtbox = document.getElementById("<%=txtRemarks.ClientID%>");
+        document.getElementById("<%=hdnTransferType.ClientID%>").value = index;
+        if (index == 0) {
+            txtbox.value = "Arrival";
+        }
+        else
+            if (index == 1) {
+                txtbox.value = "Departure";
+            }
+
+            else
+                if (index == 2) {
+                    txtbox.value = "Shifting";
+                }
+
+                else {
+                    txtbox.value = "Arrival/Departure/Shifting";
+                }
+
+            }
+
+            function DecimalNumbers(evt) {
+                var e = event || evt;
+                var charCode = e.which || e.keyCode;
+                var dot;
+
+
+                if (charCode == 46) {
+
+
+                    if ((evt.value) && (evt.value.indexOf('.') >= 0))
+                        return false;
+                    else
+                        return true;
+
+                }
+                else if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+                    return false;
+                }
+
+            }
+
+           
+          
+
+    function disablecontrol() {
+
+        var index = document.getElementById("<%=ddlTransferMode.ClientId%>").selectedIndex;
+        var ddldrivervalue = document.getElementById("<%=ddlDriverName.ClientId%>");
+        var ddlvehicleno = document.getElementById("<%=ddlvehiclename.ClientID%>");
+        var txtdriverno = document.getElementById("<%=txtTelephone.ClientID%>");
+        var ddlsuppliercode = document.getElementById("<%=ddlSupplier.ClientId%>");
+        var txtsuppliercurrency = document.getElementById("<%=txtSupplierCurr.ClientID%>");
+        var txtcostprice = document.getElementById("<%=txtCostPrice.ClientID%>");
+        var chksup = document.getElementById("<%=chkSupplier.ClientID%>");
+        var hdnsupcode =document.getElementById("<%=hdnsuppliercode.ClientID%>");
+
+
+        document.getElementById("<%=hdnTransferMode.ClientID%>").value = index;
+        if (index == 0) {
+           
+
+            ddldrivervalue.disabled = false;
+            ddlvehicleno.disabled = false;
+
+            ddlsuppliercode.value = "[Select]";
+            txtsuppliercurrency.value = "";
+            txtcostprice.value = "";
+            chksup.checked = false;
+
+
+            ddlsuppliercode.disabled = true;
+            txtsuppliercurrency.disabled = true;
+            txtcostprice.disabled = true;
+            chksup.disabled = true;
+
+            ColServices.clsServices.filldriverowntransport(FillDriverValueowntransport, ErrorHandler, TimeOutHandler);
+            ddldrivervalue.value = "[Select]"
+            ddlvehicleno.value = "[Select]";
+            txtdriverno.value = "";
+          
+            hdnsupcode.value = "[Select]";
+        }
+
+        else
+        {
+            if (index == 1) {
+
+                ddldrivervalue.value = "[Select]";
+                ddlvehicleno.value = "[Select]";
+                txtdriverno.value = "";
+
+                ddldrivervalue.disabled = false;
+                ddlvehicleno.disabled = false;
+                ddlsuppliercode.disabled = false;
+                txtsuppliercurrency.disabled = false;
+                txtcostprice.disabled = false;
+                chksup.disabled = false;
+
+               
+               
+            }
+
+            else {
+
+                ddldrivervalue.value = "[Select]";
+                ddlvehicleno.value = "[Select]";
+                txtdriverno.value = "";
+
+                ddldrivervalue.disabled = true;
+                ddlvehicleno.disabled = true;
+                ddlsuppliercode.disabled = true;
+                txtsuppliercurrency.disabled = true;
+                txtcostprice.disabled = true;
+                chksup.disabled = true;
+
+
+            }
+
+        }
+
+    }
+
+    function status() {
+        var hdnstatus = document.getElementById("<%=ddlstatus.ClientId%>").selectedIndex;
+        document.getElementById("<%=hdnstatus.ClientId%>").selectedIndex = hdnstatus;
+
+    }
+
+
+    function setvalue() {
+        var txt = document.getElementById("<%=txtCostPrice.ClientID%>");
+        document.getElementById("<%=hdncostprice.ClientID%>").value = txt.value;
+
+    }
+
+    function vehiclecode() {
+        var hdnvehiclecode = document.getElementById("<%=ddlvehiclename.ClientId%>");
+        var codeid = hdnvehiclecode.options[hdnvehiclecode.selectedIndex].value;
+        document.getElementById("<%=hdnvehiclecode.ClientId%>").selectedIndex = codeid;
+
+    }
+
+
+
+
+    function hidediv() {
+        var divtransfer = document.getElementById("<%=divassigntransfer.ClientID%>");
+        divtransfer.style.display = "none";
+        divtransfer.style.visibility = "hidden";
+        return false;
+
+    }
+//    change cell number because for now car type column value is 17
+    function currencycode() {
+        var suppliercode = document.getElementById("<%=ddlSupplier.ClientID%>");
+        var codeid = suppliercode.options[suppliercode.selectedIndex].value;
+        document.getElementById("<%=hdnsuppliercode.ClientID%>").value = codeid;
+        var sessionValue = "";
+
+
+        ColServices.clsServices.GetPartyCurrCodenew(sessionValue, codeid, FillSupCurrCodes, ErrorHandler, TimeOutHandler);
+        var transferdatevalue = document.getElementById("<%=txtTransferDatevalue.ClientID%>");
+        var transferdate = transferdatevalue.Value;
+
+        var objGridView = document.getElementById('<%=gv_SearchResult.ClientID%>');
+        var txtrowcnt = document.getElementById('<%=hdngrdRows.ClientID%>');
+
+        var hdngrdlineno = document.getElementById('<%=hdngrdlineno.ClientID%>');
+
+        intRows = txtrowcnt.value;
+
+        var transfertype = document.getElementById('<%=ddlTransferType.ClientID%>').value;
+
+        
+
+
+        var cartypevalue = objGridView.rows[parseInt(hdngrdlineno.value)].cells[17].children[0].innerHTML;
+        var startingcodevalue = objGridView.rows[parseInt(hdngrdlineno.value)].cells[17].children[1].innerHTML;
+        var endingcodevalue = objGridView.rows[parseInt(hdngrdlineno.value)].cells[17].children[2].innerHTML;
+        var index = objGridView.rows[parseInt(hdngrdlineno.value)].cells[17].children[3].innerHTML;
+       
+        var sessionValue = "";
+
+        if (transfertype == 'Arrival') {
+            mainindex =0
+        }
+        if (transfertype == 'Departure') {
+            mainindex =1
+        }
+
+        if (transfertype == 'Shifting') {
+            mainindex = 1
+        }  
+         
+
+       
+            ColServices.clsServices.filldriverfromsup(suppliercode.value, FillDriverValuefromsup, ErrorHandler, TimeOutHandler);
+
+
+           
+
+            if (index != -1 && codeid !="[Select]" && transferdatevalue.value != '' && cartypevalue != "[Select]" && startingcodevalue != "[Select]" && endingcodevalue != "[Select]") {
+           
+            ColServices.clsServices.FillCostList(sessionValue, transferdatevalue.value, index, cartypevalue, startingcodevalue, endingcodevalue,codeid, FillCostprice, ErrorHandler, TimeOutHandler);
+            return;
+
+        }
+
+
+      
+       
+
+      //  for (j = 1; j < intRows-1; j++) {
+
+           // if (objGridView.rows[j].cells[17].children[0].innerHTML  !=null || objGridView.rows[j].cells[17].children[0].innerHTML  !=undefined ) {
+
+              
+
+            //}
+       // }
+    }
+
+
+
+
+        function FillCostprice(result) {
+
+
+
+            var txt = document.getElementById("<%=txtCostPrice.ClientID%>");
+            document.getElementById("<%=hdncostprice.ClientID%>").value = txt.value;
+
+            if ((result.length) > 0) {
+
+                if ((result[0]) != null)
+
+                    txt.value = result[0];
+
+                else
+
+                    txt.value = 0;
+
+
+
+            }
+
+
+
+        }
+
+
+
+
+
+
+    function gettelehpone() {
+        var drivercode = document.getElementById("<%=ddlDriverName.ClientID%>");
+
+        var codeid = drivercode.options[drivercode.selectedIndex].value;
+        document.getElementById("<%=hdndrivercode.ClientID%>").value = codeid;
+
+        var connstr = document.getElementById("<%=txtconnection.ClientID%>");
+        constr = connstr.value
+
+        ColServices.clsServices.GetrepPhone(codeid, FillDriverTelValue, ErrorHandler, TimeOutHandler);
+
+        ColServices.clsServices.getvehiclenameweb(constr,codeid, fillvehcombo, ErrorHandler, TimeOutHandler);
+    }
+
+
+    function TimeOutHandler(result) {
+
+        alert("Timeout :" + result);
+    }
+    function ErrorHandler(result) {
+        var msg = result.get_exceptionType() + "\r\n";
+        msg += result.get_message() + "\r\n";
+        msg += result.get_stackTrace();
+        alert(msg);
+    }
+
+
+    function FillSupCurrCodes(result) {
+
+        var currency = document.getElementById("<%=txtSupplierCurr.ClientID%>");
+        currency.value = result;
+       
+        if (isNaN(currency.value ==true))
+        currency.value=""
+
+        document.getElementById("<%=hdnsuppliercurrency.ClientID%>").value = currency.value;
+
+    }
+
+    function FillDriverTelValue(result) {
+
+        var telephone = document.getElementById("<%=txtTelephone.ClientID%>");
+        telephone.value = result;
+        document.getElementById("<%=hdndriverphoneno.ClientID%>").value = telephone.value;
+    }
+
+
+    function FillDriverValue(result) {
+        var driver = document.getElementById("<%=ddldrivername.ClientID%>");
+        var hdndrivercode = document.getElementById("<%=hdndrivercode.ClientID%>");
+        RemoveAll(driver)
+        for (var i = 0; i < result.length; i++) {
+            var option = new Option(result[i].ListText, result[i].ListValue);
+            driver.options.add(option);
+        }
+        hdndrivercode.value = driver.value
+        //driver.options.add('[Select]');
+    }
+
+
+    function FillDriverValuefromsup(result) {
+        var driver = document.getElementById("<%=ddldrivername.ClientID%>");
+        var hdndrivercode = document.getElementById("<%=hdndrivercode.ClientID%>");
+        var connstr = document.getElementById("<%=txtconnection.ClientID%>");
+        constr = connstr.value
+        RemoveAll(driver)
+        for (var i = 0; i < result.length; i++) {
+            var option = new Option(result[i].ListText, result[i].ListValue);
+            driver.options.add(option);
+        }
+        hdndrivercode.value = driver.value
+
+        ColServices.clsServices.GetDriverPhone(hdndrivercode.value, FillDriverTelValue, ErrorHandler, TimeOutHandler);
+        ColServices.clsServices.getvehiclenameweb(constr, hdndrivercode.value, fillvehcombo, ErrorHandler, TimeOutHandler);
+        //driver.options.add('[Select]');
+    }
+
+    function FillDriverValueowntransport(result) {
+        var driver = document.getElementById("<%=ddldrivername.ClientID%>");
+        var hdndrivercode = document.getElementById("<%=hdndrivercode.ClientID%>");
+        RemoveAll(driver)
+        for (var i = 0; i < result.length; i++) {
+            var option = new Option(result[i].ListText, result[i].ListValue);
+            driver.options.add(option);
+        }
+        hdndrivercode.value = driver.value
+        driver.value = "[Select]";
+    }
+    
+
+
+    function fillvehcombo(result) {
+        var vehiclecode = document.getElementById("<%=ddlvehiclename.ClientID%>");
+        var hdnvehiclecode =document.getElementById("<%=hdnvehiclecode.ClientID%>");
+        RemoveAll(vehiclecode)
+        for (var i = 0; i < result.length; i++) {
+            var option = new Option(result[i].ListText, result[i].ListValue);
+            vehiclecode.options.add(option);
+        }
+      hdnvehiclecode.value =vehiclecode.value
+  }
+
+//  function filldriverondriverclick() {
+//      var driver = document.getElementById("<%=ddldrivername.ClientID%>");
+//      var hdndrivercode = document.getElementById("<%=hdndrivercode.ClientID%>");
+//      var suppliercode = document.getElementById("<%=ddlSupplier.ClientID%>");
+//      var index = document.getElementById("<%=ddlTransferMode.ClientId%>").selectedIndex;
+
+//      if (index ==0){
+//      ColServices.clsServices.filldriverowntransport(FillDriverValueowntransport, ErrorHandler, TimeOutHandler);
+//      ddldrivervalue.value = "[Select]"
+//      }
+//  if (index == 1) {
+//      ColServices.clsServices.filldriverfromsup(suppliercode.value, FillDriverValue, ErrorHandler, TimeOutHandler);
+//      }
+//  }
+
+</script>
+<asp:UpdatePanel id="UpdatePanel1" runat="server">
+      <contenttemplate>
+<table style="border-right: gray 2px solid; border-top: gray 2px solid; border-left: gray 2px solid;width:100%; border-bottom: gray 2px solid" class="td_cell" align="left">
+ <TR style="COLOR: #000000">
+              <TD style="TEXT-ALIGN: center;width:100%" class="td_cell">
+              <asp:Label id="lblHeading" runat="server" Text="Assign Airport Representative" 
+                      CssClass="field_heading" Width="100%"></asp:Label>
+              </TD>
+              </TR>
+
+<tr>
+  <td>
+          <table style="width:100%">
+          <tr>
+          <td>
+            <table style="width:900px;">
+              <tr>
+                        <TD style="width:80px" align="left" class="td_cell">Transfer Type </td>
+                        <td style="width:80px"><asp:DropDownList ID="ddlTransferType" AutoPostBack ="True" runat="server" class="field_input" style="WIDTH: 80px;" tabindex="0" onchange="filltextbox();"></asp:DropDownList></td> 
+
+                    
+                        <td style="width:120px;display:none" align="left" class="td_cell">From Request Date</td>
+                        
+                        <td style="width:100px;display:none" align="left" class="td_cell"><asp:TextBox ID="fromdate" 
+                                runat="server" AutoPostBack="false" CssClass="fiel_input" Width="60px" 
+                                TabIndex="1"></asp:TextBox>
+
+                        <cc1:CalendarExtender ID="CEPFromDate"  runat="server" Format="dd/MM/yyyy" PopupButtonID="ImgPBtnFrmDt" TargetControlID="fromdate"></cc1:CalendarExtender> <cc1:MaskedEditExtender ID="MEPFromDate" runat="server" Mask="99/99/9999" MaskType="Date" TargetControlID="fromdate"></cc1:MaskedEditExtender>
+                        <asp:ImageButton ID="ImgPBtnFrmDt" runat="server" 
+                                ImageUrl="~/Images/Calendar_scheduleHS.png" Height="15px" TabIndex="2" /><cc1:MaskedEditValidator ID="MEVPFromDate" runat="server" ControlExtender="MEPFromDate" ControlToValidate="fromdate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required" EmptyValueMessage="Date is required" ErrorMessage="MEPFromDate" InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date" TabIndex="-1" TooltipMessage="Date in dd/mm/yyyy format"> </cc1:MaskedEditValidator> 
+                        </td>
+
+                        <td style="width:111px;display:none" align="left" class="td_cell">To Request Date</td>
+                        <td style="width:;display:none" align="left" class="td_cell"> <asp:TextBox ID="txtodate" 
+                                runat="server"  AutoPostBack="false" CssClass="fiel_input" Width="60px" 
+                                Height="15px" TabIndex="3"></asp:TextBox>
+                        <cc1:CalendarExtender ID="CEPToDate"  runat="server" Format="dd/MM/yyyy" PopupButtonID="ImgPBtnToDt" TargetControlID="txtodate"></cc1:CalendarExtender>
+                        <cc1:MaskedEditExtender ID="MEPToDate" runat="server" Mask="99/99/9999"  MaskType="Date" TargetControlID="txtodate"></cc1:MaskedEditExtender>&nbsp;<asp:ImageButton 
+                                ID="ImgPBtnToDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png" 
+                                Height="15px" TabIndex="4" />
+                        <cc1:MaskedEditValidator ID="MEVPToDate" runat="server" ControlExtender="MEPToDate" ControlToValidate="txtodate"  CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required" EmptyValueMessage="Date is required" ErrorMessage="MEPToDate" InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date" TabIndex="-1" TooltipMessage="Date in dd/mm/yyyy format">
+                        </cc1:MaskedEditValidator>
+                        </td>
+                        <td style="width: 22px;display:none"><asp:checkbox  ID="chkDate" runat="server" 
+                                AutoPostBack="True" Width="20px" TabIndex="5"/></td>
+                        <td  rowspan="2" style="width:200px;align:right">
+                            <asp:TextBox id="txtRemarks" runat="server" 
+                                CssClass="field_input" Width="180px" Height="50px"  TabIndex="6" 
+                                Font-Bold="True" Font-Size="Large" TextMode="MultiLine" ReadOnly="True"></asp:TextBox></td>
+              </tr>
+
+
+                <%--    </table>
+
+                     <table style="width:600px;border:2px solid blue">--%>
+             
+            </table> 
+
+            <table>
+             <tr>
+                    <TD style="WIDTH:120px;" align="left" class="td_cell">Transfer From Date</td>
+                    <td style="width:120px" align="left" class="td_cell">
+                    <asp:TextBox ID="txtTransFrmDate" runat="server" AutoPostBack="false" 
+                            CssClass="fiel_input" Width="60px" TabIndex="7"></asp:TextBox>
+                    <cc1:CalendarExtender ID="CEPTransFromDate" runat="server" Format="dd/MM/yyyy" PopupButtonID="ImgPBtnTransFrmDt" TargetControlID="txtTransFrmDate"></cc1:CalendarExtender>
+                    <cc1:MaskedEditExtender ID="MEPTransFromDate" runat="server" Mask="99/99/9999" MaskType="Date" TargetControlID="txtTransFrmDate"></cc1:MaskedEditExtender>
+                    &nbsp;<asp:ImageButton ID="ImgPBtnTransFrmDt" runat="server" 
+                            ImageUrl="~/Images/Calendar_scheduleHS.png" Height="15px" TabIndex="8" />
+                    <cc1:MaskedEditValidator ID="MEVPTransDate" runat="server" ControlExtender="MEPTransFromDate" ControlToValidate="txtTransFrmDate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required" EmptyValueMessage="Date is required" ErrorMessage="MEPTransFromDate" InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date" TabIndex="-1" TooltipMessage="Date in dd/mm/yyyy format">
+                    </cc1:MaskedEditValidator>
+                    </td>
+                   <TD style="WIDTH:110px;" align="left" class="td_cell">Transfer To Date</td>
+                   <td style="width:120px" align="left" class="td_cell">
+                   <asp:TextBox ID="txtTransferTodate" runat="server" AutoPostBack="false" 
+                           CssClass="fiel_input" Width="60px" Height="15px" TabIndex="9"></asp:TextBox>
+                   <cc1:CalendarExtender ID="CEPTransToDate" runat="server" Format="dd/MM/yyyy" PopupButtonID="ImgPBtnTransToDt" TargetControlID="txtTransferTodate"></cc1:CalendarExtender>
+                   <cc1:MaskedEditExtender ID="MEPTransToDate" runat="server" Mask="99/99/9999" MaskType="Date" TargetControlID="txtTransferTodate"></cc1:MaskedEditExtender>
+                   &nbsp;<asp:ImageButton ID="ImgPBtnTransToDt" runat="server" 
+                           ImageUrl="~/Images/Calendar_scheduleHS.png" Height="15px" TabIndex="10" />
+                   <cc1:MaskedEditValidator ID="MEVPTransToDate" runat="server" ControlExtender="MEPTransToDate" ControlToValidate="txtTransferTodate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required" EmptyValueMessage="Date is required" ErrorMessage="MEPTransToDate" InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date" TabIndex="-1" TooltipMessage="Date in dd/mm/yyyy format">
+                   </cc1:MaskedEditValidator>
+                   </td>
+                 <td style="width: 22px"><asp:checkbox  ID="chkTransferDate" runat="server" 
+                         AutoPostBack="True" Width="20px" TabIndex="11" /></td>
+             </tr>
+            
+            </table>
+
+              <table style="width:100%;">
+              <tr>
+                     <TD style="width:50px" align="left" class="td_cell">Hotel</td>
+                      <td  class="td_cell" style="width:350px">
+                      <input type="text" class="field_input MyAutoCompleteHotelClass MyAutoCompleteHotelTypeClass" id="txthotelName"  runat="server" tabindex="12" style="width:245px"/>
+                      <SELECT  id="ddlHotelName" class="field_input MyDropDownListsuppValue" 
+                              runat="server" style="width:250px" tabindex="13"></SELECT>
+                      </td>
+
+                  <td style="width:160px">Guest</td>
+                  <TD style="width:140px" class="td_cell"><asp:TextBox id="txtGuestname" 
+                          runat="server" CssClass="field_input" Width="200px" Enabled="True" 
+                          TabIndex="14"></asp:TextBox> </td>
+              </tr>
+              <tr>
+                 <TD style="width:50px" align="left" class="td_cell">Flight</td>
+                  <td  class="td_cell" style="width:350px">
+                 
+                  <SELECT  id="ddlFlightName" class="field_input"  runat="server" style="width:250px" 
+                          tabindex="15"></SELECT>
+                  </td>
+
+                  <td style="width:160px">Transfer Id</td>
+                  <TD style="width:200px" class="td_cell">
+                  <asp:TextBox id="txttransferId" runat="server" CssClass="field_input" Width="200px" 
+                          Enabled="True" TabIndex="16"></asp:TextBox> </td>
+              </tr>
+               <tr>
+                 <TD style="width:50px" align="left" class="td_cell">Client</td>
+                  <td  class="td_cell" style="width:350px">
+               <input type="text" class="field_input MyAutoCompleteClass" tabindex="17"  id="txtagent"  runat="server" style="width:245px"/>
+                  <SELECT  id="ddlAgent" class="field_input  MyDropDownListCustValue" runat="server" 
+                          style="width:250px" tabindex="18"></SELECT>
+                  </td>
+
+                  <td style="width:160px">Client Ref</td>
+                  <TD style="width:140px" class="td_cell">
+                  <asp:TextBox id="txtClientRef" runat="server" CssClass="field_input" Width="200px" 
+                          Enabled="True" TabIndex="19"></asp:TextBox> </td>
+
+                          <td>
+     <input id="txtconnection" runat="server" 
+                         style="visibility: hidden; width: 12px; height: 9px" type="text" />
+   </td>
+                          
+              </tr>
+
+                  <tr>
+                      <td colspan="2">
+                       <asp:Button ID="btnResult" runat="server" CssClass="btn" Font-Bold="False" 
+                              Text="Fill Results" Width="100px" />
+                      </td>
+                  </tr>
+             </table>
+
+             <table style="width:100%;">
+             <tr>
+              <td style="width:900px;">
+   <%-- <asp:Panel ID="pngv" runat="server"  Width="900px" Height="300px"  scrollbars="Auto">--%>
+        <asp:GridView id="gv_SearchResult" tabIndex=9 runat="server" Font-Size="10px" 
+                      CssClass="grdstyle" GridLines="Vertical"  CellPadding="3" BorderWidth="1px" 
+                      BorderStyle="None" AutoGenerateColumns="False" AllowPaging ="true" 
+                      PageSize="100">
+        <FooterStyle CssClass="grdfooter"></FooterStyle>
+        <Columns>
+               <asp:TemplateField Visible="false" HeaderText="Complemntary from supplier">
+             <EditItemTemplate>
+               <asp:TextBox ID="complementsup" runat="server" Text='<%# Bind("complementsup") %>' ReadOnly="true"></asp:TextBox></EditItemTemplate>
+               <ItemTemplate><asp:Label id="lblcomplementsup" runat="server" Text='<%# Bind("complementsup") %>' ReadOnly="true"></asp:Label></ItemTemplate></asp:TemplateField>
+               <asp:TemplateField Visible="false" HeaderText="RequestLineNo"><EditItemTemplate><asp:TextBox ID="TextBox1" runat="server" Text='<%# Bind("vlineno") %>' ReadOnly="true"></asp:TextBox></EditItemTemplate>
+               <ItemTemplate><asp:Label id="lblCode" runat="server" Text='<%# Bind("vlineno") %>' ReadOnly="true"></asp:Label></ItemTemplate></asp:TemplateField>
+                <asp:BoundField DataField="requestid" HeaderText="Transfer Id" ReadOnly="True"></asp:BoundField>
+               <asp:BoundField DataField="agentname" HeaderText="Agent Name" ReadOnly="True"></asp:BoundField>
+               <asp:BoundField DataField="hotelname" HeaderText="Hotel Name"  ReadOnly="True"></asp:BoundField>
+                <asp:BoundField DataField="guestname"  HeaderText="Guest Name" ReadOnly="True"></asp:BoundField>
+               <asp:BoundField DataField="shifthotelname" HeaderText="Shift Hotel Name" ReadOnly="True"></asp:BoundField>
+               <asp:BoundField DataField="flightcode" HeaderText="Flight Code" ReadOnly="True"></asp:BoundField>
+                <asp:BoundField DataField="agentref" HeaderText="Agent Ref" ReadOnly="True"></asp:BoundField>
+               <%--<asp:TemplateField Visible="false" HeaderText="Starting Point">
+               <ItemTemplate><asp:Label id="lblstartingpoint" runat="server" Text='<%# Bind("startingpoint") %>' ReadOnly="true"></asp:Label></ItemTemplate></asp:TemplateField>
+                <asp:TemplateField Visible="false" HeaderText="Ending Point">
+               <ItemTemplate><asp:Label id="lblendingpoint" runat="server" Text='<%# Bind("endingpoint") %>' ReadOnly="true"></asp:Label></ItemTemplate></asp:TemplateField>--%>
+               <asp:BoundField DataField="airportname" HeaderText="Airport Name" ReadOnly="True"></asp:BoundField>
+               <asp:BoundField DataField="flighttime" HeaderText="Time" ReadOnly="True"></asp:BoundField>
+               <asp:ButtonField HeaderText="Action" Text="Assign" CommandName="Assign">
+               <ItemStyle ForeColor="Blue"></ItemStyle></asp:ButtonField>
+               <asp:ButtonField HeaderText="Action" Text="Remove Assign" CommandName="Remove Assign">
+               <Itemstyle ForeColor ="Blue"></itemstyle></asp:ButtonField>
+
+             
+               <asp:BoundField DataField="trfstatus"  HeaderText="Status" ReadOnly="True"></asp:BoundField>
+               <asp:BoundField DataField="transfermode" HeaderText="Transfer Mode" ReadOnly="True"></asp:BoundField>
+
+
+                <asp:TemplateField Visible="false" HeaderText="Status">
+               <ItemTemplate><asp:Label id="lblstatus" runat="server" Text='<%# Bind("status") %>' ReadOnly="true"></asp:Label>
+               
+               </ItemTemplate></asp:TemplateField>
+                <asp:TemplateField Visible="false" HeaderText="Mode">
+               <ItemTemplate><asp:Label id="lbltransfermode" runat="server" Text='<%# Bind("mode") %>' ReadOnly="true"></asp:Label></ItemTemplate></asp:TemplateField>
+
+
+
+           
+               <asp:TemplateField Visible="true" HeaderText="Rep.Code">
+               <ItemTemplate><asp:Label id="lbldrivercode" runat="server" Text='<%# Bind("repcode") %>' ReadOnly="true"></asp:Label>
+               
+               </ItemTemplate></asp:TemplateField>
+
+               <asp:BoundField DataField="repname" HeaderText="Rep. Name" ReadOnly="True"></asp:BoundField>
+               <asp:BoundField DataField="telephone" HeaderText="Rep. Telephone" ReadOnly="True"></asp:BoundField>
+             
+               
+
+               
+             
+               
+            
+               <asp:TemplateField Visible="true" HeaderText="Vehicle No">
+               <ItemTemplate><asp:Label id="lblvehiclecode" runat="server" Text='<%# Bind("vehiclecode") %>' ReadOnly="true"></asp:Label></ItemTemplate></asp:TemplateField>
+
+
+                  <asp:TemplateField Visible="true" HeaderText="Car Type">
+               <ItemTemplate>
+               <asp:Label id="lblcartype" runat="server" Text='<%# Bind("cartype") %>' ReadOnly="true"></asp:Label>
+                <asp:Label id="lblstartingpoint" runat="server"  style="display:none"  Text='<%# Bind("startingpoint") %>' ReadOnly="true"></asp:Label>
+               <asp:Label id="lblendingpoint" runat="server" style="display:none" Text='<%# Bind("endingpoint") %>' ReadOnly="true"></asp:Label>
+               <asp:Label id="lbltransfertype" runat="server" style="display:none" Text='<%# Bind("transfertype") %>' ReadOnly="true"></asp:Label>
+                  </ItemTemplate></asp:TemplateField>
+
+
+               <asp:BoundField DataField="remarks"  HeaderText="Remarks" ReadOnly="True"></asp:BoundField>
+              
+                <asp:TemplateField Visible="true" HeaderText="Pick up Date">
+              <%-- <ItemTemplate><asp:Label id="lblpickupdate" runat="server" Text='<%# Bind("pickupdate") %>'  ReadOnly="true"></asp:Label>--%>
+              <ItemTemplate><asp:Label id="lblpickupdate" runat="server" Text='<%# DataBinder.Eval (Container.DataItem, "pickupdate", "{0:d}") %>'  ReadOnly="true"></asp:Label>
+               
+               </ItemTemplate></asp:TemplateField>
+               
+          
+                <asp:TemplateField Visible="true" HeaderText="Pick up Time">
+               
+                <ItemTemplate><asp:Label id="lblpickuptime" runat="server" Text='<%# Bind("pickuptime") %>' ReadOnly="true"></asp:Label></ItemTemplate></asp:TemplateField>
+
+        
+                <asp:TemplateField Visible="true" HeaderText="Supplier Code">
+               <ItemTemplate><asp:Label id="lblsuppliercode" runat="server" Text='<%# Bind("suppliercode") %>' ReadOnly="true"></asp:Label>
+                  
+               </ItemTemplate></asp:TemplateField>
+               <asp:BoundField DataField="suppliername" HeaderText="Supplier Name" ReadOnly="True"></asp:BoundField>
+           
+              <asp:TemplateField Visible="true" HeaderText="Supplier Currency">
+               <ItemTemplate><asp:Label id="lblsuppliercurrcode" runat="server" Text='<%# Bind("suppliercurr") %>' ReadOnly="true"></asp:Label>
+                 
+               </ItemTemplate></asp:TemplateField>
+              
+
+               <asp:TemplateField Visible="true" HeaderText="Cost Price">
+               <ItemTemplate><asp:Label id="lblcostprice" runat="server" Text='<%# Bind("costprice") %>' ReadOnly="true"></asp:Label>
+                  
+               </ItemTemplate></asp:TemplateField>
+     
+               <asp:TemplateField HeaderText="Complimentary from Supplier">
+              <ItemTemplate>
+              <asp:CheckBox ID="chkSelect" runat="server" readonly="true"/>
+               </ItemTemplate>
+              <HeaderStyle HorizontalAlign="Center" Width="60px" />
+              <ItemStyle HorizontalAlign="Center" Width="60px" />
+                </asp:TemplateField>
+               
+               <asp:BoundField DataField="transfers_Type"  HeaderText="Transfers Type" Visible ="False" ReadOnly="True"></asp:BoundField>
+               <asp:BoundField DataField="transfersdate" HeaderText="Transfers Date" Visible ="False" ReadOnly="True"></asp:BoundField>
+
+                 <asp:TemplateField Visible="true" HeaderText="tlineno">
+               <ItemTemplate><asp:Label id="lbltlineno" Visible="false" runat="server" Text='<%# Bind("tlineno") %>' ReadOnly="true"></asp:Label>               
+               </ItemTemplate></asp:TemplateField>
+
+
+         </Columns>
+          <RowStyle CssClass="grdRowstyle"></RowStyle>
+          <SelectedRowStyle CssClass="grdselectrowstyle"></SelectedRowStyle>
+          <PagerStyle CssClass="grdpagerstyle" HorizontalAlign="Center"></PagerStyle>
+          <HeaderStyle CssClass="grdheader" ForeColor="White"></HeaderStyle>
+           <AlternatingRowStyle CssClass="grdAternaterow"></AlternatingRowStyle>
+      </asp:GridView>
+  <%-- </asp:Panel>--%>
+             
+           </td>
+         </tr>
+   </table>
+
+             <div ID="divassigntransfer" runat="server" style="border: 3px solid #0000FF;background-color: #FFFFFF; width: 400px;
+                position:absolute;height:200px;z-index:15;top:50%;left:50%;margin:-100px 0 0 -150px;">
+                  <table style="width:400px;">
+                   <tr style="background-color:#D0A9F5;display:none">
+                      <td style="width:110px" class="td_cell">Transfer Id</td>
+                      <td><asp:TextBox ID="txtTransferIDvalue" runat="server" 
+                              ReadOnly="true" CssClass ="fiel_input" Width="100px"></asp:TextBox> </td>
+                      <td style="width:130px" class="td_cell">Transfer Type</td>
+                     <td><asp:TextBox ID="txtTransferTypevalue" runat="server"  
+                             ReadOnly="true" CssClass ="fiel_input" Width="150px"></asp:TextBox> </td>
+                      <td style="width:70px" class="td_cell">Agent Name</td>
+                     <td><asp:TextBox ID="txtagentName" runat="server" readonly="true"  
+                             CssClass ="fiel_input" Width="150px"></asp:TextBox> </td>
+                      <td style="width:80px" class="td_cell">Client Ref</td>
+                     <td><asp:TextBox ID="txtclientRefvalue" runat="server" 
+                             ReadOnly="true" CssClass ="fiel_input" Width="100px"></asp:TextBox> </td>
+                  </tr>
+
+                  <tr style="background-color:#D0A9F5;display:none">
+
+
+                     <td style="width:95px" class="td_cell">Transfer Date</td>
+                     <td><asp:TextBox ID="txtTransferDatevalue" runat="server"  
+                             ReadOnly="true" CssClass ="fiel_input" Width="100px"></asp:TextBox> </td>
+                
+
+                 
+                  <td id="Td1" style="width:70px" runat="server" class="td_cell">Hotel Name</td>
+                  <td><asp:TextBox ID="txtHotelNameValue" runat="server" 
+                              ReadOnly="true" CssClass ="fiel_input" Width="150px" 
+                          TextMode="MultiLine"></asp:TextBox> </td>
+                  
+                  <td id="Td2" style="width:90px" runat="server" class="td_cell">Shift Hotel Name</td>
+                  <td><asp:TextBox ID="txtShiftHotelNameValue" runat="server" 
+                   ReadOnly="true" CssClass ="fiel_input" Width="150px" TextMode="MultiLine"></asp:TextBox> </td>
+
+                   <td id="Td3" style="width:80px" runat="server" class="td_cell">Flight No</td>
+                  <td><asp:TextBox ID="txtflightnovalue" runat="server" 
+                   ReadOnly="true" CssClass ="fiel_input" Width="100px"></asp:TextBox> </td>
+              </tr>
+                  
+                         <tr style="background-color:#D0A9F5;display:none">
+                             <td id="Td4" runat="server" class="td_cell" style="width:80px">
+                                 Airport</td>
+                             <td>
+                                 <asp:TextBox ID="txtAirportvalue" runat="server" CssClass="fiel_input" 
+                                     ReadOnly="true" Width="100px" TextMode="MultiLine"></asp:TextBox>
+                             </td>
+                             <td id="Td5" runat="server" class="td_cell" style="width:80px">
+                                 Time</td>
+                             <td>
+                                 <asp:TextBox ID="txtTimeValue" runat="server" CssClass="fiel_input" 
+                                     ReadOnly="true" Width="150px"></asp:TextBox>
+                             </td>
+                             <td id="Td6" runat="server" class="td_cell" style="width:120px">
+                                 Guest Name</td>
+                             <td>
+                                 <asp:TextBox ID="txtGuestNameValue" runat="server" CssClass="fiel_input" 
+                                     ReadOnly="true" Width="150px"></asp:TextBox>
+                             </td>
+                       </tr>
+                         <%-- </table>
+                         
+
+               <table style="width:1200px;">--%>
+
+                         <tr>
+
+
+                             
+                             <td style="width:80px;display:none">
+                                 <asp:DropDownList ID="ddlstatus" runat="server" class="field_input" onchange="status();" 
+                                     style="WIDTH: 100px;" tabindex="20">
+                                 </asp:DropDownList>
+                             </td>
+                             <td style="width:90px;display:none">
+                                 Transfer Mode</td>
+                             <td style="width:80px;display:none">
+                                 <asp:DropDownList ID="ddlTransferMode" runat="server" class="field_input" 
+                                     onchange="disablecontrol();" style="WIDTH: 150px;" tabindex="21">
+                                 </asp:DropDownList>
+                             </td>
+                             <td style="width:100px">
+                                 Airport Rep. Name</td>
+                             <td>
+                                 <select ID="ddlDriverName" runat="server" class="field_input"  onchange="gettelehpone();" style="WIDTH: 100px;" tabindex="22"></select></td>
+                             <td>
+                                  Tel No  &nbsp; <asp:TextBox ID="txtTelephone" runat="server" CssClass="fiel_input" 
+                                      ReadOnly="True" TabIndex="23" Width="100px"></asp:TextBox>
+                             </td>
+                             <td>
+                                 &nbsp;</td>
+
+                             </tr>
+
+                             <tr>
+                            
+                             <td style="width:54px;display:none">Remarks</td>
+                             <td class="td_cell" colspan="2" style="FONT-SIZE:8pt;TEXT-ALIGN: left;display:none">
+                                 <asp:TextBox ID="txtRemarksValue" runat="server" CssClass="field_input" 
+                                     Height="100px" TextMode="MultiLine" Width="260px" TabIndex="25"></asp:TextBox>
+                             </td>
+                             <td>
+
+                             </td>
+                              
+                             </tr>
+                         
+                         <%--  </table>
+           <table>--%>
+                        <tr style="display:none">
+                             <td style="width:90px">
+                                 Pick Up Date
+                             </td>
+                             <td align="left" class="td_cell" style="width:105px">
+                                 <asp:TextBox ID="txtPickUpDate" runat="server" AutoPostBack="false" 
+                                     CssClass="fiel_input" Width="60px" TabIndex="26"></asp:TextBox>
+                                 <cc1:CalendarExtender ID="caExt" runat="server" Format="dd/MM/yyyy" 
+                                     PopupButtonID="ImageButton1" TargetControlID="txtPickUpDate">
+                                 </cc1:CalendarExtender>
+                                 <cc1:MaskedEditExtender ID="MaskedEditExtender1" runat="server" 
+                                     Mask="99/99/9999" MaskType="Date" TargetControlID="txtPickUpDate">
+                                 </cc1:MaskedEditExtender>
+                                 &nbsp;<asp:ImageButton ID="ImageButton1" runat="server" Height="15px" tabindex="27"
+                                     ImageUrl="~/Images/Calendar_scheduleHS.png" />
+                                 <cc1:MaskedEditValidator ID="MaskedEditValidator1" runat="server" 
+                                     ControlExtender="MaskedEditExtender1" ControlToValidate="txtPickUpDate" 
+                                     CssClass="field_error" Display="Dynamic" 
+                                     EmptyValueBlurredText="Date is required" EmptyValueMessage="Date is required" 
+                                     ErrorMessage="MEPTransFromDate" InvalidValueBlurredMessage="Invalid Date" 
+                                     InvalidValueMessage="Invalid Date" TabIndex="-1" 
+                                     TooltipMessage="Date in dd/mm/yyyy format">
+                                 </cc1:MaskedEditValidator>
+                             </td>
+                             <td>
+                                 Pick Up Time</td>
+                             <td>
+                                 <asp:TextBox ID="txtPickuptime" runat="server" CssClass="fiel_input" 
+                                     Width="100px" TabIndex="28"></asp:TextBox>
+                             </td>
+
+                             <td style="width:63px">
+                                 Vehicle No</td>
+                             <td>
+                                 <select id="ddlvehiclename" runat="server" class="field_input" style="width:100px" onchange="vehiclecode();" tabindex="24"></select>
+                             </td>
+
+                             </tr>
+                             </table>
+                              <table style="width:400px;">
+                             <tr style="display:none">
+                             <td>
+                                 Supplier</td>
+                             <td>
+                                 <select id="ddlSupplier" runat="server" class="field_input" style="width:200px" onchange="currencycode();" tabindex="29" >
+                                 </select>
+                             </td>
+                             <td style="width:105px">
+                                 Supplier Currency</td>
+                             <td style="width: 179px">
+                                 <asp:TextBox ID="txtSupplierCurr" runat="server" CssClass="fiel_input" readonly="true"
+                                     Width="100px"></asp:TextBox>
+                             </td>
+                               <td style="width:80px">
+                                 Sent to Supplier</td>
+                             <td>
+                                 <asp:CheckBox ID="chksentsup" TabIndex="31" runat="server" />
+                             </td>
+
+                            </tr>
+                            <tr style="display:none">
+                             <td>
+                                 Cost Price</td>
+                             <td>
+                                 <asp:TextBox ID="txtCostPrice" runat="server" CssClass="fiel_input" onkeypress="return DecimalNumbers(event)" onchange="setvalue();"
+                                     Width="100px" TabIndex="30"></asp:TextBox>
+                             </td>
+                             <td style="width:80px">
+                                 Compliment From Supplier</td>
+                             <td style="width: 179px">
+                                 <asp:CheckBox ID="chkSupplier" TabIndex="31" runat="server" />
+                             </td>
+
+                      
+                         </tr>
+
+                         <tr>
+                                <td Width="80px"> Remarks.</td>
+                         <td>
+                         <asp:TextBox ID="txtremarksnew" runat="server" TextMode="MultiLine" CssClass="fiel_input" 
+                                     Width="200px" Height="80px" TabIndex="30"></asp:TextBox></td> 
+                         </tr>
+                                             
+                          <tr> 
+                          <td> </td> <td> </td>
+                          </tr>
+                         <tr>
+                             <td style="width:80px">
+                                 <asp:Button ID="btnSave" runat="server" TabIndex="32" cssclass="btn" text="Save" />
+                             </td>
+                             <td style="width:80px">
+                                 <asp:Button ID="btnCancel" TabIndex="33" runat="server" cssclass="btn" text="Cancel" />
+                             </td>
+                         </tr>
+
+
+
+                  </table>
+
+
+
+
+             </div>
+
+               
+<%--  <cc1:modalpopupextender id="ModalPopupDays" runat="server" BehaviorID="ModalPopupDays"
+	cancelcontrolid="btnCancel1" okcontrolid="btnOkay" 
+	targetcontrolid="btnInvisibleGuest" popupcontrolid="divassigntransfer1"
+	popupdraghandlecontrolid="PopupHeader" drag="true" 
+	backgroundcssclass="ModalPopupBG">
+</cc1:modalpopupextender>
+
+<input id="btnInvisibleGuest" runat="server" type="button" value="Cancel" style="visibility:hidden" />
+<input id="btnOkay" type="button" value="OK" style="visibility:hidden"  />
+<input id="btnCancel1" type="button" value="Cancel" style="visibility:hidden" />
+--%>
+         </td> 
+         </tr>
+         
+        <%-- <tr>
+         <td style=width:80px">
+         <asp:Button ID ="btnExport" runat="server"  Text="Export to Excel"/></button>
+         <td><asp:Button ID="btndriverreport" runat="server" Text="Driverwise Report"/></button></td>
+         <td><asp:button ID ="btnDrOperation" Text="Driverwise Report for Operation Dept" runat="server" /></button</td>
+       <td><asp:Button ID="btnTransport" Text="Transport Request-Suppliers" runat="server" /></button></td>
+       <td><asp:Button ID="btnExit" runat="server" Text="Exit" /></button></td>
+         </tr> --%>
+        </table>
+
+     <tr>
+         <td style="width:900px">
+         <asp:Button ID ="btnExport" runat="server"  CssClass ="btn" width="125px" Text="Export to Excel"/></button>&nbsp;
+         <asp:Button ID="btndriverreport" runat="server" Text="Driverwise Report" CssClass="btn" width="150px"/></button>&nbsp;
+         <asp:button ID ="btnDrOperation" style="display:none" Text="Driverwise Report for Operation Dept" runat="server" CssClass="btn" width="350px" /></button>&nbsp;
+         <asp:Button ID="btnTransport" style="display:none" runat="server" Text="Transport Request-Suppliers" Visible="true" with="150px" CssClass="btn" /></button>&nbsp;
+    <asp:Button ID="btnExit" runat="server" Text="Exit" CssClass="btn" /></button>
+      <asp:checkbox  ID="chkshow" style="display:none" Text="Show Supplier" runat="server" 
+                                Width="20px" TabIndex="5"/>
+    </td>
+         </tr> 
+
+         <tr>
+         <td>
+         
+          <asp:Button ID ="btnAddNew" runat="server"  CssClass ="btn" width="110px" Text="Add New"/></button>&nbsp;
+          <asp:Button ID ="btnPrint" runat="server"  CssClass ="btn" width="110px" Text="Print"/></button>&nbsp;
+           <asp:Button ID ="btnExportToExcel" runat="server"  CssClass ="btn" width="110px" Text="Export to Excel"/></button>&nbsp;
+               <asp:Button ID ="btnRemove" runat="server"  CssClass ="btn" width="110px" style="display:none" Text="Remove"/></button>
+
+         </td>
+         
+         
+         </tr>
+
+ </td>
+ </tr>
+ <tr>
+ <td>
+ 
+ <asp:HiddenField ID="hdnTransferType" runat="server"></asp:HiddenField>
+ <asp:HiddenField id="hdnTransferMode" runat="server"></asp:HiddenField>
+  <asp:HiddenField id="hdnvlineno" runat="server"></asp:HiddenField>
+  <asp:HiddenField id="hdntransaction" runat="server"></asp:HiddenField>
+
+  <asp:HiddenField id="hdnstatus" runat="server"></asp:HiddenField>
+
+  <asp:HiddenField id="hdndrivercode" runat="server"></asp:HiddenField>
+  <asp:HiddenField id="hdndriverphoneno" runat="server"></asp:HiddenField>
+  <asp:HiddenField id="hdnsuppliercode" runat="server"></asp:HiddenField>
+  <asp:HiddenField id="hdnsuppliercurrency" runat="server"></asp:HiddenField>
+  <asp:HiddenField id="hdncomsupplier" runat="server"></asp:HiddenField>
+  <asp:HiddenField id="hdnvehiclecode" runat="server"></asp:HiddenField>
+      <asp:HiddenField id="hdngrdRows" runat="server"></asp:HiddenField>
+       <asp:HiddenField id="hdnpickupdate" runat="server"></asp:HiddenField>
+        <asp:HiddenField id="hdnpickuptime" runat="server"></asp:HiddenField>
+         <asp:HiddenField id="hdncostprice" runat="server"></asp:HiddenField>
+     <asp:HiddenField ID="hdntlineno" runat="server" />
+     <asp:HiddenField ID="hdngrdlineno" runat="server" />
+     
+     <br />
+ </td>
+ </tr>
+ </table>
+  <asp:ScriptManagerProxy ID="ScriptManagerProxy1" runat="server">
+             <Services>
+                 <asp:ServiceReference Path="~/clsServices.asmx" />
+             </Services>
+         </asp:ScriptManagerProxy>
+
+  </contenttemplate> 
+      </asp:UpdatePanel> 
+
+      <script type="text/javascript">
+          $(document).ready(function () {
+              var prm = Sys.WebForms.PageRequestManager.getInstance();
+              prm.add_initializeRequest(InitializeRequest);
+              prm.add_endRequest(EndRequest);
+
+              // Place here the first init of the autocomplete
+              MyAutoCustomer();
+              MyAutohotel_rptFillArray();
+             
+
+          });
+
+          function InitializeRequest(sender, args) {
+
+          }
+
+          function EndRequest(sender, args) {
+              // after update occur on UpdatePanel re-init the Autocomplete
+              MyAutoCustomer();
+              MyAutohotel_rptFillArray();
+             
+          }
+ </script>
+
+
+</asp:Content>
+
+
+

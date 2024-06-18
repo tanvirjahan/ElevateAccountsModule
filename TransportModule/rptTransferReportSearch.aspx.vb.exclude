@@ -1,0 +1,575 @@
+﻿#Region "Namespace"
+Imports System.Data
+Imports System.Data.SqlClient
+
+Imports CrystalDecisions.CrystalReports.Engine
+Imports CrystalDecisions.CrystalReports
+Imports CrystalDecisions.Shared
+Imports CrystalDecisions.Web
+Imports CrystalDecisions.ReportSource
+#End Region
+
+Partial Class TransportModule_rptTransferReportSearch
+    Inherits System.Web.UI.Page
+
+#Region "Global Declarations"
+    Dim objectcl As New clsDateTime
+    Dim rep As New ReportDocument
+    Dim rptcompanyname As String
+    Dim rptreportname As String
+    Dim objutils As New clsUtils
+    Dim servicetype As String
+    Dim default_country As String
+    Dim strqry As String
+    Dim seasonfrom As String
+    Dim seasonto As String
+    Dim exctypecol As Collection
+    Dim priidcost As Integer = 25
+    Dim priidcomi As Integer = 50
+    Dim showcostp As String = ""
+    Dim showcommip As String = ""
+    Dim excursionno As String = ""
+    Dim objUser As New clsUser
+#End Region
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+
+        Try
+
+       
+        If Page.IsPostBack = False Then
+
+                Dim AppId As HiddenField = CType(Master.FindControl("hdnAppId"), HiddenField)
+                Dim AppName As HiddenField = CType(Master.FindControl("hdnAppName"), HiddenField)
+                Dim strappid As String = ""
+                Dim strappname As String = ""
+                If AppId Is Nothing = False Then
+                    strappid = AppId.Value
+                End If
+                If AppName Is Nothing = False Then
+                    strappname = AppName.Value
+                End If
+
+
+
+
+                If CType(Session("GlobalUserName"), String) = Nothing Or CType(Session("Userpwd"), String) = Nothing Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                Else
+                    objUser.CheckUserRight(Session("dbconnectionName"), CType(Session("GlobalUserName"), String), CType(Session("Userpwd"), String), _
+                                                       CType(strappname, String), "TransportModule\rptTransferReportSearch.aspx", btnadd, btnexport, BtnPrint, gv_SearchResult)
+
+
+                End If
+
+
+
+
+
+
+
+
+
+
+
+            If txtreqfrom.Text = "" Then
+                txtreqfrom.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+            End If
+
+            If txtreqto.Text = "" Then
+                txtreqto.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+            End If
+
+            If txttourfrom.Text = "" Then
+                txttourfrom.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+            End If
+
+            If txttourto.Text = "" Then
+                txttourto.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+            End If
+
+            FillDropDownList()
+
+            ''HOTEL
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromhotelcode, "partycode", "partyname", "select ltrim(rtrim(partycode))partycode,ltrim(rtrim(partyname))partyname from partymast where active=1 and partymast.sptypecode='HOT'   order by partycode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromhotelname, "partyname", "partycode", "select ltrim(rtrim(partycode))partycode,ltrim(rtrim(partyname))partyname from partymast where active=1 and partymast.sptypecode='HOT'  order by partyname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltohotelcode, "partycode", "partyname", "select ltrim(rtrim(partycode))partycode,ltrim(rtrim(partyname))partyname from partymast where active=1 and partymast.sptypecode='HOT'  order by partycode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltohotelname, "partyname", "partycode", "select ltrim(rtrim(partycode))partycode,ltrim(rtrim(partyname))partyname from partymast where active=1 and partymast.sptypecode='HOT'  order by partyname", True)
+
+            'clients
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromclientcode, "agentcode", "agentname", "select agentcode,agentname from agentmast where active=1   order by agentcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromclientname, "agentname", "agentcode", "select agentcode,agentname from agentmast where active=1   order by agentname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoclientcode, "agentcode", "agentname", "select agentcode,agentname from agentmast where active=1   order by agentcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoclientname, "agentname", "agentcode", "select agentcode,agentname from agentmast where active=1   order by agentname", True)
+
+            ''DRIVER
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromdcode, "drivercode", "drivername", "select drivercode,drivername from drivermaster where active=1   order by drivercode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromdname, "drivername", "drivercode", "select drivercode,drivername from drivermaster where active=1   order by drivername", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltodcode, "drivercode", "drivername", "select drivercode,drivername from drivermaster where active=1   order by drivercode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltodname, "drivername", "drivercode", "select drivercode,drivername from drivermaster where active=1   order by drivername", True)
+
+            'Airport
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromairportcode, "airportbordercode", "airportbordername", "select airportbordercode,airportbordername from airportbordersmaster where active=1 order by airportbordercode ", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromairportname, "airportbordername", "airportbordercode", "select airportbordercode,airportbordername from airportbordersmaster where active=1 order by airportbordername ", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoairportcode, "airportbordercode", "airportbordername", "select airportbordercode,airportbordername from airportbordersmaster where active=1 order by airportbordercode ", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoairportname, "airportbordername", "airportbordercode", "select airportbordercode,airportbordername from airportbordersmaster where active=1 order by airportbordername ", True)
+
+            'Sector
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromsectorcode, "sectorcode", "sectorname", "select sectorcode,sectorname from sectormaster where active=1 order by sectorcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromsectorname, "sectorname", "sectorcode", "select sectorcode,sectorname from sectormaster where active=1 order by sectorname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltosectorcode, "sectorcode", "sectorname", "select sectorcode,sectorname from sectormaster where active=1 order by sectorcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltosectorname, "sectorname", "sectorcode", "select sectorcode,sectorname from sectormaster where active=1 order by sectorname", True)
+
+            'Car
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromcarcode, "othcatcode", "othcatname", "select othcatcode,othcatname from othcatmast where othgrpcode=(select option_selected from reservation_parameters where  param_id='1001') and active=1 order by othcatcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromcarname, "othcatname", "othcatcode", "select othcatcode,othcatname from othcatmast where othgrpcode=(select option_selected from reservation_parameters where  param_id='1001') and active=1 order by othcatname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltocarcode, "othcatcode", "othcatname", "select othcatcode,othcatname from othcatmast where othgrpcode=(select option_selected from reservation_parameters where  param_id='1001') and active=1 order by othcatcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltocarname, "othcatname", "othcatcode", "select othcatcode,othcatname from othcatmast where othgrpcode=(select option_selected from reservation_parameters where  param_id='1001') and active=1 order by othcatname", True)
+
+            DisableAllControl()
+
+            Else
+
+                EnableAllControl()
+
+            End If
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objutils.WritErrorLog("rptTransferReportSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Private Sub DisableAllControl()
+
+
+        txtreqfrom.Enabled = False
+        txtreqto.Enabled = False
+        ImgBtnFrmDt.Enabled = False
+        ImgBtnToDate.Enabled = False
+
+        txttourfrom.Enabled = False
+        txttourto.Enabled = False
+        ImgBtnFrmDt2.Enabled = False
+        ImgBtnToDate3.Enabled = False
+
+        ddlfromclientcode.Disabled = True
+        ddlfromclientname.Disabled = True
+        ddltoclientcode.Disabled = True
+        ddltoclientname.Disabled = True
+
+        ddlfromclientcode.Value = "[Select]"
+        ddlfromclientname.Value = "[Select]"
+        ddltoclientcode.Value = "[Select]"
+        ddltoclientname.Value = "[Select]"
+
+
+        ddlfromdcode.Disabled = True
+        ddlfromdname.Disabled = True
+        ddltodcode.Disabled = True
+        ddltodname.Disabled = True
+
+        ddlfromdcode.Value = "[Select]"
+        ddlfromdname.Value = "[Select]"
+        ddltodcode.Value = "[Select]"
+        ddltodname.Value = "[Select]"
+
+      
+        ddlfromhotelcode.Disabled = True
+        ddlfromhotelname.Disabled = True
+        ddltohotelcode.Disabled = True
+        ddltohotelname.Disabled = True
+
+        ddlfromhotelcode.Value = "[Select]"
+        ddlfromhotelname.Value = "[Select]"
+        ddltohotelcode.Value = "[Select]"
+        ddltohotelname.Value = "[Select]"
+
+        ddlfromairportcode.Disabled = True
+        ddlfromairportname.Disabled = True
+        ddltoairportcode.Disabled = True
+        ddltoairportname.Disabled = True
+
+        ddlfromairportcode.Value = "[Select]"
+        ddlfromairportname.Value = "[Select]"
+        ddltoairportcode.Value = "[Select]"
+        ddltoairportname.Value = "[Select]"
+
+        ddlfromsectorcode.Disabled = True
+        ddlfromsectorname.Disabled = True
+        ddltosectorcode.Disabled = True
+        ddltosectorname.Disabled = True
+
+        ddlfromsectorcode.Value = "[Select]"
+        ddlfromsectorname.Value = "[Select]"
+        ddltosectorcode.Value = "[Select]"
+        ddltosectorname.Value = "[Select]"
+
+        ddlfromcarcode.Disabled = True
+        ddlfromcarname.Disabled = True
+        ddltocarcode.Disabled = True
+        ddltocarname.Disabled = True
+
+        ddlfromcarcode.Value = "[Select]"
+        ddlfromcarname.Value = "[Select]"
+        ddltocarcode.Value = "[Select]"
+        ddltocarname.Value = "[Select]"
+
+        'radcityrange.Checked = False
+        'radclientrange.Checked = False
+        'radcolrange.Checked = False
+        'radexcproviderto.Checked = False
+        'radhotelrange.Checked = False
+        'radmarketrange.Checked = False
+        'radpaytermsrange.Checked = False
+        'radreqrange.Checked = False
+        'radsalesrange.Checked = False
+        'radsaprange.Checked = False
+        'radtourrange.Checked = False
+        'raddrange.Checked = False
+        'rbmaingprange.Checked = False
+        'rbexcgprange.Checked = False
+        'rbexctyperange.Checked = False
+        'radsprange.Checked = False
+
+        'rbmaingpall.Checked = True
+        'rbexcgpall.Checked = True
+        'rbexctypeall.Checked = True
+        'radcityall.Checked = True
+        'radhotelall.Checked = True
+        'radclientall.Checked = True
+        'radexcproviderall.Checked = True
+        'radcolall.Checked = True
+
+        'raddall.Checked = True
+        'radspall.Checked = True
+        'radmarketall.Checked = True
+        'radpaytermsall.Checked = True
+        'radreqall.Checked = True
+        'radsalesall.Checked = True
+        'radsapall.Checked = True
+        'radtourall.Checked = True
+    End Sub
+
+    Private Sub EnableAllControl()
+
+
+        txtreqfrom.Enabled = True
+        txtreqto.Enabled = True
+        ImgBtnFrmDt.Enabled = True
+        ImgBtnToDate.Enabled = True
+
+        txttourfrom.Enabled = True
+        txttourto.Enabled = True
+        ImgBtnFrmDt2.Enabled = True
+        ImgBtnToDate3.Enabled = True
+
+
+        ddlfromclientcode.Disabled = False
+        ddlfromclientname.Disabled = False
+        ddltoclientcode.Disabled = False
+        ddltoclientname.Disabled = False
+
+        
+
+        ddlfromdcode.Disabled = False
+        ddlfromdname.Disabled = False
+        ddltodcode.Disabled = False
+        ddltodname.Disabled = False
+
+
+        ddlfromhotelcode.Disabled = False
+        ddlfromhotelname.Disabled = False
+        ddltohotelcode.Disabled = False
+        ddltohotelname.Disabled = False
+
+        ddlfromairportcode.Disabled = False
+        ddlfromairportname.Disabled = False
+        ddltoairportcode.Disabled = False
+        ddltoairportname.Disabled = False
+
+
+        ddlfromsectorcode.Disabled = False
+        ddlfromsectorname.Disabled = False
+        ddltosectorcode.Disabled = False
+        ddltosectorname.Disabled = False
+
+        ddlfromcarcode.Disabled = False
+        ddlfromcarname.Disabled = False
+        ddltocarcode.Disabled = False
+        ddltocarname.Disabled = False
+
+        'radcityrange.Checked = False
+        'radclientrange.Checked = False
+        'radcolrange.Checked = False
+        'radexcproviderto.Checked = False
+        'radhotelrange.Checked = False
+        'radmarketrange.Checked = False
+        'radpaytermsrange.Checked = False
+        'radreqrange.Checked = False
+        'radsalesrange.Checked = False
+        'radsaprange.Checked = False
+        'radtourrange.Checked = False
+        'raddrange.Checked = False
+        'rbmaingprange.Checked = False
+        'rbexcgprange.Checked = False
+        'rbexctyperange.Checked = False
+        'radsprange.Checked = False
+
+        'rbmaingpall.Checked = True
+        'rbexcgpall.Checked = True
+        'rbexctypeall.Checked = True
+        'radcityall.Checked = True
+        'radhotelall.Checked = True
+        'radclientall.Checked = True
+        'radexcproviderall.Checked = True
+        'radcolall.Checked = True
+
+        'raddall.Checked = True
+        'radspall.Checked = True
+        'radmarketall.Checked = True
+        'radpaytermsall.Checked = True
+        'radreqall.Checked = True
+        'radsalesall.Checked = True
+        'radsapall.Checked = True
+        'radtourall.Checked = True
+    End Sub
+
+    Private Sub FillDropDownList()
+        Try
+            ddlTransferType.Items.Clear()
+            ddlTransferType.Items.Add(New ListItem("All", "3"))
+            ddlTransferType.Items.Add(New ListItem("Arrival", "0"))
+            ddlTransferType.Items.Add(New ListItem("Departure", "1"))
+            ddlTransferType.Items.Add(New ListItem("Shifting", "2"))
+
+            ddlgroupby.Items.Clear()
+            ddlgroupby.Items.Add(New ListItem("Car", "0"))
+            ddlgroupby.Items.Add(New ListItem("Client", "1"))
+            ddlgroupby.Items.Add(New ListItem("Sector", "2"))
+            ddlgroupby.Items.Add(New ListItem("Transfer Type", "3"))
+            ddlgroupby.Items.Add(New ListItem("Transfer Date", "4"))
+            ddlgroupby.Items.Add(New ListItem("Vehicle", "5"))
+
+            ddlCurrencyType.Items.Clear()
+            ddlCurrencyType.Items.Add(New ListItem("Base Currency", "0"))
+            ddlCurrencyType.Items.Add(New ListItem("A/c Currency", "1"))
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objutils.WritErrorLog("rptTransferReportSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+    Protected Sub BtnPrint_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles BtnPrint.Click
+        Try
+
+            Dim strReportTitle As String = ""
+            Dim param1 As String = ""
+            Dim param2 As String = ""
+            Dim param3 As String = ""
+            Dim param4 As String = ""
+            Dim param5 As String = ""
+            Dim param6 As String = ""
+
+            Dim strclientfrom As String = ""
+            Dim strclientto As String = ""
+
+            Dim strdriverfrom As String = ""
+            Dim strdriverto As String = ""
+
+            Dim strcarTypefrom As String = ""
+            Dim strcarTypeTo As String = ""
+
+            Dim strhotelfrom As String = ""
+            Dim strhotelto As String = ""
+
+            Dim strairportfrom As String = ""
+            Dim strairportto As String = ""
+
+            Dim strsectorfrom As String = ""
+            Dim strsectorto As String = ""
+
+            Dim strfromdate As String = ""
+            Dim strtodate As String = ""
+            Dim strtourfrom As String = ""
+            Dim strtourto As String = ""
+            Dim strrepfilter As String = ""
+
+            Dim strreportoption As String = ""
+
+
+            If chkShowHand.Checked = True Then
+                strreportoption = 1
+            ElseIf chkShowProfit.Checked = True Then
+                strreportoption = 2
+            Else
+                strreportoption = 0
+            End If
+
+            strrepfilter = strrepfilter & " Transfers Type :" & ddlTransferType.SelectedItem.Text & " ; "
+
+            strrepfilter = strrepfilter & " Currency Type :" & ddlCurrencyType.SelectedItem.Text & " ; "
+
+            strrepfilter = strrepfilter & " Group By :" & ddlgroupby.SelectedItem.Text & " ; "
+
+            'Client
+            strclientfrom = IIf(UCase(ddlfromclientcode.Items(ddlfromclientcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromclientcode.Items(ddlfromclientcode.SelectedIndex).Text, "")
+            strclientto = IIf(UCase(ddltoclientcode.Items(ddltoclientcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltoclientcode.Items(ddltoclientcode.SelectedIndex).Text, "")
+            If strclientfrom <> "" And strclientto <> "" Then
+                strrepfilter = strrepfilter & " Client from :" + strclientfrom + " To :" & strclientto & " ; "
+            End If
+
+
+            'Driver
+            strdriverfrom = IIf(UCase(ddlfromdcode.Items(ddlfromdcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromdcode.Items(ddlfromdcode.SelectedIndex).Text, "")
+            strdriverto = IIf(UCase(ddltodcode.Items(ddltodcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltodcode.Items(ddltodcode.SelectedIndex).Text, "")
+            If strdriverfrom <> "" And strdriverto <> "" Then
+                strrepfilter = strrepfilter & " Driver from :" + strdriverfrom + " To :" & strdriverto & " ; "
+            End If
+
+
+            'Car Type
+            strcarTypefrom = IIf(UCase(ddlfromcarcode.Items(ddlfromcarcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromcarcode.Items(ddlfromcarcode.SelectedIndex).Text, "")
+            strcarTypeTo = IIf(UCase(ddltocarcode.Items(ddltocarcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltocarcode.Items(ddltocarcode.SelectedIndex).Text, "")
+            If strcarTypefrom <> "" And strcarTypeTo <> "" Then
+                strrepfilter = strrepfilter & " Car Type from :" + strcarTypefrom + " To :" & strcarTypeTo & " ; "
+            End If
+
+            'Hotel
+            strhotelfrom = IIf(UCase(ddlfromhotelcode.Items(ddlfromhotelcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromhotelcode.Items(ddlfromhotelcode.SelectedIndex).Text, "")
+            strhotelto = IIf(UCase(ddltohotelcode.Items(ddltohotelcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltohotelcode.Items(ddltohotelcode.SelectedIndex).Text, "")
+            If strhotelfrom <> "" And strhotelto <> "" Then
+                strrepfilter = strrepfilter & " Hotel from :" + strhotelfrom + " To :" & strhotelto & " ; "
+            End If
+
+            'Airport
+            strairportfrom = IIf(UCase(ddlfromairportcode.Items(ddlfromairportcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromairportcode.Items(ddlfromairportcode.SelectedIndex).Text, "")
+            strairportto = IIf(UCase(ddltoairportcode.Items(ddltoairportcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltoairportcode.Items(ddltoairportcode.SelectedIndex).Text, "")
+            If strairportfrom <> "" And strairportto <> "" Then
+                strrepfilter = strrepfilter & " Airport from :" + strairportfrom + " To :" & strairportto & " ; "
+            End If
+
+            'Sector
+            strsectorfrom = IIf(UCase(ddlfromsectorcode.Items(ddlfromsectorcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromsectorcode.Items(ddlfromsectorcode.SelectedIndex).Text, "")
+            strsectorto = IIf(UCase(ddltosectorcode.Items(ddltosectorcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltosectorcode.Items(ddltosectorcode.SelectedIndex).Text, "")
+            If strsectorfrom <> "" And strsectorto <> "" Then
+                strrepfilter = strrepfilter & " Sector from :" + strsectorfrom + " To :" & strsectorto & " ; "
+            End If
+
+
+            strfromdate = Mid(Format(CType(txtreqfrom.Text, Date), "u"), 1, 10)
+            strtodate = Mid(Format(CType(txtreqto.Text, Date), "u"), 1, 10)
+            strtourfrom = Mid(Format(CType(txttourfrom.Text, Date), "u"), 1, 10)
+            strtourto = Mid(Format(CType(txttourto.Text, Date), "u"), 1, 10)
+
+
+            strReportTitle = " Tranfers  Report"
+
+
+            Dim strpop As String = ""
+
+            'strpop = "window.open('rptTransfersReport.aspx?Pageame=TranfersReport&BackPageName=rptTransferReportSearch.aspx " _
+            '& "&reqfrom=" & strfromdate & "&reqto=" & strtodate & "&Date=" & IIf(rbRequestRange.Checked = True, "Yes", "") _
+            '& "&tourfrom=" & strtourfrom & "&tourto=" & strtourto & "&dateyn=" & IIf(rbTourRange.Checked = True, "Yes", "") _
+            '& "&clientfrom=" & strclientfrom & "&clientto=" & strclientto _
+            '& "&driverfrom=" & strdriverfrom & "&driverto=" & strdriverto _
+            '& "&carTypeFrom=" & strcarTypefrom & "&carTypeTo=" & strcarTypeTo _
+            '& "&hotelfrom=" & strhotelfrom & "&hotelto=" & strhotelto _
+            '& "&airportfrom=" & strairportfrom & "&airportto=" & strairportto _
+            '& "&sectorfrom=" & strsectorfrom & "&sectorto=" & strsectorto _
+            '& "&transfertype=" & ddlTransferType.SelectedValue _
+            '& "&currencytype=" & ddlCurrencyType.SelectedValue _
+            '& "&groupby=" & ddlgroupby.SelectedValue _
+            '& "&showHandlingFees=" & chkShowHand.Checked _
+            '& "&showProfit=" & chkShowProfit.Checked _
+            '& "&repfilter=" & strrepfilter & "&reportoption=" & strreportoption & "&reporttitle=" & strReportTitle & "','RepNewClient','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes' );"
+
+            strpop = "window.open('rptTransfersReport.aspx?Pageame=TranfersReport&BackPageName=rptTransferReportSearch.aspx " _
+           & "&reqfrom=" & strfromdate & "&reqto=" & strtodate & "&Date=" & IIf(rbRequestRange.Checked = True, "Yes", "") _
+           & "&tourfrom=" & strtourfrom & "&tourto=" & strtourto & "&dateyn=" & IIf(rbTourRange.Checked = True, "Yes", "") _
+           & "&clientfrom=" & strclientfrom & "&clientto=" & strclientto _
+           & "&driverfrom=" & strdriverfrom & "&driverto=" & strdriverto _
+           & "&carTypeFrom=" & strcarTypefrom & "&carTypeTo=" & strcarTypeTo _
+           & "&hotelfrom=" & strhotelfrom & "&hotelto=" & strhotelto _
+           & "&airportfrom=" & strairportfrom & "&airportto=" & strairportto _
+           & "&sectorfrom=" & strsectorfrom & "&sectorto=" & strsectorto _
+           & "&transfertype=" & ddlTransferType.SelectedValue _
+           & "&currencytype=" & ddlCurrencyType.SelectedValue _
+           & "&groupby=" & ddlgroupby.SelectedValue _
+           & "&showHandlingFees=" & chkShowHand.Checked _
+           & "&showProfit=" & chkShowProfit.Checked _
+           & "&repfilter=" & strrepfilter & "&reportoption=" & strreportoption & "&reporttitle=" & strReportTitle & "','RepNewClient');"
+
+
+
+
+
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objutils.WritErrorLog("rptTransferReportSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub btnClear_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnClear.Click
+
+        rbRequestAll.Checked = True
+        rbRequestRange.Checked = False
+
+        rbTourAll.Checked = True
+        rbTourRange.Checked = False
+
+        rbclientall.Checked = True
+        rbclientrange.Checked = False
+
+        rbdriverall.Checked = True
+        rbdriverrange.Checked = False
+
+        rbHotelAll.Checked = True
+        rbHotelRange.Checked = False
+
+        rbCarAll.Checked = True
+        rbCarRange.Checked = False
+
+        rbAirPortAll.Checked = True
+        rbAirPortRange.Checked = False
+
+        rbSectorAll.Checked = True
+        rbSectorRange.Checked = False
+
+        ddlCurrencyType.SelectedValue = "0"
+        ddlTransferType.SelectedValue = "3"
+        ddlgroupby.SelectedValue = "0"
+
+        chkShowHand.Checked = False
+        chkShowProfit.Checked = False
+
+        txtreqfrom.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+        txtreqto.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+        txttourfrom.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+        txttourto.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+
+        DisableAllControl()
+
+
+    End Sub
+
+    Protected Sub chkShowHand_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles chkShowHand.CheckedChanged
+
+        Dim chk As CheckBox
+        chk = CType(sender, CheckBox)
+        If chk.Checked = True Then
+            chkShowProfit.Checked = False
+        End If
+    End Sub
+
+    Protected Sub chkShowProfit_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles chkShowProfit.CheckedChanged
+        Dim chk As CheckBox
+        chk = CType(sender, CheckBox)
+        If chk.Checked = True Then
+            chkShowHand.Checked = False
+        End If
+    End Sub
+End Class

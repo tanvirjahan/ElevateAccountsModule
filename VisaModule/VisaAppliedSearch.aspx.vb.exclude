@@ -1,0 +1,1030 @@
+﻿#Region "Namespace"
+Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Collections
+Imports System.Collections.Generic
+Imports CrystalDecisions.CrystalReports.Engine
+Imports CrystalDecisions.CrystalReports
+Imports CrystalDecisions.Shared
+Imports CrystalDecisions.Web
+Imports CrystalDecisions.ReportSource
+#End Region
+
+Partial Class VisaModule_VisaAppliedSearch
+    Inherits System.Web.UI.Page
+#Region "Global Declaration"
+    Dim objUtils As New clsUtils
+    Dim strSqlQry As String
+    Dim mySqlCmd As SqlCommand
+    Dim mySqlReader As SqlDataReader
+    Dim mySqlConn As SqlConnection
+    Dim sqlTrans As SqlTransaction
+    Dim objDate As New clsDateTime
+    Dim SqlConn As SqlConnection
+    Dim myCommand As SqlCommand
+    Dim myDataAdapter As SqlDataAdapter
+    Dim index As String
+    Dim lblid As Label    
+    Dim objUser As New clsUser
+    Dim strSelectionFormula As String = ""
+    Dim strReportTitle As String = ""
+    Dim repfilter As String = ""
+    Dim mydsnew As New DataSet
+    Dim strappid As String = ""
+    Dim strappname As String = ""
+#End Region
+
+
+#Region "Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        If Page.IsPostBack = False Then
+
+            Try
+                Dim AppId As HiddenField = CType(Master.FindControl("hdnAppId"), HiddenField)
+                Dim AppName As HiddenField = CType(Master.FindControl("hdnAppName"), HiddenField)
+                strappid = AppId.Value
+
+                strappname = AppName.Value
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+
+                Else
+                    objUser.CheckUserRight(Session("dbconnectionName"), CType(Session("GlobalUserName"), String), CType(Session("Userpwd"), String), _
+                                                       CType(strappname, String), "VisaModule\VisaAppliedSearch.aspx?appid=" + strappid, btnadd, Button1, btnPrint, gv_SearchResult)
+
+
+
+                End If
+
+
+                chkDateRequired.Checked = True
+                fromdate.Text = Format(CType(objDate.GetSystemDateOnly(Session("dbconnectionName")), Date), "dd/MM/yyyy")
+                txtodate.Text = Format(CType(objDate.GetSystemDateOnly(Session("dbconnectionName")), Date), "dd/MM/yyyy")
+                fillorderby()
+                fillReport()
+                fillFilter()
+                divtxtDate.Text = Format(CType(objDate.GetSystemDateOnly(Session("dbconnectionName")), Date), "dd/MM/yyyy")
+                divFill()
+                LoadVisaCategory()
+
+                Dim ds As DataSet = objUtils.ExecuteQuerySqlnew(Session("dbconnectionName"), "SELECT ISNULL(option_selected,0) paramvalue FROM reservation_parameters Where param_id IN (2002,2003)")
+                hdnCancelCharge.Value = ds.Tables(0).Rows(0).Item("paramvalue")
+                hdnCancelSelRate.Value = ds.Tables(0).Rows(1).Item("paramvalue")
+
+                FillGrid()
+
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            End Try
+
+
+        Else
+            Try
+                postbackGridFill()
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            End Try
+
+        End If
+    End Sub
+
+
+
+#End Region
+    Protected Sub btnhelp_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnhelp.Click
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "window.open('../Help.aspx?hi=VisaApplied','_blank','status=1,scrollbars=1,top=135,left=760,width=250,height=500');", True)
+    End Sub
+
+
+    Private Sub LoadVisaCategory()
+        Try
+            Dim ds As New DataSet
+            Dim StrQry As String = " SELECT * From VisaCategory_Master Where Active =1"
+            ds = objUtils.ExecuteQuerySqlnew(Session("dbconnectionName"), StrQry)
+            ViewState("VisaCategoryList") = ds
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Sub
+
+
+    Private Sub fillorderby()
+        ddlSelectionType.Items.Clear()
+        ddlSelectionType.Items.Add("Request ID")
+        ddlSelectionType.Items.Add("Client Code")
+        ddlSelectionType.Items.Add("Guest Name")
+        ddlSelectionType.Items.Add("Arrival Date")
+        ddlSelectionType.Items.Add("Client Name")
+        ddlSelectionType.Items.Add("Passport No")
+        ddlSelectionType.SelectedIndex = 0
+    End Sub
+
+    Private Sub fillReport()
+        ddlReportFor.Items.Clear()
+        ddlReportFor.Items.Add("All")
+        ddlReportFor.Items.Add("Applied")
+        ddlReportFor.Items.Add("Confirmed")
+        ddlReportFor.Items.Add("Rejected")
+        ddlReportFor.Items.Add("Cancelled")
+        ddlReportFor.SelectedIndex = 0
+    End Sub
+
+    Private Sub divFill()
+        ddlFilter.Items.Clear()
+        ddlFilter.Items.Add("Applied Date")
+        ddlFilter.Items.Add("Arrival Date")
+        ddlFilter.SelectedIndex = 0
+    End Sub
+
+    Private Sub fillFilter()
+        divddlvisastatus.Items.Clear()
+        divddlvisastatus.Items.Add("Confirmed")
+        divddlvisastatus.Items.Add("Rejected")
+        divddlvisastatus.Items.Add("Cancelled")
+        divddlvisastatus.SelectedIndex = 0
+    End Sub
+
+#Region "Public Function  FillGrid()"
+    Public Function FillGrid()
+        Dim ds As New DataSet
+        Dim dt As New DataTable
+        Dim visagroup As String
+        Dim check As CheckBox
+        Dim lblstatus As Label
+        Dim lblselect As Label
+        Dim hdnStatus As HiddenField
+        Dim hdnapplieddate As HiddenField
+        Dim applieddate As TextBox
+        Dim lblstatusDate As Label
+        Dim rate As TextBox
+        Dim amt As TextBox
+        Dim pax As Label
+        Dim Volume As Decimal = 0
+        Dim amtv As Decimal
+        Dim amount As TextBox
+        Dim btnselect As Button
+
+        Dim hdnCancelFlg As HiddenField
+
+        Dim txtcancelcharge As TextBox
+        Dim txtcancelselrate As TextBox
+
+        visagroup = objUtils.GetDBFieldFromStringnew(Session("dbConnectionName"), "Reservation_Parameters", "option_selected", "param_id", "1002")
+
+        gv_SearchResult.Visible = True
+        If gv_SearchResult.PageIndex < 0 Then
+            gv_SearchResult.PageIndex = 0
+        End If
+
+        Dim i As Integer
+        Dim parms As New List(Of SqlParameter)
+        Dim parm(6) As SqlParameter
+
+        parm(0) = New SqlParameter("@visagroup", visagroup)
+        parm(1) = New SqlParameter("@fromdate", CType(objDate.ConvertDateromTextBoxToTextYearMonthDay(fromdate.Text), String))
+        parm(2) = New SqlParameter("@todate", CType(objDate.ConvertDateromTextBoxToTextYearMonthDay(txtodate.Text), String))
+        parm(3) = New SqlParameter("@chkdate", IIf(chkDateRequired.Checked = True, 1, 0))
+        parm(4) = New SqlParameter("@cmbsearch", ddlSelectionType.SelectedIndex)
+        parm(5) = New SqlParameter("@txtsearch", txtSearch.Text)
+        For i = 0 To 5
+            parms.Add(parm(i))
+        Next
+
+        ds = objUtils.ExecuteQuerynew(Session("dbconnectionName"), "sp_visa_pending", parms)
+
+        If ds.Tables.Count > 0 Then
+            dt = ds.Tables(0)
+            gv_SearchResult.DataSource = dt
+            If ds.Tables(0).Rows.Count > 0 Then
+                gv_SearchResult.DataBind()
+            Else
+                gv_SearchResult.PageIndex = 0
+                gv_SearchResult.DataBind()
+            End If
+            FillGrid = ""
+        End If
+
+        ViewState("DataSetVisa") = dt
+
+        For Each gvrow As GridViewRow In gv_SearchResult.Rows
+            check = gvrow.FindControl("chkSelect")
+
+            lblselect = gvrow.FindControl("lblSelectNo")
+            lblstatus = gvrow.FindControl("lblstatus")
+            hdnStatus = gvrow.FindControl("hdnstatus")
+            hdnapplieddate = gvrow.FindControl("hdnapplieddate")
+            btnselect = gvrow.FindControl("btnselect")
+
+            hdnCancelFlg = gvrow.FindControl("hdnCancelFlg")
+
+            applieddate = gvrow.FindControl("txtAppliedDate")
+            lblstatusDate = gvrow.FindControl("lblStatusDate")
+            rate = gvrow.FindControl("txtrate")
+            amt = gvrow.FindControl("txtamt")
+            pax = gvrow.FindControl("lblPax")
+
+            txtcancelcharge = gvrow.FindControl("txtCancelCharge")
+            txtcancelselrate = gvrow.FindControl("txtCancelSelRate")
+
+
+            If lblselect.Text = "4" Then
+                check.Checked = False
+            Else
+                check.Checked = True
+            End If
+           
+            If lblselect.Text = "0" Then
+                lblstatus.Text = "Applied"
+            ElseIf lblselect.Text = "1" Then
+                lblstatus.Text = "Confirmed"
+            ElseIf lblselect.Text = "2" Then
+                lblstatus.Text = "Rejected"
+            ElseIf lblselect.Text = "3" Then
+                lblstatus.Text = "Cancelled"
+            Else
+                lblstatus.Text = ""
+            End If
+
+            If lblstatus.Text = "Cancelled" Then
+                check.Enabled = False
+                txtcancelcharge.Enabled = True
+                txtcancelselrate.Enabled = True
+                btnselect.Enabled = False
+                hdnCancelFlg.Value = 1
+            Else
+                check.Enabled = True
+                txtcancelcharge.Enabled = False
+                txtcancelselrate.Enabled = False
+                btnselect.Enabled = True
+                hdnCancelFlg.Value = 0
+            End If
+
+            hdnStatus.Value = lblstatus.Text
+            hdnapplieddate.Value = applieddate.Text
+            If (rate.Text <> "") And (pax.Text <> "") Then
+                amt.Text = (rate.Text * pax.Text) + CDec(Val(txtcancelcharge.Text))
+            End If
+            If check.Checked Then
+                If (amt.Text) <> "" Then
+                    Volume = Volume + (amt.Text)
+                End If
+            End If            
+            'txtTotal.Text=
+        Next
+        txtTotal.Text = Volume
+
+
+    End Function
+#End Region
+
+    Protected Sub btnResult_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnResult.Click
+        FillGrid()
+    End Sub
+
+#Region "Public Function getdate()"
+    Public Function getdate(ByVal obj As Object) As String
+        If Not (obj Is Nothing) Then
+            Return CType(obj.ToString(), Date).ToShortDateString()
+        Else
+            Return ""
+        End If
+    End Function
+#End Region
+
+    Protected Sub gv_SearchResult_PageIndexChanging(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gv_SearchResult.PageIndexChanging
+        gv_SearchResult.PageIndex = e.NewPageIndex
+        FillGrid()
+        'FillGrid("tranid")        
+        'FillGrid()
+    End Sub
+
+    Protected Sub gv_SearchResult_RowCommand(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gv_SearchResult.RowCommand
+        Try
+            If e.CommandName = "Page" Then Exit Sub
+            If e.CommandName = "Sort" Then Exit Sub
+            Dim lblreqestid As Label
+            Dim lblrequestdate As Label
+            Dim lblarrivaldate As Label
+            Dim lblagentcode As Label
+            Dim txtFirstName As TextBox
+            Dim txtLastName As TextBox
+            Dim txtPassportNo As TextBox
+            Dim ddlVisaCategory As DropDownList
+            Dim ddlTitle As DropDownList
+            Dim lblPax As Label
+            Dim rate As TextBox
+            Dim lbloline As Label
+            Dim lblgline As Label
+            Dim lblstatus As Label
+            Dim lblstatusDate As Label
+            Dim lblapplydate As TextBox
+            Dim lblsellrate As Label
+            Dim lblGuestLineNo As Label
+            Dim hdnapplieddate As HiddenField
+
+
+            Dim txtCancelCharge As TextBox
+            Dim txtCancelSelRate As TextBox
+
+            Dim txtamt As TextBox
+            Dim hdnCancelFlg As HiddenField
+
+          
+            Dim chk As CheckBox
+
+            Dim index As Integer = 0
+            Dim recCnt As Integer = 0
+            Dim pgIndex As Integer = gv_SearchResult.PageIndex + 1
+            recCnt = pgIndex * gv_SearchResult.PageSize
+            recCnt = recCnt - gv_SearchResult.PageSize
+            If gv_SearchResult.PageIndex > 0 Then
+                index = CInt(Val(e.CommandArgument) - recCnt)
+            Else
+                index = CInt(Val(e.CommandArgument))
+            End If
+
+
+            If e.CommandName = "SaveRow" Then
+                chk = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("chkSelect")
+                lblreqestid = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("lblRequestNo")
+                lblrequestdate = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("lblRequestDate")
+                lblarrivaldate = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("lblArrivalDate")
+                lblagentcode = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("lblAgentCode")
+                txtFirstName = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("txtFirstName")
+                txtLastName = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("txtLastName")
+                txtPassportNo = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("txtPassportNo")
+                ddlVisaCategory = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("ddlVisaCategory")
+                ddlTitle = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("ddlTitle")
+                lblPax = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("lblPax")
+                rate = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("txtrate")
+                lbloline = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("lblOlineno")
+                lblgline = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("lblGlineno")
+                lblstatus = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("lblstatus")
+                lblstatusDate = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("lblStatusDate")
+                lblapplydate = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("txtAppliedDate")
+                lblsellrate = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("lblSellRate")
+                lblGuestLineNo = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("lblGuestLineNo")
+                txtamt = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("txtamt")
+                txtCancelCharge = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("txtCancelCharge")
+                txtCancelSelRate = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("txtCancelSelRate")
+                hdnCancelFlg = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("hdnCancelFlg")
+                hdnapplieddate = gv_SearchResult.Rows(CType(index.ToString, String)).FindControl("hdnapplieddate")
+
+                If chk.Checked Then
+
+                    Dim mindate1 As String = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select convert(varchar(10),min(datein),111) from view_bookingmindatein(nolock) where requestid='" & lblreqestid.Text & "'")
+
+                    Dim sealdate As String = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select sealdate from  sealing_master(nolock)")
+
+                    If mindate1 <> "" Then
+                        If Convert.ToDateTime(mindate1) <= Convert.ToDateTime(sealdate) Then
+
+                            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This Month Already Sealed');", True)
+                            Return
+                        End If 
+                    End If
+
+                    lblapplydate.Text = hdnapplieddate.Value
+                    If txtPassportNo.Text = "" Or txtPassportNo.Text.Length = 0 Then
+                        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Please enter passport no' );", True)
+                    Else
+                        Save(lblreqestid.Text, lblrequestdate.Text, lblarrivaldate.Text, lblagentcode.Text, ddlTitle.Items(ddlTitle.SelectedIndex).Value, txtFirstName.Text, txtLastName.Text, txtPassportNo.Text, ddlVisaCategory.Items(ddlVisaCategory.SelectedIndex).Value, lblPax.Text, rate.Text, lbloline.Text, lblgline.Text, lblstatus.Text, lblstatusDate.Text, lblapplydate.Text, lblsellrate.Text, lblGuestLineNo.Text, txtCancelCharge.Text, txtCancelSelRate.Text, hdnCancelFlg.Value)
+                        txtamt.Text = CDec(Val(rate.Text) * Val(lblPax.Text)) + Val(txtCancelCharge.Text)
+                        gv_SearchResult.Rows(CType(index.ToString, String)).BackColor = Drawing.Color.LightSkyBlue
+
+                    End If
+                Else
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Please check the row and click save' );", True)
+                End If
+
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaAppliedSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub gv_SearchResult_RowDataBound(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gv_SearchResult.RowDataBound
+
+        Dim chkSelect As CheckBox
+        Dim lblStatus As Label
+        Dim txtDate As TextBox
+        Dim lblSelect As Label
+        Dim hdnstatus As HiddenField        
+        Dim hdnapplieddate As HiddenField
+        Dim hdnvisacatcode As HiddenField
+        Dim hdnVisaPrice As HiddenField
+        Dim ddlVisaCategory As DropDownList
+        Dim btnSelect As Button
+        Dim rate As TextBox
+        Dim amt As TextBox
+        Dim pax As Label
+
+        Dim hdnCancelFlg As HiddenField
+
+        Dim txtCancelCharge As TextBox
+        Dim txtCancelSelRate As TextBox
+
+        If (e.Row.RowType = DataControlRowType.Header) Then
+            Exit Sub
+        End If
+        'ViewState("VisaCategoryList")
+        Dim ds As New DataSet
+        If Not ViewState("VisaCategoryList") Is Nothing Then
+            ds = ViewState("VisaCategoryList")
+        End If
+
+        If (e.Row.RowType = DataControlRowType.DataRow) Then
+            chkSelect = e.Row.FindControl("chkSelect")
+            lblStatus = e.Row.FindControl("lblstatus")
+            txtDate = e.Row.FindControl("txtAppliedDate")
+            lblSelect = e.Row.FindControl("lblSelectNo")
+            hdnstatus = e.Row.FindControl("hdnstatus")
+            hdnapplieddate = e.Row.FindControl("hdnapplieddate")
+            ddlVisaCategory = e.Row.FindControl("ddlVisaCategory")
+            hdnvisacatcode = e.Row.FindControl("hdnvisacatcode")
+            hdnVisaPrice = e.Row.FindControl("hdnVisaPrice")
+            btnSelect = e.Row.FindControl("btnSelect")
+
+            txtCancelCharge = e.Row.FindControl("txtCancelCharge")
+            txtCancelSelRate = e.Row.FindControl("txtCancelSelRate")
+
+            hdnCancelFlg = e.Row.FindControl("hdnCancelFlg")
+
+            rate = e.Row.FindControl("txtrate")
+            amt = e.Row.FindControl("txtamt")
+            pax = e.Row.FindControl("lblPax")
+
+            rate.Attributes.Add("onkeypress", "return checkNumber(event,this)")
+            amt.Attributes.Add("onkeypress", "return checkNumber(event,this)")
+            txtCancelCharge.Attributes.Add("onkeypress", "return checkNumber(event,this)")
+            txtCancelSelRate.Attributes.Add("onkeypress", "return checkNumber(event,this)")
+
+            If ds.Tables.Count > 0 Then
+                If ds.Tables(0).Rows.Count > 0 Then
+                    ddlVisaCategory.DataSource = ds.Tables(0)
+                    ddlVisaCategory.DataTextField = "VisaCategoryName"
+                    ddlVisaCategory.DataValueField = "VisaCategoryCode"
+                    ddlVisaCategory.DataBind()
+                    If hdnvisacatcode.Value = "" Then
+                        ddlVisaCategory.SelectedValue = "TV-001"
+                    Else
+                        ddlVisaCategory.SelectedValue = hdnvisacatcode.Value
+                    End If
+                Else
+                    ddlVisaCategory.Items.Add("[Select]")
+                End If
+
+                If ds.Tables.Count > 0 Then
+                    Dim dsString As String = ConvertDataTabletoString(ds.Tables(0))
+                    ddlVisaCategory.Attributes.Add("onchange", "GetRateByScript('" & ddlVisaCategory.ClientID & "','" & rate.ClientID & "','" & dsString & "','" & pax.ClientID & "','" & amt.ClientID & "')")
+                End If
+            Else
+                ddlVisaCategory.Items.Add("[Select]")
+                ddlVisaCategory.DataTextField = "[Select]"
+                ddlVisaCategory.DataValueField = "[Select]"
+                ddlVisaCategory.DataBind()
+            End If
+
+            If Val(rate.Text) = 0 Then
+                rate.Text = GetRateFromMaster(ddlVisaCategory.Items(ddlVisaCategory.SelectedIndex).Value)
+            End If
+
+            txtDate.Attributes.Add("onchange", "getapplydate('" & txtDate.ClientID & "','" & hdnapplieddate.ClientID & "')")
+            btnSelect.Attributes.Add("onclick", "return chkRateColumn('" & rate.ClientID & "','" & amt.ClientID & "','" & btnSelect.ClientID & "');")
+            chkSelect.Attributes.Add("onclick", "statusFill('" & chkSelect.ClientID & "','" & lblStatus.ClientID & "','" & txtDate.ClientID & "','" & hdnstatus.ClientID & "','" & hdnapplieddate.ClientID & "' ,'" & rate.ClientID & "','" & amt.ClientID & "','" & txtCancelCharge.ClientID & "','" & txtCancelSelRate.ClientID & "')")
+            rate.Attributes.Add("onchange", "FillAmt('" & rate.ClientID & "','" & amt.ClientID & "','" & pax.ClientID & "','" & txtCancelCharge.ClientID & "');")
+            txtCancelCharge.Attributes.Add("onchange", "FillAmt('" & rate.ClientID & "','" & amt.ClientID & "','" & pax.ClientID & "','" & txtCancelCharge.ClientID & "');")
+        End If
+    End Sub
+    'added by riswan 15/12/2015
+    Private Function GetRateFromMaster(ByVal visacatcode As String) As Decimal
+        Try
+            Dim ds As New DataSet
+            If Not ViewState("VisaCategoryList") Is Nothing Then
+                ds = ViewState("VisaCategoryList")
+            End If
+            Dim p = From dr As DataRow In ds.Tables(0).AsEnumerable
+                    Where dr.Item("VisaCategoryCode") = visacatcode
+            Return p.AsDataView.Item(0).Item("price")
+        Catch ex As Exception
+            Return 0
+        End Try
+    End Function
+
+    'added by riswan 15/12/2015
+    Private Function ConvertDataTabletoString(ByVal dt As DataTable) As String
+        Try
+            Dim serializer As New System.Web.Script.Serialization.JavaScriptSerializer()
+            Dim rows As New List(Of Dictionary(Of String, Object))()
+            Dim row As Dictionary(Of String, Object)
+            For Each dr As DataRow In dt.Rows
+                row = New Dictionary(Of String, Object)()
+                For Each col As DataColumn In dt.Columns
+                    row.Add(col.ColumnName, dr(col))
+                Next
+                rows.Add(row)
+            Next
+            Return serializer.Serialize(rows)
+
+        Catch ex As Exception
+            Return ""
+        End Try
+    End Function
+
+
+    Private Sub postbackGridFill()
+        Dim hdnStatus As HiddenField
+        Dim status As Label        
+        Dim btnSelect As Button
+        Dim hdnapplieddate As HiddenField
+        Dim applieddate As TextBox
+        Dim check As CheckBox
+
+        Dim txtamt As TextBox
+        Dim txtrate As TextBox
+        Dim lblPax As Label
+
+        Dim hdnCancelFlg As HiddenField
+
+        For Each gvrow As GridViewRow In gv_SearchResult.Rows            
+            hdnStatus = gvrow.FindControl("hdnstatus")
+            status = gvrow.FindControl("lblstatus")
+            hdnapplieddate = gvrow.FindControl("hdnapplieddate")
+            applieddate = gvrow.FindControl("txtAppliedDate")
+            check = gvrow.FindControl("chkSelect")
+            btnSelect = gvrow.FindControl("btnSelect")
+
+            txtrate = gvrow.FindControl("txtrate")
+            lblPax = gvrow.FindControl("lblPax")
+            txtamt = gvrow.FindControl("txtamt")
+
+            hdnCancelFlg = gvrow.FindControl("hdnCancelFlg")
+
+            If hdnStatus.Value <> "" And check.Checked = True Then
+                status.Text = hdnStatus.Value
+            Else
+                status.Text = ""
+
+            End If
+
+            If hdnapplieddate.Value <> "" And check.Checked = True Then
+                applieddate.Text = hdnapplieddate.Value
+            Else
+                applieddate.Text = ""
+
+            End If
+            txtamt.Text = CDec(Val(txtrate.Text)) * CDec(Val(lblPax.Text))
+
+            'hdnStatus.Value = ""
+            'hdnapplieddate.Value = ""
+
+            If hdnStatus.Value = "Cancelled" Then
+                check.Enabled = False
+                btnSelect.Enabled = False
+                hdnCancelFlg.Value = 1
+            Else
+                check.Enabled = True
+                btnSelect.Enabled = True
+                hdnCancelFlg.Value = 0
+            End If
+
+        Next
+
+    End Sub
+
+    Protected Sub btnSelect_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Dim objbtn As Button = CType(sender, Button)
+        Dim rowid As Integer = 0
+        Dim row As GridViewRow
+        Dim lblstatus As Label
+        Dim lblstatusDate As Label
+        Dim lblAppliedDate As TextBox
+        Dim lblRequestNo As Label
+        Dim txtRate As TextBox
+        Dim txtamt As TextBox
+        Dim ddlVisaCat As DropDownList
+        Dim chk As CheckBox
+        row = CType(objbtn.NamingContainer, GridViewRow)
+        rowid = row.RowIndex
+        Session("rowid") = row.RowIndex
+        lblstatus = gv_SearchResult.Rows(rowid).FindControl("lblstatus")
+        lblstatusDate = gv_SearchResult.Rows(rowid).FindControl("lblStatusDate")
+        lblRequestNo = gv_SearchResult.Rows(rowid).FindControl("lblRequestNo")
+        txtRate = gv_SearchResult.Rows(rowid).FindControl("txtrate")
+        txtamt = gv_SearchResult.Rows(rowid).FindControl("txtamt")
+        lblAppliedDate = gv_SearchResult.Rows(rowid).FindControl("txtAppliedDate")
+        ddlVisaCat = gv_SearchResult.Rows(rowid).FindControl("ddlVisaCategory")
+        chk = gv_SearchResult.Rows(rowid).FindControl("chkSelect")
+        If chk.Checked Then
+            If lblstatus.Text = "Confirmed" Then
+                divddlvisastatus.Items(divddlvisastatus.SelectedIndex).Text = "Confirmed"
+            ElseIf lblstatus.Text = "Rejected" Then
+                divddlvisastatus.Items(divddlvisastatus.SelectedIndex).Text = "Rejected"
+            ElseIf lblstatus.Text = "Cancelled" Then
+                divddlvisastatus.Items(divddlvisastatus.SelectedIndex).Text = "Cancelled"
+            End If
+            If lblstatusDate.Text <> "" And lblstatusDate.Text <> "01/01/1900" Then
+                divtxtDate.Text = lblstatusDate.Text
+                hdnDate.Value = lblstatusDate.Text
+            Else
+                divtxtDate.Text = Format(CType(objDate.GetSystemDateOnly(Session("dbconnectionName")), Date), "dd/MM/yyyy")
+                hdnDate.Value = Format(CType(objDate.GetSystemDateOnly(Session("dbconnectionName")), Date), "dd/MM/yyyy")
+            End If
+            hdnReqID.Value = lblRequestNo.Text
+            hdnAppDate.Value = lblAppliedDate.Text
+            hdnrate.Value = txtRate.Text
+            hdnAmount.Value = txtamt.Text
+            hfnVisaCat.Value = ddlVisaCat.Items(ddlVisaCat.SelectedIndex).Value
+            ModalPopupDays.Show()
+        Else
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Please select the row' );", True)
+
+        End If
+
+    End Sub
+
+    Protected Sub btnSave_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSave.Click
+        Try
+            Dim lblreqestid As Label
+            Dim lblrequestdate As Label
+            Dim lblarrivaldate As Label
+            Dim lblagentcode As Label
+            Dim txtFirstName As TextBox
+            Dim txtLastName As TextBox
+            Dim txtPassportNo As TextBox
+            Dim ddlVisaCategory As DropDownList
+            Dim ddlTitle As DropDownList
+            Dim lblPax As Label
+            Dim rate As TextBox
+            Dim lbloline As Label
+            Dim lblgline As Label
+            Dim lblstatus As Label
+            Dim lblstatusDate As Label
+            Dim lblapplydate As Label
+            Dim lblsellrate As Label
+            Dim lblGuestLineNo As Label
+            For Each gvRow In gv_SearchResult.Rows
+                Dim chk As CheckBox
+                chk = gvRow.Findcontrol("chkSelect")
+                If chk.Checked = True Then
+                    lblreqestid = gvRow.Findcontrol("lblRequestNo")
+                    lblrequestdate = gvRow.Findcontrol("lblRequestDate")
+                    lblarrivaldate = gvRow.Findcontrol("lblArrivalDate")
+                    lblagentcode = gvRow.FindControl("lblAgentCode")
+                    ddlTitle = gvRow.FindControl("ddlTitle")
+                    txtFirstName = gvRow.FindControl("txtFirstName")
+                    txtLastName = gvRow.FindControl("txtLastName")
+                    txtPassportNo = gvRow.FindControl("txtPassportNo")
+                    ddlVisaCategory = gvRow.FindControl("ddlVisaCategory")
+                    lblPax = gvRow.FindControl("lblPax")
+                    rate = gvRow.FindControl("txtrate")
+                    lbloline = gvRow.FindControl("lblOlineno")
+                    lblgline = gvRow.FindControl("lblGlineno")
+                    lblstatus = gvRow.FindControl("lblstatus")
+                    lblstatusDate = gvRow.FindControl("lblStatusDate")
+                    lblapplydate = gvRow.FindControl("txtAppliedDate")
+                    lblsellrate = gvRow.FindControl("lblSellRate")
+                    lblGuestLineNo = gvRow.FindControl("lblGuestLineNo")
+
+                    'Save(lblreqestid.Text, lblrequestdate.Text, lblarrivaldate.Text, lblagentcode.Text, ddlTitle.Items(ddlTitle.SelectedIndex).Value, txtFirstName.Text, txtLastName.Text, txtPassportNo.Text, ddlVisaCategory.Items(ddlVisaCategory.SelectedIndex).Value, lblPax.Text, rate.Text, lbloline.Text, lblgline.Text, lblstatus.Text, IIf(lblstatusDate.Text = "", DBNull.Value, lblstatusDate.Text), lblapplydate.Text, lblsellrate.Text, lblGuestLineNo.Text, )
+                End If
+            Next
+            FillGrid()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaAppliedSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+
+    Private Sub Save(ByVal requestid As String, ByVal requestdate As String, ByVal arrdate As String, ByVal agentcode As String, ByVal title As String, ByVal firstname As String, ByVal lastname As String, ByVal ppno As String, ByVal visacatcode As String, ByVal pax As Integer, ByVal rate As Decimal, ByVal rlineno As Integer, ByVal glineno As Integer, ByVal status As String, ByVal status_date As String, ByVal apply_date As String, ByVal sellrate As String, ByVal guestlineno As String, ByVal cancelcharge As String, ByVal cancelselrate As String, ByVal hdnCancelFlg As Integer)
+        Try
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+            sqlTrans = SqlConn.BeginTransaction
+            myCommand = New SqlCommand("sp_visarts", SqlConn, sqlTrans)
+            myCommand.CommandType = CommandType.StoredProcedure
+            myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 10)).Value = requestid
+            myCommand.Parameters.Add(New SqlParameter("@reqdate", SqlDbType.DateTime)).Value = requestdate
+            myCommand.Parameters.Add(New SqlParameter("@arrdate", SqlDbType.DateTime)).Value = arrdate
+            myCommand.Parameters.Add(New SqlParameter("@agentcode", SqlDbType.VarChar, 20)).Value = agentcode
+            myCommand.Parameters.Add(New SqlParameter("@title", SqlDbType.VarChar, 20)).Value = title
+            myCommand.Parameters.Add(New SqlParameter("@firstname", SqlDbType.VarChar, 150)).Value = firstname
+            myCommand.Parameters.Add(New SqlParameter("@lastname", SqlDbType.VarChar, 150)).Value = lastname
+            myCommand.Parameters.Add(New SqlParameter("@passportno", SqlDbType.VarChar, 150)).Value = ppno
+            myCommand.Parameters.Add(New SqlParameter("@visacatcode", SqlDbType.VarChar, 150)).Value = visacatcode
+            myCommand.Parameters.Add(New SqlParameter("@visatype", SqlDbType.VarChar, 20)).Value = "VISA"
+            myCommand.Parameters.Add(New SqlParameter("@pax", SqlDbType.Int)).Value = pax
+            myCommand.Parameters.Add(New SqlParameter("@rate", SqlDbType.Decimal)).Value = rate
+            myCommand.Parameters.Add(New SqlParameter("@rlineno", SqlDbType.Int)).Value = rlineno
+            myCommand.Parameters.Add(New SqlParameter("@glineno", SqlDbType.Int)).Value = glineno
+            If status = "Applied" Then
+                myCommand.Parameters.Add(New SqlParameter("@status", SqlDbType.Int)).Value = 0
+            ElseIf status = "Rejected" Then
+                myCommand.Parameters.Add(New SqlParameter("@status", SqlDbType.Int)).Value = 2
+            ElseIf status = "Confirmed" Then
+                myCommand.Parameters.Add(New SqlParameter("@status", SqlDbType.Int)).Value = 1
+            ElseIf status = "Cancelled" Then
+                myCommand.Parameters.Add(New SqlParameter("@status", SqlDbType.Int)).Value = 3
+            Else
+                myCommand.Parameters.Add(New SqlParameter("@status", SqlDbType.Int)).Value = DBNull.Value
+            End If
+
+            myCommand.Parameters.Add(New SqlParameter("@status_date", SqlDbType.VarChar, 20)).Value = status_date
+
+            'If hdnAppDate.Value <> "" Then
+            '    apply_date = hdnAppDate.Value
+            'End If
+            myCommand.Parameters.Add(New SqlParameter("@apply_date", SqlDbType.VarChar, 20)).Value = apply_date
+            myCommand.Parameters.Add(New SqlParameter("@bran_code", SqlDbType.Int)).Value = 1
+            myCommand.Parameters.Add(New SqlParameter("@sellrate", SqlDbType.Decimal)).Value = sellrate
+            myCommand.Parameters.Add(New SqlParameter("@guestlineno", SqlDbType.Decimal)).Value = guestlineno
+            myCommand.Parameters.Add(New SqlParameter("@cancelcharge", SqlDbType.Decimal)).Value = cancelcharge
+            myCommand.Parameters.Add(New SqlParameter("@cancelselrate", SqlDbType.Decimal)).Value = cancelselrate
+
+            Dim adult As Integer = 0
+            Dim child As Integer = 0
+            Dim infant As Integer = 0
+
+            If title = "Mr" Or title = "Mrs" Or title = "Mis" Or title = "Ms" Or title = "Dr" Or title = "HE" Or title = "Oth" Then adult = 1
+            If title = "Chl" Then child = 1
+            If title = "Inf" Then infant = 1
+
+            myCommand.Parameters.Add(New SqlParameter("@adult", SqlDbType.Decimal)).Value = adult
+            myCommand.Parameters.Add(New SqlParameter("@child", SqlDbType.Decimal)).Value = child
+            myCommand.Parameters.Add(New SqlParameter("@infant", SqlDbType.Decimal)).Value = infant
+            myCommand.Parameters.Add(New SqlParameter("@cancelflg", SqlDbType.Int)).Value = hdnCancelFlg
+
+            myCommand.ExecuteNonQuery()
+
+            sqlTrans.Commit()                'SQl Tarn Commit
+            clsDBConnect.dbSqlTransation(sqlTrans)              ' sql Transaction disposed 
+            clsDBConnect.dbCommandClose(myCommand)               'sql command disposed
+            clsDBConnect.dbConnectionClose(SqlConn)
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Record Saved Successfully.');", True)
+
+            If status = "Confirmed" Then
+                Dim strqry As String = " SELECT ISNULL((SELECT usemail from usermaster where UserCode= a.spersoncode),'') FROM agentmast a where agentcode ='" & agentcode & "'"
+                Dim toemail As String = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), strqry)
+                If toemail = "" Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Email doest not exist.' );", True)
+                Else
+
+                End If
+            End If
+
+        Catch ex As Exception
+            If SqlConn.State = ConnectionState.Open Then
+                sqlTrans.Rollback()
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaAppliedSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Private Function frommailvalid(ByVal mailid As String) As Boolean
+
+        If InStr(mailid, "@") > 0 Then
+            If InStr(mailid, ".") > 0 Then
+                If Len(mailid) > 5 Then
+                    frommailvalid = True
+                Else
+                    frommailvalid = False
+                End If
+            Else
+                frommailvalid = False
+            End If
+        Else
+            frommailvalid = False
+        End If
+
+    End Function
+
+    Private Sub SendMail(ByVal reqid As String, ByVal guestname As String, ByVal toemail As String, ByVal arrdate As String, ByVal status As String)
+        Try
+            Dim objEmail As New clsEmail
+            Dim fromMail As String = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select usemail from  usermaster where usercode ='" & Session("GlobalUserName") & "'")
+            fromMail = IIf(frommailvalid(fromMail) = True, fromMail, objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select option_value from reservation_parameters where param_id =1115"))
+
+            Dim strcuststart As String = "<table style='font-family: Verdana'><tr><td> The following Confirmed Visa for  –" + reqid + "</td></tr></table>"
+            Dim strcust As String = ""
+            strcust += " <br /><table style='font-family: Verdana;border:groove;font-size:smaller'>"
+            strcust += " <br /><tr><td> Booking No :" + reqid + "</td></tr>"
+            strcust += " <br /><tr><td> Guest Name  :" + guestname + "</td></tr>"
+            strcust += " <br /><tr><td> Arrival Date :" + arrdate + "</td></tr>"
+            strcust += " <br /><tr><td> Status :" + status + "</td></tr></table>"
+
+
+            strcust += " <br />Thanks & Best Regards<br /><br />" + Session("GlobalUserName")
+            strcust += " <br />" + objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select userdesign from  usermaster where usercode ='" & Session("GlobalUserName") & "'") + "."
+
+            Dim strcustmain As String = strcuststart + strcust
+
+            Dim subject As String = "Visa Confirm Notification -" & reqid '& "(" & IIf(subject1 <> "", subject1, "New") & ")"
+            Dim blnMailSend As Boolean = objEmail.SendCDOMessage("", fromMail, toemail, "", subject, strcustmain)
+            If blnMailSend Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "2", "alert('Mail has send Sucessfully  ');", True)
+            Else
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "3", "alert('Failed to send mail');", True)
+            End If
+
+
+        Catch ex As Exception
+
+        End Try
+
+    End Sub
+
+
+    Protected Sub btnOk_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnOk.Click
+        Dim status As String
+        Dim lblstatusvalue As Label
+        Dim hdnstatus As HiddenField
+        Dim statusdate As String
+        Dim statusdatevalue As Label
+
+        Dim txtcancelcharge As TextBox
+        Dim txtcancelselrate As TextBox
+        Dim txtamt As TextBox
+        Dim lblpax As Label
+        Dim txtrate As TextBox
+        Dim chkSelect As CheckBox
+        Dim btnSelect As Button
+        Dim tot As Decimal = 0.0
+        Try
+            'status = IIf(divddlvisastatus.Items(divddlvisastatus.SelectedIndex).Text = "Confirmed", "Confirmed", "Rejected")
+            status = divddlvisastatus.Items(divddlvisastatus.SelectedIndex).Text
+            statusdate = divtxtDate.Text
+            For Each gvRow As GridViewRow In gv_SearchResult.Rows
+                lblstatusvalue = gvRow.FindControl("lblstatus")
+                statusdatevalue = gvRow.FindControl("lblStatusDate")
+                chkSelect = gvRow.FindControl("chkSelect")
+                lblpax = gvRow.FindControl("lblpax")
+                txtrate = gvRow.FindControl("txtrate")
+                txtamt = gvRow.FindControl("txtamt")
+                txtcancelcharge = gvRow.FindControl("txtCancelCharge")
+                txtcancelselrate = gvRow.FindControl("txtCancelSelRate")
+                btnSelect = gvRow.FindControl("btnSelect")
+                If gvRow.RowIndex = Session("rowid") Then
+                    lblstatusvalue.Text = status
+                    statusdatevalue.Text = statusdate
+                    hdnstatus = CType(gvRow.FindControl("hdnstatus"), HiddenField)
+
+
+                    lblpax = gvRow.FindControl("lblPax")
+                    txtrate = gvRow.FindControl("txtrate")
+
+
+                    hdnstatus.Value = status
+                    If hdnIsConfUpdate.Value = 1 And status <> "Cancelled" Then
+                        BindStatusToAll(status, statusdate)
+                    Else
+                        If status = "Cancelled" Then
+                            txtcancelcharge.Enabled = True
+                            txtcancelselrate.Enabled = True
+                            If txtcancelcharge.Text = "" Or txtcancelcharge.Text = 0 Then
+                                txtcancelcharge.Text = hdnCancelCharge.Value
+                            End If
+
+                            If txtcancelselrate.Text = "" Or txtcancelselrate.Text = 0 Then
+                                txtcancelselrate.Text = hdnCancelSelRate.Value
+                            End If
+                            txtamt.Text = BindCalculateAmount(CDec(Val(txtrate.Text)), CDec(Val(lblpax.Text)), CDec(Val(txtcancelcharge.Text)))
+                            chkSelect.Enabled = False
+                            btnSelect.Enabled = False
+                        Else
+                            txtcancelcharge.Enabled = False
+                            txtcancelselrate.Enabled = False
+                            txtcancelcharge.Text = 0
+                            txtcancelselrate.Text = 0
+                        End If
+                        If hdnIsConfUpdate.Value = 1 Then
+                            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('You cannot cancelled all the records of this booking at the same time');", True)
+                        End If
+                    End If
+
+                End If
+                txtamt.Text = (CDec(Val(lblpax.Text)) * CDec(Val(txtrate.Text))) + CDec(Val(txtcancelcharge.Text))
+                If chkSelect.Checked Then
+                    tot = CDec(tot) + CDec(Val(txtamt.Text))
+                End If
+                txtTotal.Text = tot
+            Next
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+            objUtils.WritErrorLog("VisaAppliedSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Private Function BindCalculateAmount(ByVal txtrate As Decimal, ByVal pax As Decimal, ByVal txtcancelchg As Decimal) As Decimal
+        Try
+            Dim txtamt As Decimal = (txtrate * pax) + txtcancelchg
+            Return txtamt
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+            objUtils.WritErrorLog("VisaAppliedSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Function
+
+
+    Private Sub BindStatusToAll(ByVal status As String, ByVal statusdate As String)
+        Try
+            Dim lblstatusvalue As Label
+            Dim lblRequestNo As Label
+            Dim hdnstatus As HiddenField
+            Dim statusdatevalue As Label
+            Dim lblAppliedDate As TextBox
+            Dim txtRate As TextBox
+            Dim txtAmt As TextBox
+            Dim lblPax As Label
+            Dim ddlVisaCat As DropDownList
+            Dim chkSelect As CheckBox
+
+            Dim txtcancelcharge As TextBox
+            Dim txtcancelselrate As TextBox
+
+            For Each gvRow As GridViewRow In gv_SearchResult.Rows
+
+                lblstatusvalue = gvRow.FindControl("lblstatus")
+                statusdatevalue = gvRow.FindControl("lblStatusDate")
+                lblRequestNo = gvRow.FindControl("lblRequestNo")
+                chkSelect = gvRow.FindControl("chkSelect")
+                txtRate = gvRow.FindControl("txtrate")
+                txtAmt = gvRow.FindControl("txtamt")
+                lblAppliedDate = gvRow.FindControl("txtAppliedDate")
+                lblPax = gvRow.FindControl("lblPax")
+                ddlVisaCat = gvRow.FindControl("ddlVisaCategory")
+
+                ddlVisaCat = gvRow.FindControl("ddlVisaCategory")
+                ddlVisaCat = gvRow.FindControl("ddlVisaCategory")
+
+                txtcancelcharge = gvRow.FindControl("txtCancelCharge")
+                txtcancelselrate = gvRow.FindControl("txtCancelSelRate")
+
+                If lblRequestNo.Text = hdnReqID.Value Then
+                    chkSelect.Checked = True
+                    lblstatusvalue.Text = status
+                    statusdatevalue.Text = statusdate
+                    lblAppliedDate.Text = hdnAppDate.Value
+                    txtRate.Text = hdnrate.Value
+                    txtAmt.Text = CDec(Val(txtRate.Text)) * CDec(Val(lblPax.Text))
+                    hdnstatus = CType(gvRow.FindControl("hdnstatus"), HiddenField)
+                    hdnstatus.Value = status
+                    ddlVisaCat.SelectedValue = hfnVisaCat.Value
+
+                    If status = "Cancelled" Then
+                        txtcancelcharge.Enabled = True
+                        txtcancelselrate.Enabled = True
+                        If txtcancelcharge.Text = "" Or txtcancelcharge.Text = 0 Then
+                            txtcancelcharge.Text = hdnCancelCharge.Value
+                        End If
+
+                        If txtcancelselrate.Text = "" Or txtcancelselrate.Text = 0 Then
+                            txtcancelselrate.Text = hdnCancelSelRate.Value
+                        End If
+                        txtAmt.Text = BindCalculateAmount(CDec(Val(txtRate.Text)), CDec(Val(lblPax.Text)), CDec(Val(txtcancelcharge.Text)))
+                    Else
+                        txtcancelcharge.Enabled = False
+                        txtcancelselrate.Enabled = False
+                        txtcancelcharge.Text = 0
+                        txtcancelselrate.Text = 0
+                    End If
+                End If
+
+            Next
+
+        Catch ex As Exception
+        End Try
+    End Sub
+
+    Protected Sub btnPrint_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnPrint.Click
+        Try
+            Dim strReportTitle As String = ""
+            Dim strSelectionFormula As String = ""
+            Dim strVal As String = ""
+            'Dim strqry As String = "select othgrpcode,othgrpname from othgrpmast where active=1 And othgrpcode=(Select Option_Selected From Reservation_ParaMeters Where Param_Id='" & Session("OthTypeFilter") & "') order by othgrpcode"
+            'strVal = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), strqry)
+
+            Dim strpop As String = ""
+            Dim visagroup As String = ""
+            visagroup = objUtils.GetDBFieldFromStringnew(Session("dbConnectionName"), "Reservation_Parameters", "option_selected", "param_id", "1002")
+            Dim frmdt As String = CType(objDate.ConvertDateromTextBoxToTextYearMonthDay(fromdate.Text), String)
+            Dim todt As String = CType(objDate.ConvertDateromTextBoxToTextYearMonthDay(txtodate.Text), String)
+            Dim chkdt As Integer = IIf(chkDateRequired.Checked = True, 1, 0)
+            Dim seltyp As Integer = ddlSelectionType.SelectedIndex
+            Dim txtSrc As String = txtSearch.Text
+            If visagroup = "" Then visagroup = "VISA"
+
+
+            'strpop = "window.open('rptReportNew.aspx?Pageame=VisaApplied&BackPageName=VisaAppliedSearch.aspx&reportfor=" & ddlReportFor.SelectedIndex & "&filterby=" & ddlFilter.SelectedIndex & "&visagrp=" & visagroup.Trim & "&frmdt=" & frmdt.Trim & "&todt=" & todt.Trim & "&seltyp=" & seltyp & "&chkdt=" & chkdt & "&txtSrc=" & txtSrc.Trim & "','RepCarRentalType','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+            strpop = "window.open('rptReportNew.aspx?Pageame=VisaApplied&BackPageName=VisaAppliedSearch.aspx&reportfor=" & ddlReportFor.SelectedIndex & "&filterby=" & ddlFilter.SelectedIndex & "&visagrp=" & visagroup.Trim & "&frmdt=" & frmdt.Trim & "&todt=" & todt.Trim & "&seltyp=" & seltyp & "&chkdt=" & chkdt & "&txtSrc=" & txtSrc.Trim & "','RepCarRentalType');"
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("OtherServiceTypesSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+  
+End Class

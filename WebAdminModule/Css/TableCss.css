@@ -1,0 +1,137 @@
+﻿table.ChatTableAdd{
+    font-family: Verdana;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: normal;
+    letter-spacing: -1px;
+    line-height: 1.2em;
+    border-collapse:collapse;
+    text-align:center;
+}
+
+
+.ChatTableAdd th, .ChatTableAdd td{
+    padding:5px 5px 10px 2px;
+    color:#000;
+    font-size: 14px;
+    
+    background-color:#79BCEA;
+    font-weight:normal;
+    border-right:1px dotted #666;
+    -moz-box-shadow:0px -1px 4px #000;
+    -webkit-box-shadow:0px -1px 4px #000;
+    box-shadow:0px -1px 4px #000;
+}
+.ChatTableAdd thead th, .ChatTableAdd tfoot td{
+    padding:5px 5px 10px 2px;
+    color:#000;
+    font-size: 14px;
+    
+    background-color:#79BCEA;
+    font-weight:normal;
+    border-right:1px dotted #666;
+    -moz-box-shadow:0px -1px 4px #000;
+    -webkit-box-shadow:0px -1px 4px #000;
+    box-shadow:0px -1px 4px #000;
+}
+.ChatTableAdd tfoot th{
+    padding:10px;
+    font-size:14px;
+     /*text-transform:uppercase;*/
+    color:#888;
+}
+.ChatTableAdd tfoot td{
+    font-size:36px;
+    color:#EF870E;
+    border-top:none;
+    border-bottom:3px solid #666;
+    -moz-box-shadow:0px 1px 4px #000;
+    -webkit-box-shadow:0px 1px 4px #000;
+    box-shadow:0px 1px 4px #000;
+}
+.ChatTableAdd thead th:empty{
+    background:transparent;
+    -moz-box-shadow:none;
+    -webkit-box-shadow:none;
+    box-shadow:none;
+}
+
+
+.ChatTableAdd thead :nth-last-child(1){
+    border-right:none;
+}
+.ChatTableAdd thead :first-child,
+.ChatTableAdd tbody :nth-last-child(1){
+    border:none;
+}
+.ChatTableAdd thead th.Last{
+ 	-moz-border-radius: 0px 15px 0px 0px;
+border-radius: 0px 15px 0px 0px;
+-webkit-border-radius: 0px 15px 0px 0px;
+border:none;
+}
+.ChatTableAdd thead th.First{
+ 	-moz-border-radius: 15px 0px 0px 0px;
+border-radius: 15px 0px 0px 0px;
+-webkit-border-radius: 15px 0px 0px 0px;
+    border-right:1px dotted #666;
+}
+/*.ChatTableAdd tbody th{
+    text-align:right;
+    padding:10px;
+    color:#333;
+    text-shadow:1px 1px 1px #ccc;
+    background-color:#f9f9f9;
+}*/
+.ChatTableAdd tbody td{
+    padding:10px;
+    background-color:#f0f0f0;
+    border-right:1px dotted #999;
+   /*  text-shadow:1px 1px 1px #000; */
+    /*text-transform:uppercase;*/
+    color:#333;
+    font-size:12px;
+    font-family:Verdana;
+}
+
+.ChatTableAdd tbody td a{
+  
+    color:#333;
+    font-family:Verdana;
+}
+.TextChatTableAdd tbody td a{
+  
+    color:#333;
+    font-family:Verdana;
+}
+.ChatTableAdd tbody td .BigFont{
+    font-size:18px;
+    color:#333;
+    font-weight:bold;
+    font-family:Verdana;
+}
+.ChatTableAdd tbody td .MediumFont{
+    font-size:12px;
+    color:#333;
+    font-weight:bold;
+    font-family:Verdana;
+    
+}
+
+
+
+
+.ChatTableAddLive
+{
+ width: 390px;
+ overflow: auto;
+}
+
+
+.UserChatTypeclass
+{
+	width: 400px;
+	height:400px;
+	overflow:auto;
+	
+}

@@ -1,0 +1,466 @@
+﻿<%@ Page Language="VB"  MasterPageFile="~/SubPageMaster.master" AutoEventWireup="false" CodeFile="Vehicletype.aspx.vb" Inherits="TransportModule_Vehicletype" %>
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+
+<%@ Register Assembly="System.Web.Extensions, Version=1.0.61025.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+    Namespace="System.Web.UI" TagPrefix="asp" %>
+    <%@ OutputCache location="none" %> 
+
+
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" Runat="Server">
+   <link rel="stylesheet" href="../Content/lib/css/reset.css" type="text/css" media="screen"
+        charset="utf-8">
+    <link rel="stylesheet" href="../Content/lib/css/icons.css" type="text/css" media="screen"
+        charset="utf-8">
+    <link rel="stylesheet" href="../Content/lib/css/workspace.css" type="text/css" media="screen"
+        charset="utf-8">
+    <link href="../css/VisualSearch.css" rel="stylesheet" type="text/css" />
+    <script src="../Content/vendor/jquery-1.11.0.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/vendor/jquery.ui.core.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/vendor/jquery.ui.widget.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/vendor/jquery.ui.position.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/vendor/jquery.ui.menu.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/vendor/jquery.ui.autocomplete.js" type="text/javascript"
+        charset="utf-8"></script>
+    <script src="../Content/vendor/underscore-1.5.2.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/vendor/backbone-1.1.0.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/visualsearch.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/views/search_box.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/views/search_facet.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/views/search_input.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/models/search_facets.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/models/search_query.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/utils/backbone_extensions.js" type="text/javascript"
+        charset="utf-8"></script>
+    <script src="../Content/lib/js/utils/hotkeys.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/utils/jquery_extensions.js" type="text/javascript"
+        charset="utf-8"></script>
+    <script src="../Content/lib/js/utils/search_parser.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/utils/inflector.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/templates/templates.js" type="text/javascript" charset="utf-8"></script>
+ <script type="text/javascript" charset="utf-8">
+
+     $(document).ready(function () {
+
+         txtsuppnameAutoCompleteExtenderKeyUp();
+     });
+
+   
+
+</script>
+
+  <script language ="javascript" type="text/javascript" >
+
+      function preferedautocompleteselected(source, eventArgs, city) {
+
+          var hiddenfieldID = source.get_id().replace("txtpartyname_AutoCompleteExtender", "txtPreferedCode");
+          $get(hiddenfieldID).value = eventArgs.get_value();
+      }
+
+      function checkNumber(e) {
+          if ((event.keyCode < 45 || event.keyCode > 57)) {
+              return false;
+          }
+      }
+
+      function checkCharacter(e) {
+          if (event.keyCode == 32 || event.keyCode == 46)
+              return;
+          if ((event.keyCode < 47 || event.keyCode > 57) && (event.keyCode < 65 || event.keyCode > 91) && (event.keyCode < 96 || event.keyCode > 122)) {
+              return false;
+          }
+
+      }
+
+      function txtpreferedsuppnameAutoCompleteExtenderKeyUp(txtpref,txtprefcode) {
+
+ 
+          if (document.getElementById(txtpref).value == '') {
+
+              document.getElementById(txtprefcode).value = '';
+          }
+
+
+      }
+
+
+      function txtsuppnameAutoCompleteExtenderKeyUp() {
+
+          $("#<%= txtsuppname.ClientID %>").bind("change", function () {
+
+              if (document.getElementById('<%=txtsuppname.ClientID%>').value == '') {
+
+                  document.getElementById('<%=txtsuppcode.ClientID%>').value = '';
+              }
+
+          });
+
+          $("#<%= txtsuppname.ClientID %>").keyup(function (event) {
+
+              if (document.getElementById('<%=txtsuppname.ClientID%>').value == '') {
+
+                  document.getElementById('<%=txtsuppcode.ClientID%>').value = '';
+              }
+
+          });
+      }
+
+
+      function suppnameautocompleteselected(source, eventArgs) {
+          if (eventArgs != null) {
+              document.getElementById('<%=txtsuppcode.ClientID%>').value = eventArgs.get_value();
+          }
+          else {
+              document.getElementById('<%=txtsuppcode.ClientID%>').value = '';
+          }
+      }
+
+
+    
+
+
+      function PopUpImageView(code) {
+
+          var FileName = document.getElementById("<%=hdnFileName.ClientID%>");
+          var lblfilename = document.getElementById("<%=lblimage.ClientID%>");
+          if (FileName.value == "") {
+              FileName.value = code;
+          }
+          if (lblfilename.innerText != "") {
+
+              popWin = open('../Transportmodule/ImageViewer.aspx?code=' + FileName.value, 'myWin', 'resizable=yes,scrollbars=yes,width=500,height=350,left=450,top=80');
+              popWin.focus();
+              FileName.value = "";
+              return false
+
+          }
+          else {
+
+              popWin = open('../PriceListModule/ImageViewer.aspx?', 'myWin', 'resizable=yes,scrollbars=yes,width=500,height=350,left=450,top=80');
+              popWin.focus();
+          }
+      }
+
+      
+</script> 
+
+<asp:UpdatePanel id="UpdatePanel1" runat="server">
+ <Triggers> 
+        <asp:PostBackTrigger ControlID="btnSave" /> 
+    </Triggers> 
+  <contenttemplate>
+
+<table style="border: 2px solid gray; width: 888px; height: 446px">
+    <tbody>
+
+    <TR><TD style= "display:none">Order&nbsp;&nbsp;<SPAN style="COLOR: red" class="td_cell">*</SPAN></TD>
+         <TD style= "display:none" colspan="3"><INPUT style="TEXT-ALIGN: right" id="txtOrder" tabIndex=5 type=text maxLength=10 runat="server" /></TD>
+             <TD style="WIDTH: 1%; height: 32px;"></TD>
+         <TD style="WIDTH: 10%; height: 32px;"></TD><TD style="WIDTH: 23px; height: 32px;"></TD>
+             <TD style="height: 32px; width: 48px;"></TD></TR>
+        <tr><td style="HEIGHT: 4px" class="td_cell" align=center colSpan=7><asp:Label id="lblHeading" runat="server" Text="Add New Vehicle Types" ForeColor="White" 
+        CssClass="field_heading" Width="725px"></asp:Label></td>
+        <td style="HEIGHT: 4px; width: 48px;" class="td_cell" align=center colSpan=1></td></tr>
+        <tr style="COLOR: #ff0000"><td style="WIDTH: 130px; HEIGHT: 7px" class="td_cell"><SPAN style="COLOR: #000000">Code </SPAN>
+        <SPAN style="COLOR: #ff0000" class="td_cell">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </SPAN></TD>
+        <td style="COLOR: #000000; HEIGHT: 7px" colspan="3"><INPUT style="WIDTH: 196px" id="txtCode" class="field_input" tabIndex=1 type=text maxLength=20 runat="server" />
+        <SPAN style="COLOR: #000000"></SPAN></TD>
+        <td style="WIDTH: 1%; COLOR: #000000; HEIGHT: 7px"></td><td style="WIDTH: 10%; COLOR: #000000; HEIGHT: 7px"></td>
+        <td style="WIDTH: 23px; COLOR: #000000; HEIGHT: 7px"></td>
+            <td style="COLOR: #000000; HEIGHT: 7px; width: 48px;"></td></TR>
+        
+        <TR style="COLOR: #000000">
+        <td style="WIDTH: 130px; HEIGHT: 2px" class="td_cell"><SPAN style="COLOR: #000000">Name</SPAN><SPAN style="COLOR: #ff0000"> <SPAN class="td_cell">*</SPAN></SPAN></td>
+        <td style="COLOR: #ff0000; HEIGHT: 2px" colspan="3">
+            <INPUT style="WIDTH: 396px" id="txtName" class="field_input" tabIndex=2 type=text maxLength=100 runat="server" /></td>
+        <td style="WIDTH: 1%; COLOR: #ff0000; HEIGHT: 2px"></td><td style="WIDTH: 10%; COLOR: #ff0000; HEIGHT: 2px"></TD><TD style="WIDTH: 23px; COLOR: #ff0000; HEIGHT: 2px"></td>
+        <td style="COLOR: #ff0000; HEIGHT: 2px; width: 48px;"></td></TR>
+
+        <%--<TR><TD style="WIDTH: 130px; HEIGHT: 10px" class="td_cell">Group Code&nbsp;<SPAN style="COLOR: red" class="td_cell">*</SPAN></TD>
+        <TD style="WIDTH: 1%; HEIGHT: 10px" class="td_cell" align=left><SPAN style="COLOR: #ff0000">
+        <SELECT style="WIDTH: 200px" id="ddlOtherGrpCode" class="field_input" tabIndex=3 onchange="GetOtherGrpValueFrom()" runat="server">
+         <OPTION selected></OPTION></SELECT></SPAN></TD><TD style="WIDTH: 1%; HEIGHT: 10px" class="td_cell" align=left></TD>
+         <TD style="WIDTH: 10%; HEIGHT: 10px" class="td_cell" align=left>Group&nbsp;Name&nbsp;&nbsp;</TD><TD style="WIDTH: 23px; HEIGHT: 10px" class="td_cell" align=left>
+         <SELECT style="WIDTH: 350px" id="ddlOtherGrpName" class="field_input" tabIndex=4 onchange="GetOtherGrpValueCode()" runat="server"> <OPTION selected></OPTION></SELECT></TD>
+         <TD style="HEIGHT: 10px" class="td_cell" align=left></TD></TR>--%>
+
+         
+         
+         <TR >
+         
+         <TD style="WIDTH: 130px; height: 30px;" class="td_cell">Min Pax&nbsp;&nbsp;<SPAN style="COLOR: red" class="td_cell">*</SPAN></TD>
+             <TD style="WIDTH: 95px; height: 30px;">
+         <INPUT style="TEXT-ALIGN: right" id="txtMinPax" tabIndex=6 type=text runat="server" /></TD>
+             <TD style="WIDTH: 160px; height: 30px;" class="td_cell">Exc.Min Pax&nbsp;&nbsp;<span class="td_cell" 
+                     style="COLOR: red">*</span></TD><TD style="height: 30px;">
+                 <INPUT style="TEXT-ALIGN: right" id="txtexcMinPax" tabIndex=6 type=text runat="server" />
+             </TD>
+         
+         </TR>
+         
+         <TR>
+         <TD style="WIDTH: 130px; HEIGHT: 8px" class="td_cell">Max Adults &nbsp;&nbsp;<SPAN style="COLOR: red" class="td_cell">*</SPAN></TD>
+         <TD style="WIDTH: 95px; HEIGHT: 8px"><INPUT style="TEXT-ALIGN: right" id="txtMaxPax" tabIndex=7 type=text runat="server" /></TD>
+             <td style="WIDTH: 160px; HEIGHT: 8px" class="td_cell">
+                 Exc.Max Adults &nbsp;&nbsp;<span class="td_cell" style="COLOR: red">*</span></td>
+             <td style="HEIGHT: 8px">
+                 <INPUT style="TEXT-ALIGN: right" id="txtExcMaxad" tabIndex=6 type=text runat="server" />
+             </td>
+         <TD style="WIDTH: 1%; HEIGHT: 8px"></TD>
+         <TD style="WIDTH: 10%; HEIGHT: 8px"></TD>
+         <TD style="WIDTH: 23px; HEIGHT: 8px"></TD>
+        <TD style="HEIGHT: 8px; width: 48px;"></TD>
+        </TR>
+
+        <TR>
+         <TD style="WIDTH: 130px; HEIGHT: 8px" class="td_cell">Max Child &nbsp;&nbsp;<SPAN style="COLOR: red" class="td_cell">*</SPAN></TD>
+         <TD style="WIDTH: 95px; HEIGHT: 8px"><INPUT style="TEXT-ALIGN: right" id="txtchild" tabIndex=7 type=text runat="server" /></TD>
+            <td style="WIDTH: 160px; HEIGHT: 8px" class="td_cell">
+                Exc.Max Child &nbsp;&nbsp;<span class="td_cell" style="COLOR: red">*</span></td>
+            <td style="HEIGHT: 8px">
+                <INPUT style="TEXT-ALIGN: right" id="txtExcMaxchild" tabIndex=6 type=text runat="server" />
+            </td>
+         <TD style="WIDTH: 1%; HEIGHT: 8px"></TD>
+         <TD style="WIDTH: 10%; HEIGHT: 8px"></TD>
+         <TD style="WIDTH: 23px; HEIGHT: 8px"></TD>
+        <TD style="HEIGHT: 8px; width: 48px;"></TD>
+        </TR>
+          <TR><TD style="WIDTH: 130px; height: 30px;" class="td_cell">Max Pax&nbsp;&nbsp;<SPAN style="COLOR: red" class="td_cell">*</SPAN></TD>
+             <TD style="WIDTH: 95px; height: 30px;">
+         <INPUT style="TEXT-ALIGN: right" id="maxpax" tabIndex=6 type=text runat="server" /></TD>
+              <td style="WIDTH: 160px; height: 30px;" class="td_cell">
+                  Exc.Max Pax&nbsp;&nbsp;<span class="td_cell" style="COLOR: red">*</span></td>
+              <td style="height: 30px;">
+                  <INPUT style="TEXT-ALIGN: right" id="txtexcmaxpax" tabIndex=6 type=text runat="server" />
+              </td>
+             <TD style="WIDTH: 1%; height: 30px;"></TD><TD style="WIDTH: 10%; height: 30px;"></TD>
+         <TD style="WIDTH: 23px; height: 30px;"></TD><TD style="height: 30px; width: 48px;"></TD></TR>
+         <tr>
+         <TD style="WIDTH: 130px; height: 30px;" class="td_cell">Child Freeupto&nbsp;&nbsp;</TD>
+         <td><INPUT style="TEXT-ALIGN: right" id="txtchildfreeupto" tabIndex=6 type=text runat="server" /></TD>
+         </tr>
+         
+         <TR>
+         <TD style="display:none" class="td_cell">Car Type</TD>
+         <TD colspan="3" >  <asp:DropDownList ID="ddlCarType" runat="server" visible=false AutoPostBack="True" 
+                class="field_input" CssClass="drpdown" TabIndex="1" Width="186px" />
+              
+          </TD>
+         <TD style="WIDTH: 1%; HEIGHT: 8px"></TD>
+         <TD style="WIDTH: 10%; HEIGHT: 8px"></TD>
+         <TD style="WIDTH: 23px; HEIGHT: 8px"></TD>
+        <TD style="HEIGHT: 8px; width: 48px;"></TD>
+        </TR>
+
+            <TR>
+     <TD style="display:none" >Allotment Type</TD>
+     <TD colspan="3"><asp:DropDownList ID="ddlAllotType" visible=false runat="server" AutoPostBack="True" 
+                class="field_input" CssClass="drpdown" TabIndex="1" Width="186px" />
+              
+        </TD>
+         <TD style="WIDTH: 1%; HEIGHT: 8px"></TD>
+         <TD style="WIDTH: 10%; HEIGHT: 8px"></TD>
+         <TD style="WIDTH: 23px; HEIGHT: 8px"></TD>
+        <TD style="HEIGHT: 8px; width: 48px;"></TD>
+        </TR>
+         
+         <TR><TD style="WIDTH: 130px; height: 44px;" class="td_cell">Remark&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </TD>
+         <TD style="height: 44px" colspan="3" ><asp:TextBox id="txtRemark" tabIndex=8 runat="server" Height="44px" Width="613px" TextMode="MultiLine"></asp:TextBox></TD>
+             <TD colSpan=1 style="height: 44px"></TD></TR>
+
+    <tr>
+        <%--<td class="td_cell" style="width: 130px">
+            Display Name</td>
+        <td colspan="4">
+            <INPUT style="width: 329px;" id="txtdispname" tabIndex=9 type="text" runat="server" maxlength="50" /></td>
+        <td colspan="1">
+        </td>--%>
+         <td class="td_cell" style="width: 130px; height: 21px;">
+           Capacity</td>
+        <td colspan="6" style="height: 21px">
+            <INPUT style="width: 329px;" id="txtCapacity" tabIndex="9" type="text" runat="server" maxlength="30" /></td>
+        <td colspan="1" style="height: 21px; width: 48px;">
+        </td>
+         
+    </tr>
+     <tr>
+       <td class="td_cell" style="width: 130px; height: 21px;">
+          Vehicle Image</td>
+        <td colspan="6" style="height: 21px">
+            <asp:FileUpload ID="fileVehicleImage" runat="server" /><span class="td_cell">(203 X 151)</span>
+            </td>
+            
+    </tr>
+     <tr>
+    <td style="width: 130px; height: 2px" class="td_cell"></TD>
+         <TD style="height: 2px" colspan="3">
+        <asp:Label style="width: 329px" id="lblimage" tabindex="10" type="text" maxlength="30" runat="server" />
+  
+             <asp:Button ID="btnViewimage" runat="server" CssClass="field_button" 
+         Text="View" Width="64px" /> </td>
+  </TR>
+    
+   <tr>
+    <td style="width: 130px; height: 2px" class="td_cell">Options</TD>
+    <TD style="height: 2px" colspan="3">
+        <input style="width: 329px" id="txtOptions" tabindex="10" type="text" maxlength="30" runat="server" />
+        </TD>
+        <%-- <td style="width: 1%; height: 2px"></TD><td style="width: 10%; height: 2px"></TD>
+        <td style="width: 23px; height: 2px">&nbsp;</TD><TD style="height: 2px"></TD>--%>
+  </TR>
+     
+
+        <tr>
+            <td class="td_cell" style="width: 130px; height: 2px" valign="top">
+                Prefered Supplier <span class="td_cell" style="COLOR: red">*</span></td>
+            <td colspan="3" style="height: 2px">
+                <table style="width: 100%">
+                    <tr>
+                        <td colspan="2">
+                            <asp:GridView ID="grdsuppdetails" runat="server" AutoGenerateColumns="False" 
+                                BackColor="White" BorderColor="#999999" BorderStyle="None" BorderWidth="1px" 
+                                CellPadding="3" CssClass="td_cell" Font-Bold="True" Font-Size="12px" 
+                                GridLines="Vertical" TabIndex="13" Width="298px">
+                                <FooterStyle CssClass="grdfooter" />
+                                <Columns>
+                                    <asp:TemplateField HeaderText="Select">
+                                        <ItemTemplate>
+                                            <asp:CheckBox ID="chkSelect" runat="server" />
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Select Prefered Supplier">
+                                        <EditItemTemplate>
+                                            &nbsp;
+                                        </EditItemTemplate>
+                                        <ItemStyle HorizontalAlign="Left" Width="150px" />
+                                        <HeaderStyle HorizontalAlign="Left" />
+                                        <ItemTemplate>
+                                            <asp:TextBox ID="txtPrefered" runat="server" AutoPostBack="false" 
+                                                CssClass="field_input" Width="300px"></asp:TextBox>
+                                            <asp:TextBox ID="txtPreferedCode" runat="server" AutoPostBack="false" 
+                                                CssClass="field_input" style="display:none;" Width="300px"></asp:TextBox>
+                                            <asp:AutoCompleteExtender ID="txtpartyname_AutoCompleteExtender" runat="server" 
+                                                CompletionInterval="10" 
+                                                CompletionListCssClass="autocomplete_completionListElement" 
+                                                CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem" 
+                                                CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" 
+                                                DelimiterCharacters="" EnableCaching="false" Enabled="True" 
+                                                FirstRowSelected="false" MinimumPrefixLength="-1" 
+                                                OnClientItemSelected="preferedautocompleteselected" 
+                                                ServiceMethod="Getsupplierlist" TargetControlID="txtPrefered" 
+                                                UseContextKey="true">
+                                            </asp:AutoCompleteExtender>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Prioritize">
+                                        <ItemTemplate>
+                                            <asp:TextBox ID="txtPriorOrder" runat="server" CssClass="field_input" 
+                                                Height="16px" Style="text-align: right" Width="60px"></asp:TextBox>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                </Columns>
+                                <RowStyle CssClass="grdRowstyle" />
+                                <SelectedRowStyle CssClass="grdselectrowstyle" />
+                                <PagerStyle CssClass="grdpagerstyle" HorizontalAlign="Center" />
+                                <HeaderStyle CssClass="grdheader" />
+                                <AlternatingRowStyle CssClass="grdAternaterow" />
+                            </asp:GridView>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            &nbsp;</td>
+                        <td>
+                            &nbsp;</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <asp:Button ID="btnaddrow" runat="server" CssClass="field_button" tabIndex="38" 
+                                Text="Add Row" Width="93px" />
+                            &nbsp;<asp:Button ID="btndelrow" runat="server" CssClass="field_button" 
+                                tabIndex="39" Text="Delete Row" />
+                        </td>
+                        <td>
+                            &nbsp;</td>
+                    </tr>
+                    <tr>
+                        <td>
+                          <asp:TextBox ID="txtsuppcode" runat="server" style="display:none" ></asp:TextBox>
+                            <asp:TextBox ID="txtsuppname" runat="server" CssClass="field_input"  style="display:none" 
+                                MaxLength="500" TabIndex="3" Width="300px"></asp:TextBox>
+                            <asp:AutoCompleteExtender ID="txtsuppname_AutoCompleteExtender" runat="server" 
+                                CompletionInterval="10" 
+                                CompletionListCssClass="autocomplete_completionListElement" 
+                                CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem" 
+                                CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" 
+                                DelimiterCharacters="" EnableCaching="false" Enabled="True" 
+                                FirstRowSelected="True" MinimumPrefixLength="0" 
+                                OnClientItemSelected="suppnameautocompleteselected" 
+                                ServiceMethod="Getsupplierlist" TargetControlID="txtsuppname">
+                            </asp:AutoCompleteExtender>
+                        </td>
+                        <td>
+                            &nbsp;</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+<tr>
+<%--<td style="width: 130px; height: 2px" class="td_cell">Calculated by Pax/ Unit&nbsp;&nbsp;</TD>
+        <td style="width: 1%; height: 2px">
+    <asp:DropDownList id="ddlCalcPax" tabIndex=11 runat="server" Width="60px" ><asp:ListItem Selected="True">Yes</asp:ListItem>
+ <asp:ListItem>No</asp:ListItem> </asp:DropDownList>&nbsp; </TD>
+ <td style="width: 1%; height: 2px"></TD><td style="width: 10%; height: 2px">
+ <asp:Label id="lbladult" runat="server" Text="Adult/ Child" Font-Size="8pt" Font-Names="Arial" Width="55px"></asp:Label></TD>
+ <td style="width: 23px; height: 2px">
+    <asp:DropDownList id="ddladchild" TabIndex=12 runat="server" Width="95px"><asp:ListItem Selected="True" Value="A">Adult</asp:ListItem>
+<asp:ListItem Value="C">Child</asp:ListItem>
+</asp:DropDownList></TD><TD style="HEIGHT: 2px"></TD>--%>
+</TR>
+
+
+<TR><TD style="WIDTH: 129px; HEIGHT: 1px" class="td_cell" colSpan=7>
+
+<table style="width: 334px; height: 52px" border=0><TBODY>
+<TR>
+
+
+<TD style="width: 100%; height: 4px">
+    <input id="chkshuttle"  type=checkbox  runat="server" />Shuttle</TD></TR>
+<TR>
+
+
+<TD style="width: 100%; height: 4px">
+    <input id="ChkPakReq" tabIndex=13 type=checkbox checked runat="server" />Pax Check Required</TD></TR>
+    <%--<TR><TD style="WIDTH: 103px; HEIGHT: 1px" colSpan=2>
+        <INPUT id="ChkPrnRemark" tabIndex=14 type=checkbox CHECKED runat="server" />Print Remark</TD></TR>--%>
+        
+        <TR><TD style="WIDTH: 100%">
+        <input id="ChkActive" tabIndex=15 type=checkbox CHECKED runat="server" />Active</TD></TR>
+  </TBODY></TABLE></TD><TD style="HEIGHT: 1px; width: 48px;" class="td_cell" 
+        colSpan=1></TD></TR>
+  
+  <TR><TD style="WIDTH: 130px; HEIGHT: 22px">
+    <asp:Button id="btnSave" tabIndex=16 onclick="btnSave_Click" runat="server" 
+        Text="Save" CssClass="field_button"></asp:Button></TD>
+      <TD style="HEIGHT: 22px" colspan="3">
+        <asp:Button id="btnCancel" tabIndex=17 onclick="btnCancel_Click" runat="server" Text="Return To Search" CssClass="field_button"></asp:Button></TD>
+        <TD style="WIDTH: 1%; HEIGHT: 22px"></TD><TD style="WIDTH: 10%; HEIGHT: 22px">
+       <asp:Button id="btnhelp" tabIndex=18 onclick="btnhelp_Click" runat="server" 
+        Text="Help" CssClass="field_button" Width="46px"></asp:Button></TD><TD style="WIDTH: 23px; HEIGHT: 22px">
+    <input id="txtconnection" runat="server" style="visibility: hidden; width: 12px;
+        height: 9px" type="text" class="field_input" /></TD>
+      <TD style="HEIGHT: 22px; width: 48px;"></TD></TR></TBODY></TABLE>    <SELECT style="WIDTH: 200px" id="ddlOtherGrpCode" class="field_input" 
+        tabIndex=3 onchange="GetOtherGrpValueFrom()" runat="server" visible="False">
+         <OPTION selected></OPTION></SELECT>
+</contenttemplate>
+    </asp:UpdatePanel>
+        <asp:TextBox ID="hdnFileName" Text="" runat="server" Style="display: none" />
+     <asp:ScriptManagerProxy id="ScriptManagerProxy1" runat="server">
+        <services>
+<asp:ServiceReference Path="~/clsServices.asmx"></asp:ServiceReference>
+</services>
+    </asp:ScriptManagerProxy>
+ 
+ 
+</asp:Content>

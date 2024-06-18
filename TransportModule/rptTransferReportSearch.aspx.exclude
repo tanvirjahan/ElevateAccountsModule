@@ -1,0 +1,803 @@
+﻿<%@ Page Title="Transfers  Report" Language="VB" MasterPageFile="~/TransferMaster.master" AutoEventWireup="false" CodeFile="rptTransferReportSearch.aspx.vb" Inherits="TransportModule_rptTransferReportSearch" %>
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="cc1" %>
+<%@ Register Assembly="CrystalDecisions.Web, Version=13.0.2000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304" Namespace="CrystalDecisions.Web" TagPrefix="CR" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" Runat="Server">
+
+    <script language="javascript" type="text/javascript" >
+
+    function CallWebMethod(methodType) {
+        switch (methodType) {
+
+            //Client 
+            case "fromclientcode":
+                var select = document.getElementById("<%=ddlfromclientcode.ClientID%>");
+                var selectname = document.getElementById("<%=ddlfromclientname.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+
+                //08092014
+                var select1 = document.getElementById("<%=ddltoclientcode.ClientID%>");
+                select1.value = select.options[select.selectedIndex].value;
+                var selectname1 = document.getElementById("<%=ddltoclientname.ClientID%>");
+                selectname1.value = select.options[select.selectedIndex].text;
+
+                break;
+
+            case "fromclientname":
+              
+                var select = document.getElementById("<%=ddlfromclientname.ClientID%>");
+                var cat = select.options[select.selectedIndex].value;
+                var selectname = document.getElementById("<%=ddlfromclientcode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+                //08092014
+                var select1 = document.getElementById("<%=ddltoclientcode.ClientID%>");
+                select1.value = select.options[select.selectedIndex].text;
+                var selectname1 = document.getElementById("<%=ddltoclientname.ClientID%>");
+                selectname1.value = select.options[select.selectedIndex].value;
+
+                break;
+
+            case "toclientcode":
+                var select = document.getElementById("<%=ddltoclientcode.ClientID%>");
+                var cat = select.options[select.selectedIndex].text;
+                var selectname = document.getElementById("<%=ddltoclientname.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                break;
+
+            case "toclientname":
+                var select = document.getElementById("<%=ddltoclientname.ClientID%>");
+                var cat = select.options[select.selectedIndex].value;
+                var selectname = document.getElementById("<%=ddltoclientcode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                break;
+
+            //Driver
+
+            case "fromdrivercode":
+                var select = document.getElementById("<%=ddlfromdcode.ClientID%>");
+                var cat = select.options[select.selectedIndex].text;
+                var selectname = document.getElementById("<%=ddlfromdname.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+                //08092014
+                var select1 = document.getElementById("<%=ddltodcode.ClientID%>");
+                select1.value = select.options[select.selectedIndex].value;
+                var selectname1 = document.getElementById("<%=ddltodname.ClientID%>");
+                selectname1.value = select.options[select.selectedIndex].text;
+                break;
+
+            case "fromdrivername":
+                var select = document.getElementById("<%=ddlfromdname.ClientID%>");
+                var cat = select.options[select.selectedIndex].value;
+                var selectname = document.getElementById("<%=ddlfromdcode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+
+                //08092014
+                var select1 = document.getElementById("<%=ddltodcode.ClientID%>");
+                select1.value = select.options[select.selectedIndex].text;
+                var selectname1 = document.getElementById("<%=ddltodname.ClientID%>");
+                selectname1.value = select.options[select.selectedIndex].value;
+                break;
+
+            case "todrivercode":
+                var select = document.getElementById("<%=ddltodcode.ClientID%>");
+                var cat = select.options[select.selectedIndex].text;
+                var selectname = document.getElementById("<%=ddltodname.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                break;
+            case "todrivername":
+                var select = document.getElementById("<%=ddltodname.ClientID%>");
+                var cat = select.options[select.selectedIndex].value;
+                var selectname = document.getElementById("<%=ddltodcode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                break;
+
+
+            //Hotel 
+            case "fromhotelcode":
+                var select = document.getElementById("<%=ddlfromhotelcode.ClientID%>");
+                var cat = select.options[select.selectedIndex].text;
+                var selectname = document.getElementById("<%=ddlfromhotelname.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+
+                //08092014
+                var select1 = document.getElementById("<%=ddltohotelcode.ClientID%>");
+                select1.value = select.options[select.selectedIndex].value;
+                var selectname1 = document.getElementById("<%=ddltohotelname.ClientID%>");
+                selectname1.value = select.options[select.selectedIndex].text;
+                break;
+
+            case "fromhotelname":
+                var select = document.getElementById("<%=ddlfromhotelname.ClientID%>");
+                var cat = select.options[select.selectedIndex].value;
+                var selectname = document.getElementById("<%=ddlfromhotelcode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+                //08092014
+                var select1 = document.getElementById("<%=ddltohotelcode.ClientID%>");
+                select1.value = select.options[select.selectedIndex].text;
+                var selectname1 = document.getElementById("<%=ddltohotelname.ClientID%>");
+                selectname1.value = select.options[select.selectedIndex].value;
+                break;
+
+            case "tohotelcode":
+                var select = document.getElementById("<%=ddltohotelcode.ClientID%>");
+                var cat = select.options[select.selectedIndex].text;
+                var selectname = document.getElementById("<%=ddltohotelname.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                break;
+
+            case "tohotelname":
+                var select = document.getElementById("<%=ddltohotelname.ClientID%>");
+                var cat = select.options[select.selectedIndex].value;
+                var selectname = document.getElementById("<%=ddltohotelcode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                break;
+
+            //Airport  
+            case "fromairportcode":
+                var select = document.getElementById("<%=ddlfromairportcode.ClientID%>");
+                var cat = select.options[select.selectedIndex].text;
+                var selectname = document.getElementById("<%=ddlfromairportname.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+                //08092014
+                var select1 = document.getElementById("<%=ddltoairportcode.ClientID%>");
+                select1.value = select.options[select.selectedIndex].value;
+                var selectname1 = document.getElementById("<%=ddltoairportname.ClientID%>");
+                selectname1.value = select.options[select.selectedIndex].text;
+
+                break;
+
+            case "fromairportname":
+                var select = document.getElementById("<%=ddlfromairportname.ClientID%>");
+                var cat = select.options[select.selectedIndex].value;
+                var selectname = document.getElementById("<%=ddlfromairportcode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+
+                //08092014
+                var select1 = document.getElementById("<%=ddltoairportcode.ClientID%>");
+                select1.value = select.options[select.selectedIndex].text;
+                var selectname1 = document.getElementById("<%=ddltoairportname.ClientID%>");
+                selectname1.value = select.options[select.selectedIndex].value;
+
+
+                break;
+
+            case "toairportcode":
+                var select = document.getElementById("<%=ddltoairportcode.ClientID%>");
+                var cat = select.options[select.selectedIndex].text;
+                var selectname = document.getElementById("<%=ddltoairportname.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                break;
+
+            case "toairportname":
+                var select = document.getElementById("<%=ddltoairportname.ClientID%>");
+                var cat = select.options[select.selectedIndex].value;
+                var selectname = document.getElementById("<%=ddltoairportcode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                break;
+
+            //Sector  
+            case "fromsectorcode":
+                var select = document.getElementById("<%=ddlfromsectorcode.ClientID%>");
+                var cat = select.options[select.selectedIndex].text;
+                var selectname = document.getElementById("<%=ddlfromsectorname.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+
+                //08092014
+                var select1 = document.getElementById("<%=ddltosectorcode.ClientID%>");
+                select1.value = select.options[select.selectedIndex].value;
+                var selectname1 = document.getElementById("<%=ddltosectorname.ClientID%>");
+                selectname1.value = select.options[select.selectedIndex].text;
+
+                break;
+
+            case "fromsectorname":
+                var select = document.getElementById("<%=ddlfromsectorname.ClientID%>");
+                var cat = select.options[select.selectedIndex].value;
+                var selectname = document.getElementById("<%=ddlfromsectorcode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+                //08092014
+                var select1 = document.getElementById("<%=ddltosectorcode.ClientID%>");
+                select1.value = select.options[select.selectedIndex].text;
+                var selectname1 = document.getElementById("<%=ddltosectorname.ClientID%>");
+                selectname1.value = select.options[select.selectedIndex].value;
+                break;
+
+            case "tosectorcode":
+                var select = document.getElementById("<%=ddltosectorcode.ClientID%>");
+                var cat = select.options[select.selectedIndex].text;
+                var selectname = document.getElementById("<%=ddltosectorname.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                break;
+
+            case "tosectorname":
+                var select = document.getElementById("<%=ddltosectorname.ClientID%>");
+                var cat = select.options[select.selectedIndex].value;
+                var selectname = document.getElementById("<%=ddltosectorcode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                break;
+
+            //Car Type  
+            case "fromcarcode":
+                var select = document.getElementById("<%=ddlfromcarcode.ClientID%>");
+                var selectname = document.getElementById("<%=ddlfromcarname.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+                //08092014
+                var select1 = document.getElementById("<%=ddltocarcode.ClientID%>");
+                select1.value = select.options[select.selectedIndex].value;
+                var selectname1 = document.getElementById("<%=ddltocarname.ClientID%>");
+                selectname1.value = select.options[select.selectedIndex].text;
+                break;
+
+            case "fromcarname":
+                var select = document.getElementById("<%=ddlfromcarname.ClientID%>");
+                var selectname = document.getElementById("<%=ddlfromcarcode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+                //08092014
+                var select1 = document.getElementById("<%=ddltocarcode.ClientID%>");
+                select1.value = select.options[select.selectedIndex].text;
+                var selectname1 = document.getElementById("<%=ddltocarname.ClientID%>");
+                selectname1.value = select.options[select.selectedIndex].value;
+                break;
+
+            case "tocarcode":
+                var select = document.getElementById("<%=ddltocarcode.ClientID%>");
+                var cat = select.options[select.selectedIndex].text;
+                var selectname = document.getElementById("<%=ddltocarname.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                break;
+
+            case "tocarname":
+                var select = document.getElementById("<%=ddltocarname.ClientID%>");
+                var cat = select.options[select.selectedIndex].value;
+                var selectname = document.getElementById("<%=ddltocarcode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                break;
+        }
+    }
+
+
+    function radbtn_onclick(type) {
+
+        switch (type) {
+
+            case "fromclientcode":
+
+                var selectfromcode = document.getElementById("<%=ddlfromclientcode.ClientID%>");
+                var selectfromname = document.getElementById("<%=ddlfromclientname.ClientID%>");
+                var selecttocode = document.getElementById("<%=ddltoclientcode.ClientID%>");
+                var selecttoname = document.getElementById("<%=ddltoclientname.ClientID%>");
+                selectfromcode.disabled = true;
+                selectfromname.disabled = true;
+                selecttocode.disabled = true;
+                selecttoname.disabled = true;
+                selectfromcode.value = "[Select]";
+                selectfromname.value = "[Select]";
+                selecttocode.value = "[Select]";
+                selecttoname.value = "[Select]";
+                break;
+
+            case "toclientcode":
+
+                var selectfromcode = document.getElementById("<%=ddlfromclientcode.ClientID%>");
+                var selectfromname = document.getElementById("<%=ddlfromclientname.ClientID%>");
+                var selecttocode = document.getElementById("<%=ddltoclientcode.ClientID%>");
+                var selecttoname = document.getElementById("<%=ddltoclientname.ClientID%>");
+                selectfromcode.disabled = false;
+                selectfromname.disabled = false;
+                selecttocode.disabled = false;
+                selecttoname.disabled = false;
+                selectfromcode.value = "[Select]";
+                selectfromname.value = "[Select]";
+                selecttocode.value = "[Select]";
+                selecttoname.value = "[Select]";
+                break;
+
+            case "fromdrivercode":
+
+                var selectfromcode = document.getElementById("<%=ddlfromdcode.ClientID%>");
+                var selectfromname = document.getElementById("<%=ddlfromdname.ClientID%>");
+                var selecttocode = document.getElementById("<%=ddltodcode.ClientID%>");
+                var selecttoname = document.getElementById("<%=ddltodname.ClientID%>");
+                selectfromcode.disabled = true;
+                selectfromname.disabled = true;
+                selecttocode.disabled = true;
+                selecttoname.disabled = true;
+                selectfromcode.value = "[Select]";
+                selectfromname.value = "[Select]";
+                selecttocode.value = "[Select]";
+                selecttoname.value = "[Select]";
+                break;
+
+            case "todrivercode":
+
+                var selectfromcode = document.getElementById("<%=ddlfromdcode.ClientID%>");
+                var selectfromname = document.getElementById("<%=ddlfromdname.ClientID%>");
+                var selecttocode = document.getElementById("<%=ddltodcode.ClientID%>");
+                var selecttoname = document.getElementById("<%=ddltodname.ClientID%>");
+                selectfromcode.disabled = false;
+                selectfromname.disabled = false;
+                selecttocode.disabled = false;
+                selecttoname.disabled = false;
+                selectfromcode.value = "[Select]";
+                selectfromname.value = "[Select]";
+                selecttocode.value = "[Select]";
+                selecttoname.value = "[Select]";
+                break;
+
+            case "fromhotelcode":
+
+                var selectfromcode = document.getElementById("<%=ddlfromhotelcode.ClientID%>");
+                var selectfromname = document.getElementById("<%=ddlfromhotelname.ClientID%>");
+                var selecttocode = document.getElementById("<%=ddltohotelcode.ClientID%>");
+                var selecttoname = document.getElementById("<%=ddltohotelname.ClientID%>");
+                selectfromcode.disabled = true;
+                selectfromname.disabled = true;
+                selecttocode.disabled = true;
+                selecttoname.disabled = true;
+                selectfromcode.value = "[Select]";
+                selectfromname.value = "[Select]";
+                selecttocode.value = "[Select]";
+                selecttoname.value = "[Select]";
+                break;
+
+            case "tohotelcode":
+
+                var selectfromcode = document.getElementById("<%=ddlfromhotelcode.ClientID%>");
+                var selectfromname = document.getElementById("<%=ddlfromhotelname.ClientID%>");
+                var selecttocode = document.getElementById("<%=ddltohotelcode.ClientID%>");
+                var selecttoname = document.getElementById("<%=ddltohotelname.ClientID%>");
+                selectfromcode.disabled = false;
+                selectfromname.disabled = false;
+                selecttocode.disabled = false;
+                selecttoname.disabled = false;
+                selectfromcode.value = "[Select]";
+                selectfromname.value = "[Select]";
+                selecttocode.value = "[Select]";
+                selecttoname.value = "[Select]";
+                break;
+
+            case "requestfromdate":
+                var selectfromcode = document.getElementById("<%=txtreqfrom.ClientID%>");
+                var selecttocode = document.getElementById("<%=txtreqto.ClientID%>");
+                var ImgBtnFrmDt = document.getElementById("<%=ImgBtnFrmDt.ClientID%>");
+                var ImgBtnToDate = document.getElementById("<%=ImgBtnToDate.ClientID%>");
+                selectfromcode.disabled = true;
+                selecttocode.disabled = true;
+                ImgBtnFrmDt.disabled = true;
+                ImgBtnToDate.disabled = true;
+                break;
+
+            case "requesttodate":
+                var selectfromcode = document.getElementById("<%=txtreqfrom.ClientID%>");
+                var selecttocode = document.getElementById("<%=txtreqto.ClientID%>");
+                var ImgBtnFrmDt = document.getElementById("<%=ImgBtnFrmDt.ClientID%>");
+                var ImgBtnToDate = document.getElementById("<%=ImgBtnToDate.ClientID%>");
+                selectfromcode.disabled = false;
+                selecttocode.disabled = false;
+                ImgBtnFrmDt.disabled = false;
+                ImgBtnToDate.disabled = false;
+              
+                break;
+
+            case "tourfromdate":
+                var selectfromcode = document.getElementById("<%=txttourfrom.ClientID%>");
+                var selecttocode = document.getElementById("<%=txttourto.ClientID%>");
+                var ImgBtnFrmDt2 = document.getElementById("<%=ImgBtnFrmDt2.ClientID%>");
+                var ImgBtnToDate3 = document.getElementById("<%=ImgBtnToDate3.ClientID%>");
+                selectfromcode.disabled = true;
+                selecttocode.disabled = true;
+                ImgBtnFrmDt2.disabled = true;
+                ImgBtnToDate3.disabled = true;
+                break;
+
+            case "tourtodate":
+                var selectfromcode = document.getElementById("<%=txttourfrom.ClientID%>");
+                var selecttocode = document.getElementById("<%=txttourto.ClientID%>");
+                var ImgBtnFrmDt2 = document.getElementById("<%=ImgBtnFrmDt2.ClientID%>");
+                var ImgBtnToDate3 = document.getElementById("<%=ImgBtnToDate3.ClientID%>")
+                selectfromcode.disabled = false;
+                selecttocode.disabled = false;
+                ImgBtnFrmDt2.disabled = false;
+                ImgBtnToDate3.disabled = false;
+                break;
+
+            case "fromairportcode":
+
+                var selectfromcode = document.getElementById("<%=ddlfromairportcode.ClientID%>");
+                var selectfromname = document.getElementById("<%=ddlfromairportname.ClientID%>");
+                var selecttocode = document.getElementById("<%=ddltoairportcode.ClientID%>");
+                var selecttoname = document.getElementById("<%=ddltoairportname.ClientID%>");
+                selectfromcode.disabled = true;
+                selectfromname.disabled = true;
+                selecttocode.disabled = true;
+                selecttoname.disabled = true;
+                selectfromcode.value = "[Select]";
+                selectfromname.value = "[Select]";
+                selecttocode.value = "[Select]";
+                selecttoname.value = "[Select]";
+                break;
+
+            case "toairportcode":
+
+                var selectfromcode = document.getElementById("<%=ddlfromairportcode.ClientID%>");
+                var selectfromname = document.getElementById("<%=ddlfromairportname.ClientID%>");
+                var selecttocode = document.getElementById("<%=ddltoairportcode.ClientID%>");
+                var selecttoname = document.getElementById("<%=ddltoairportname.ClientID%>");
+                selectfromcode.disabled = false;
+                selectfromname.disabled = false;
+                selecttocode.disabled = false;
+                selecttoname.disabled = false;
+                selectfromcode.value = "[Select]";
+                selectfromname.value = "[Select]";
+                selecttocode.value = "[Select]";
+                selecttoname.value = "[Select]";
+                break;
+
+            case "fromsectorcode":
+
+                var selectfromcode = document.getElementById("<%=ddlfromsectorcode.ClientID%>");
+                var selectfromname = document.getElementById("<%=ddlfromsectorname.ClientID%>");
+                var selecttocode = document.getElementById("<%=ddltosectorcode.ClientID%>");
+                var selecttoname = document.getElementById("<%=ddltosectorname.ClientID%>");
+                selectfromcode.disabled = true;
+                selectfromname.disabled = true;
+                selecttocode.disabled = true;
+                selecttoname.disabled = true;
+                selectfromcode.value = "[Select]";
+                selectfromname.value = "[Select]";
+                selecttocode.value = "[Select]";
+                selecttoname.value = "[Select]";
+                break;
+
+            case "tosectorcode":
+
+                var selectfromcode = document.getElementById("<%=ddlfromsectorcode.ClientID%>");
+                var selectfromname = document.getElementById("<%=ddlfromsectorname.ClientID%>");
+                var selecttocode = document.getElementById("<%=ddltosectorcode.ClientID%>");
+                var selecttoname = document.getElementById("<%=ddltosectorname.ClientID%>");
+                selectfromcode.disabled = false;
+                selectfromname.disabled = false;
+                selecttocode.disabled = false;
+                selecttoname.disabled = false;
+                selectfromcode.value = "[Select]";
+                selectfromname.value = "[Select]";
+                selecttocode.value = "[Select]";
+                selecttoname.value = "[Select]";
+                break;
+
+            case "fromcarcode":
+
+                var selectfromcode = document.getElementById("<%=ddlfromcarcode.ClientID%>");
+                var selectfromname = document.getElementById("<%=ddlfromcarname.ClientID%>");
+                var selecttocode = document.getElementById("<%=ddltocarcode.ClientID%>");
+                var selecttoname = document.getElementById("<%=ddltocarname.ClientID%>");
+                selectfromcode.disabled = true;
+                selectfromname.disabled = true;
+                selecttocode.disabled = true;
+                selecttoname.disabled = true;
+                selectfromcode.value = "[Select]";
+                selectfromname.value = "[Select]";
+                selecttocode.value = "[Select]";
+                selecttoname.value = "[Select]";
+                break;
+
+            case "tocarcode":
+
+                var selectfromcode = document.getElementById("<%=ddlfromcarcode.ClientID%>");
+                var selectfromname = document.getElementById("<%=ddlfromcarname.ClientID%>");
+                var selecttocode = document.getElementById("<%=ddltocarcode.ClientID%>");
+                var selecttoname = document.getElementById("<%=ddltocarname.ClientID%>");
+                selectfromcode.disabled = false;
+                selectfromname.disabled = false;
+                selecttocode.disabled = false;
+                selecttoname.disabled = false;
+                selectfromcode.value = "[Select]";
+                selectfromname.value = "[Select]";
+                selecttocode.value = "[Select]";
+                selecttoname.value = "[Select]";
+                break;
+        }
+    }
+
+</script>
+
+<asp:UpdatePanel id="UpdatePanel1" runat="server">
+<contenttemplate>
+<table style="border-right: gray 2px solid; border-top: gray 2px solid; border-left: gray 2px solid; width: 1020px; border-bottom: gray 2px solid">
+<tr>
+<td colspan="2" class="field_heading" style="text-align: center; width: 1000px;">Report - Transfers  Report</td>
+</tr>
+
+
+
+<tr>
+<td style="WIDTH: 510px">
+<asp:Panel id="Panel5" runat="server"  Width="100%" GroupingText="Request Date" Font-Names="Arial" Font-Size="12px">
+    <table>
+    <tbody>
+    <tr>
+    <td class="td_cell"> <input id="rbRequestAll" onclick ="radbtn_onclick('requestfromdate');" runat="server" checked="true" name="controlrequestdate" type="radio" /> All</td>
+    <td class="td_cell">From </td>
+    <td  class="td_cell">
+    <asp:TextBox id="txtreqfrom" runat="server" CssClass="fiel_input" Width="80px" AutoCompleteType="Cellular"></asp:TextBox>
+    <asp:ImageButton id="ImgBtnFrmDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"></asp:ImageButton>
+    <cc1:MaskedEditValidator id="MaskedEditValidator3" runat="server" CssClass="field_input" Display="Dynamic" ControlToValidate="txtreqfrom" ControlExtender="MaskedEditExtender3" InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date" EmptyValueBlurredText="Date is required" EmptyValueMessage="Date is required" TooltipMessage="Input a date in dd/mm/yyyy format"></cc1:MaskedEditValidator>
+    <cc1:CalendarExtender id="CalendarExtender3" runat="server" TargetControlID="txtreqfrom" PopupButtonID="ImgBtnFrmDt" Format="dd/MM/yyyy"></cc1:CalendarExtender>
+    <cc1:MaskedEditExtender id="MaskedEditExtender3" runat="server" TargetControlID="txtreqfrom" Mask="99/99/9999" MaskType="Date"></cc1:MaskedEditExtender>
+    </td>
+    </tr>
+
+    <tr>
+    <td class="td_cell" > <input id="rbRequestRange" onclick ="radbtn_onclick('requesttodate');" runat="server" name="controlrequestdate" type="radio" /> Range</td>
+    <td class="td_cell">To</td>
+    <td class="td_cell">
+    <asp:TextBox id="txtreqto"   runat="server" CssClass="fiel_input" Width="80px"></asp:TextBox>
+    <asp:ImageButton id="ImgBtnToDate"  runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"></asp:ImageButton>
+    <cc1:MaskedEditValidator id="MaskedEditValidator4"  runat="server" CssClass="field_error" Display="Dynamic" ControlToValidate="txtreqto" ControlExtender="MaskedEditExtender4" InvalidValueBlurredMessage=" Invalid Date" InvalidValueMessage="Invalid Date" EmptyValueBlurredText="Date is required" EmptyValueMessage="Date is required" TooltipMessage="Input a date in dd/mm/yyyy format"></cc1:MaskedEditValidator>
+    <cc1:CalendarExtender id="CalendarExtender4" runat="server" TargetControlID="txtreqto" PopupButtonID="ImgBtnToDate" Format="dd/MM/yyyy"></cc1:CalendarExtender> 
+    <cc1:MaskedEditExtender id="MaskedEditExtender4" runat="server" TargetControlID="txtreqto" Mask="99/99/9999" MaskType="Date" Enabled="True"></cc1:MaskedEditExtender>
+    </td>
+    </tr>
+    </tbody>
+    </table>
+</asp:Panel>
+</td>
+
+<td style="WIDTH: 510px">
+<asp:Panel id="Panel6" runat="server"  Width="510px" GroupingText="Tour Date" Font-Names="Arial" Font-Size="12px">
+    <table>
+    <tbody>
+    <tr>
+    <td class="td_cell"> <input id="rbTourAll" onclick ="radbtn_onclick('tourfromdate');" runat="server" checked name="controltourdate" type="radio" /> All</td>
+    <td class="td_cell">From </td>
+    <td  class="td_cell">
+    <asp:TextBox ID="txttourfrom" runat="server" CssClass="fiel_input" Width="80px"></asp:TextBox>
+    <asp:ImageButton ID="ImgBtnFrmDt2" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"></asp:ImageButton>
+    <cc1:MaskedEditValidator ID="MaskedEditValidator5" runat="server"  ControlExtender="MaskedEditExtender5" ControlToValidate="txttourfrom"  CssClass="field_input" Display="Dynamic"  EmptyValueBlurredText="Date is required" EmptyValueMessage="Date is required" InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"   TooltipMessage="Input a date in dd/mm/yyyy format"></cc1:MaskedEditValidator>
+    <cc1:CalendarExtender id="CalendarExtender5" runat="server" TargetControlID="txttourfrom" PopupButtonID="ImgBtnFrmDt2" Format="dd/MM/yyyy"></cc1:CalendarExtender>
+    <cc1:MaskedEditExtender id="MaskedEditExtender5" runat="server" TargetControlID="txttourfrom" Mask="99/99/9999" MaskType="Date"></cc1:MaskedEditExtender>
+    
+    </td>
+    </tr>
+
+    <tr>
+    <td class="td_cell"> <input id="rbTourRange" onclick ="radbtn_onclick('tourtodate');" runat="server" name="controltourdate" type="radio" /> Range</td>
+    <td class="td_cell">To</td>
+    <td class="td_cell">
+    <asp:TextBox ID="txttourto" runat="server" CssClass="fiel_input" Width="80px"></asp:TextBox>
+    <asp:ImageButton ID="ImgBtnToDate3" runat="server"  ImageUrl="~/Images/Calendar_scheduleHS.png"></asp:ImageButton>
+    <cc1:MaskedEditValidator ID="MaskedEditValidator6" runat="server"   ControlExtender="MaskedEditExtender6" ControlToValidate="txttourto"   CssClass="field_error" Display="Dynamic"   EmptyValueBlurredText="Date is required" EmptyValueMessage="Date is required"  InvalidValueBlurredMessage=" Invalid Date" InvalidValueMessage="Invalid Date"   TooltipMessage="Input a date in dd/mm/yyyy format"> </cc1:MaskedEditValidator>
+    <cc1:CalendarExtender id="CalendarExtender6" runat="server" TargetControlID="txttourto" PopupButtonID="ImgBtnToDate3" Format="dd/MM/yyyy"></cc1:CalendarExtender> 
+    <cc1:MaskedEditExtender id="MaskedEditExtender6" runat="server" TargetControlID="txttourto" Mask="99/99/9999" MaskType="Date" Enabled="True"></cc1:MaskedEditExtender>
+    </tr>
+    </tbody>
+    </table>
+</asp:Panel>
+</td>
+</tr>
+
+
+<tr>
+<td style="WIDTH: 510px">
+<asp:Panel id="Panel4" runat="server"  Width="510px" GroupingText="Client" Font-Names="Arial" Font-Size="12px">
+    <table>
+    <tbody>
+    <tr>
+    <td class="td_cell"><input id="rbclientall" onclick ="radbtn_onclick('fromclientcode');" runat="server" checked="true" name="controlclient1"  type="radio" /> All</td>
+    <td class="td_cell">From </td>
+    <td  class="td_cell"><select id="ddlfromclientcode" onchange ="CallWebMethod('fromclientcode');" runat="server" class="drpdown" style="WIDTH: 130px"> <option   selected="selected" value="[Select]">[Select]</option></select> </td>
+    <td class="td_cell"> Name</td>
+    <td class="td_cell"><select  id="ddlfromclientname" onchange ="CallWebMethod('fromclientname');" runat="server" class="drpdown" style="WIDTH: 200px"> <option  selected="selected" value="[Select]">[Select]</option></select> </td>
+    </tr>
+
+    <tr>
+    <td class="td_cell" > <input id="rbclientrange" onclick ="radbtn_onclick('toclientcode');" runat="server" name="controlclient1" type="radio" /> Range</td>
+    <td class="td_cell">To</td>
+    <td class="td_cell"><select id="ddltoclientcode" onchange ="CallWebMethod('toclientcode');" runat="server" class="drpdown" style="WIDTH: 130px"> <option  value="[Select]">[Select]</option></select> </td>
+    <td class="td_cell"> Name</td>
+    <td class="td_cell"><select id="ddltoclientname" onchange ="CallWebMethod('toclientname');" runat="server" class="drpdown" style="WIDTH: 200px"> <option selected="selected" value="[Select]">[Select]</option></select> </td>
+    </tr>
+    </tbody>
+    </table>
+</asp:Panel>
+</td>
+
+<td style="WIDTH: 510px">
+<asp:Panel id="Panel1" runat="server"  Width="510px" GroupingText="Driver" Font-Names="Arial" Font-Size="12px">
+    <table>
+    <tbody>
+    <tr>
+    <td class="td_cell"> <input id="rbdriverall" onclick ="radbtn_onclick('fromdrivercode');" runat="server" checked name="controldriver2" type="radio" /> All</td>
+    <td class="td_cell">From </td>
+    <td  class="td_cell"><select id="ddlfromdcode" onchange ="CallWebMethod('fromdrivercode');" runat="server" class="drpdown" style="WIDTH: 130px"> <option   selected="" value="[Select]">[Select]</option></select> </td>
+    <td class="td_cell"> Name</td><td class="td_cell"><select  id="ddlfromdname" onchange ="CallWebMethod('fromdrivername');" runat="server" class="drpdown" style="WIDTH: 200px"> <option  selected="" value="[Select]">[Select]</option></select> </td>
+    </tr>
+
+    <tr>
+    <td class="td_cell"> <input id="rbdriverrange" onclick ="radbtn_onclick('todrivercode');" runat="server" name="controldriver2" type="radio" /> Range</td>
+    <td class="td_cell">To</td>
+    <td class="td_cell"><select id="ddltodcode" onchange ="CallWebMethod('todrivercode');" runat="server" class="drpdown" style="WIDTH: 130px"> <option selected="" value="[Select]">[Select]</option></select> </td>
+    <td class="td_cell"> Name</td><td class="td_cell"><select id="ddltodname" onchange ="CallWebMethod('todrivername');" runat="server" class="drpdown" style="WIDTH: 200px"> <option selected="" value="[Select]">[Select]</option></select> </td>
+    </tr>
+    </tbody>
+    </table>
+</asp:Panel>
+</td>
+</tr>
+
+
+<tr>
+<td style="WIDTH: 510px">
+<asp:Panel id="Panel2" runat="server"  Width="510px" GroupingText="Hotel" Font-Names="Arial" Font-Size="12px">
+    <table>
+    <tbody>
+    <tr>
+    <td class="td_cell"><input id="rbHotelAll" onclick ="radbtn_onclick('fromhotelcode');" runat="server" checked name="controlhotel" type="radio" /> All</td>
+    <td class="td_cell">From </td>
+    <td  class="td_cell"><select id="ddlfromhotelcode" onchange ="CallWebMethod('fromhotelcode');" runat="server" class="drpdown" style="WIDTH: 130px"> <option   selected="selected" value="[Select]">[Select]</option></select> </td>
+    <td class="td_cell"> Name</td>
+    <td class="td_cell"><select  id="ddlfromhotelname" onchange ="CallWebMethod('fromhotelname');" runat="server" class="drpdown" style="WIDTH: 200px"> <option  selected="selected" value="[Select]">[Select]</option></select> </td>
+    </tr>
+
+    <tr>
+    <td class="td_cell" >  <input id="rbHotelRange" onclick ="radbtn_onclick('tohotelcode');" runat="server" name="controlhotel" type="radio" /> Range</td>
+    <td class="td_cell">To</td>
+    <td class="td_cell"><select id="ddltohotelcode" onchange ="CallWebMethod('tohotelcode');" runat="server" class="drpdown" style="WIDTH: 130px"> <option  value="[Select]">[Select]</option></select> </td>
+    <td class="td_cell"> Name</td>
+    <td class="td_cell"><select id="ddltohotelname" onchange ="CallWebMethod('tohotelname');" runat="server" class="drpdown" style="WIDTH: 200px"> <option selected="selected" value="[Select]">[Select]</option></select> </td>
+    </tr>
+    </tbody>
+    </table>
+</asp:Panel>
+</td>
+
+<td style="WIDTH: 510px">
+<asp:Panel id="Panel3" runat="server"  Width="510px" GroupingText="Car Type" Font-Names="Arial" Font-Size="12px">
+    <table>
+    <tbody>
+    <tr>
+    <td class="td_cell"> <input id="rbCarAll" onclick ="radbtn_onclick('fromcarcode');" runat="server" checked name="controlcar" type="radio" /> All</td>
+    <td class="td_cell">From </td>
+    <td  class="td_cell"><select id="ddlfromcarcode" onchange ="CallWebMethod('fromcarcode');" runat="server" class="drpdown" style="WIDTH: 130px"> <option   selected="" value="[Select]">[Select]</option></select> </td>
+    <td class="td_cell"> Name</td><td class="td_cell"><select  id="ddlfromcarname" onchange ="CallWebMethod('fromcarname');" runat="server" class="drpdown" style="WIDTH: 200px"> <option  selected="" value="[Select]">[Select]</option></select> </td>
+    </tr>
+
+    <tr>
+    <td class="td_cell"> <input id="rbCarRange" onclick ="radbtn_onclick('tocarcode');" runat="server" name="controlcar" type="radio" /> Range</td>
+    <td class="td_cell">To</td>
+    <td class="td_cell"><select id="ddltocarcode" onchange ="CallWebMethod('tocarcode');" runat="server" class="drpdown" style="WIDTH: 130px"> <option selected="" value="[Select]">[Select]</option></select> </td>
+    <td class="td_cell"> Name</td><td class="td_cell"><select id="ddltocarname" onchange ="CallWebMethod('tocarname');" runat="server" class="drpdown" style="WIDTH: 200px"> <option selected="" value="[Select]">[Select]</option></select> </td>
+    </tr>
+    </tbody>
+    </table>
+</asp:Panel>
+</td>
+</tr>
+
+
+
+
+
+<tr>
+<td style="WIDTH: 510px">
+<asp:Panel id="Panel7" runat="server"  Width="510px" GroupingText="Airport" Font-Names="Arial" Font-Size="12px">
+    <table>
+    <tbody>
+    <tr>
+    <td class="td_cell"><input id="rbAirPortAll" onclick ="radbtn_onclick('fromairportcode');" runat="server" checked="true" name="controlclient"  type="radio" /> All</td>
+    <td class="td_cell">From </td>
+    <td  class="td_cell"><select id="ddlfromairportcode" onchange ="CallWebMethod('fromairportcode');" runat="server" class="drpdown" style="WIDTH: 130px"> <option   selected="selected" value="[Select]">[Select]</option></select> </td>
+    <td class="td_cell"> Name</td>
+    <td class="td_cell"><select  id="ddlfromairportname" onchange ="CallWebMethod('fromairportname');" runat="server" class="drpdown" style="WIDTH: 200px"> <option  selected="selected" value="[Select]">[Select]</option></select> </td>
+    </tr>
+
+    <tr>
+    <td class="td_cell" > <input id="rbAirPortRange" onclick ="radbtn_onclick('toairportcode');" runat="server" name="controlclient" type="radio" /> Range</td>
+    <td class="td_cell">To</td>
+    <td class="td_cell"><select id="ddltoairportcode" onchange ="CallWebMethod('toairportcode');" runat="server" class="drpdown" style="WIDTH: 130px"> <option  value="[Select]">[Select]</option></select> </td>
+    <td class="td_cell"> Name</td>
+    <td class="td_cell"><select id="ddltoairportname" onchange ="CallWebMethod('toairportname');" runat="server" class="drpdown" style="WIDTH: 200px"> <option selected="selected" value="[Select]">[Select]</option></select> </td>
+    </tr>
+    </tbody>
+    </table>
+</asp:Panel>
+</td>
+
+<td style="WIDTH: 510px">
+<asp:Panel id="Panel8" runat="server"  Width="510px" GroupingText="Sector" Font-Names="Arial" Font-Size="12px">
+    <table>
+    <tbody>
+    <tr>
+    <td class="td_cell"> <input id="rbSectorAll" onclick ="radbtn_onclick('fromsectorcode');" runat="server" checked name="controldriver" type="radio" /> All</td>
+    <td class="td_cell">From </td>
+    <td  class="td_cell"><select id="ddlfromsectorcode" onchange ="CallWebMethod('fromsectorcode');" runat="server" class="drpdown" style="WIDTH: 130px"> <option   selected="" value="[Select]">[Select]</option></select> </td>
+    <td class="td_cell"> Name</td><td class="td_cell"><select  id="ddlfromsectorname" onchange ="CallWebMethod('fromsectorname');" runat="server" class="drpdown" style="WIDTH: 200px"> <option  selected="" value="[Select]">[Select]</option></select> </td>
+    </tr>
+
+    <tr>
+    <td class="td_cell"> <input id="rbSectorRange" onclick ="radbtn_onclick('tosectorcode');" runat="server" name="controldriver" type="radio" /> Range</td>
+    <td class="td_cell">To</td>
+    <td class="td_cell"><select id="ddltosectorcode" onchange ="CallWebMethod('tosectorcode');" runat="server" class="drpdown" style="WIDTH: 130px"> <option selected="" value="[Select]">[Select]</option></select> </td>
+    <td class="td_cell"> Name</td><td class="td_cell"><select id="ddltosectorname" onchange ="CallWebMethod('tosectorname');" runat="server" class="drpdown" style="WIDTH: 200px"> <option selected="" value="[Select]">[Select]</option></select> </td>
+    </tr>
+    </tbody>
+    </table>
+</asp:Panel>
+</td>
+</tr>
+
+
+<tr>
+<td style="WIDTH: 510px">
+
+    <table>
+    <tbody>
+    <tr>
+    <td class="td_cell">Transfer Type</td>
+    <td  class="td_cell"><asp:DropDownList id="ddlTransferType" runat="server" Width="150px" CssClass="drpdown" /> </td>
+    </tr>
+    <tr>
+    <td class="td_cell">Group By</td>
+    <td class="td_cell"><asp:DropDownList id="ddlgroupby" runat="server" Width="150px" CssClass="drpdown" /></td>
+    </tr>
+    </tbody>
+    </table>
+
+</td>
+
+<td style="WIDTH: 510px">
+
+    <table>
+    <tbody>
+    <tr>
+    <td class="td_cell">Currency Type</td>
+    <td  class="td_cell"><asp:DropDownList id="ddlCurrencyType" runat="server" Width="150px" CssClass="drpdown" /> </td>
+    </tr>
+    <tr>
+    <td class="td_cell"><asp:CheckBox ID="chkShowHand" Text="Show Handling Fees" AutoPostBack="true" runat="server" /></td>
+    <td class="td_cell"><asp:CheckBox ID="chkShowProfit" Text="Show Profit"  AutoPostBack="true" runat="server" /></td>
+    </tr>
+    </tbody>
+    </table>
+
+</td>
+</tr>
+
+<tr>
+<td colspan="2" align="right">
+<asp:Button id="BtnPrint"  runat="server" Text="Load Report" CssClass="field_button" ></asp:Button>
+<asp:Button id="btnClear"  runat="server" Text="Clear" CssClass="field_button" ></asp:Button>
+</td>
+
+<td style="display:none">
+               <asp:Button id="btnadd" tabIndex=16  runat="server"  
+        CssClass="field_button"></asp:Button>
+         <asp:Button id="btnexport" tabIndex=16 runat="server" 
+        CssClass="field_button"></asp:Button></td>
+</tr>
+
+</table>
+
+<asp:GridView ID="gv_SearchResult" runat="server" AutoGenerateColumns="False" 
+                                                BackColor="White" BorderColor="#999999" BorderStyle="None" 
+                                               CssClass="td_cell" Font-Size="10px">
+                                                 </asp:GridView>
+
+
+</contenttemplate>
+</asp:UpdatePanel>
+
+</asp:Content>
+

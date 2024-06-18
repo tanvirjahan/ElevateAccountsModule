@@ -1,0 +1,19 @@
+TransferPricelistSearch.aspx || 28/04/2019 13:20:18 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+CarTypesSearch.aspx || 28/04/2019 16:13:08 || Index was out of range. Must be non-negative and less than the size of the collection.
+Parameter name: index || admin
+--------------------------------------------------------------------------------------------------------------
+VehicleType.aspx || 23/05/2019 16:48:59 || Procedure or function 'sp_mod_othcat' expects parameter '@Supplierxml', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+VehicleType.aspx || 13/06/2019 12:47:32 || Invalid object name 'othcatmast_prefered_supplier'. || admin
+--------------------------------------------------------------------------------------------------------------
+VehicleType.aspx || 13/06/2019 14:49:49 || Invalid object name 'othcatmast_prefered_supplier'. || admin
+--------------------------------------------------------------------------------------------------------------
+VehicleType.aspx || 23/09/2019 12:03:10 || Invalid object name 'othcatmast_prefered_supplier'. || admin
+--------------------------------------------------------------------------------------------------------------
+VehicleType.aspx || 23/09/2019 12:03:40 || Invalid object name 'othcatmast_prefered_supplier'. || admin
+--------------------------------------------------------------------------------------------------------------
+VehicleType.aspx || 04/11/2019 16:57:39 || Procedure or function sp_add_othcat has too many arguments specified. || admin
+--------------------------------------------------------------------------------------------------------------
+VehicleType.aspx || 04/11/2019 17:04:44 || Procedure or function sp_add_othcat has too many arguments specified. || admin
+--------------------------------------------------------------------------------------------------------------

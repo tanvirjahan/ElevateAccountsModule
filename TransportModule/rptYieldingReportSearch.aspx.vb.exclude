@@ -1,0 +1,714 @@
+Imports CrystalDecisions.CrystalReports.Engine
+Imports CrystalDecisions.CrystalReports
+Imports CrystalDecisions.Shared
+Imports CrystalDecisions.Web
+Imports CrystalDecisions.ReportSource
+
+#Region "Namespace"
+Imports System.Data
+Imports System.Data.SqlClient
+#End Region
+
+Partial Class NewclientsSearch
+    Inherits System.Web.UI.Page
+    Dim objectcl As New clsDateTime
+    Dim rep As New ReportDocument
+    Dim rptcompanyname As String
+    Dim rptreportname As String
+    Dim objutils As New clsUtils
+    Dim servicetype As String
+    Dim default_country As String
+    Dim strqry As String
+    Dim seasonfrom As String
+    Dim seasonto As String
+    Dim mySqlConn As SqlConnection
+
+
+    Protected Sub Page_Init(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Init
+
+        If Page.IsPostBack = False Then
+            Try
+                ' Page.EnableViewState = False
+                Dim AppId As HiddenField = CType(Master.FindControl("hdnAppId"), HiddenField)
+                Dim AppName As HiddenField = CType(Master.FindControl("hdnAppName"), HiddenField)
+                Dim strappid As String = ""
+                Dim strappname As String = ""
+                If AppId Is Nothing = False Then
+                    strappid = AppId.Value
+                End If
+                If AppName Is Nothing = False Then
+                    strappname = AppName.Value
+                End If
+
+                txtconnection.Value = Session("dbconnectionName")
+
+                If txtFromDate.Text = "" Then
+                    txtFromDate.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+                End If
+
+
+                If txtToDate.Text = "" Then
+                    'txtToDate.Text = DateAdd(DateInterval.Month, 1, objectcl.GetSystemDateOnly(Session("dbconnectionName")))
+                    txttodate.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+                End If
+
+
+                If txttourfrom.Text = "" Then
+                    txttourfrom.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+                End If
+
+                If txttourto.Text = "" Then
+                    txttourto.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+                End If
+
+
+
+                If Request.QueryString("fromdate") <> "" Then
+                    txtfromdate.Text = Format("U", CType(Request.QueryString("fromdate"), Date))
+                End If
+                If Request.QueryString("todate") <> "" Then
+                    txtToDate.Text = Format("U", CType(Request.QueryString("todate"), Date))
+                End If
+
+                
+
+                txtFromDate.Attributes.Add("onchange", "javascript:ChangeDate();")
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objutils.WritErrorLog("rptSupplierpoliciesSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+            End Try
+
+
+
+        End If
+
+        Dim typ As Type
+        typ = GetType(DropDownList)
+
+        If (Page.ClientScript.IsClientScriptIncludeRegistered(typ, "TADDScript.js")) = False Then
+            Page.ClientScript.RegisterClientScriptInclude(typ, "TADDScript.js", "TADDScript.js")
+
+
+            ddlFromsectorcode.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            ddlFromSectorName.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+
+
+
+
+        End If
+
+        ClientScript.GetPostBackEventReference(Me, String.Empty)
+        If (Me.IsPostBack And Me.Request("__EVENTTARGET") = "RepNewClientWindowPostBack") Then
+            BtnPrint_Click(sender, e)
+        End If
+
+
+    End Sub
+
+    '#Region "Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+
+
+        If Page.IsPostBack = False Then
+            ''sell type
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlFromsectorcode, "sectorcode", "sectorname", "select sectorcode,sectorname from sectormaster inner join citymast on sectormaster.citycode =citymast.citycode and sectormaster.active=1   order by sectorcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlFromSectorName, "sectorname", "sectorcode", "select sectorcode,sectorname from sectormaster inner join citymast on sectormaster.citycode =citymast.citycode and sectormaster.active=1   order by sectorname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltosectorcode, "sectorcode", "sectorname", "select sectorcode,sectorname from sectormaster inner join citymast on sectormaster.citycode =citymast.citycode and sectormaster.active=1   order by sectorcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlTosectorname, "sectorname", "sectorcode", "select sectorcode,sectorname from sectormaster inner join citymast on sectormaster.citycode =citymast.citycode and sectormaster.active=1   order by sectorname", True)
+
+            ''clients
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromclientcode, "agentcode", "agentname", "select agentcode,agentname from agentmast where active=1   order by agentcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromclientname, "agentname", "agentcode", "select agentcode,agentname from agentmast where active=1   order by agentname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoclientcode, "agentcode", "agentname", "select agentcode,agentname from agentmast where active=1   order by agentcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoclientname, "agentname", "agentcode", "select agentcode,agentname from agentmast where active=1   order by agentname", True)
+
+
+            ''PARTY
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfrompartycode, "partycode", "partyname", "select partycode,partyname from partymast where active=1 and partymast.sptypecode='HOT'   order by partycode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfrompartyname, "partyname", "partycode", "select partycode,partyname from partymast where active=1 and partymast.sptypecode='HOT'  order by partyname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltopartycode, "partycode", "partyname", "select partycode,partyname from partymast where active=1 and partymast.sptypecode='HOT'  order by partycode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltopartyname, "partyname", "partycode", "select partycode,partyname from partymast where active=1 and partymast.sptypecode='HOT'  order by partyname", True)
+
+
+            ''AIRPORT
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromairportcode, "airportbordercode", "airportbordername", "select airportbordercode,airportbordername from airportbordersmaster where active=1   order by airportbordercode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromairportname, "airportbordername", "airportbordercode", "select airportbordercode,airportbordername from airportbordersmaster where active=1   order by airportbordername", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoairportcode, "airportbordercode", "airportbordername", "select airportbordercode,airportbordername from airportbordersmaster where active=1   order by airportbordercode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoairportname, "airportbordername", "airportbordercode", "select airportbordercode,airportbordername from airportbordersmaster where active=1   order by airportbordername", True)
+
+            ''cartype
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromcartypcode, "othcatcode", "othcatname", "select othcatcode,othcatname from othcatmast where active=1  and othcatmast.othgrpcode in (select option_selected from reservation_parameters where param_id ='1001') order by othcatcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromcartypname, "othcatname", "othcatcode", "select othcatcode,othcatname from othcatmast where active=1  and othcatmast.othgrpcode in (select option_selected from reservation_parameters where param_id ='1001') order by othcatname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltocartypcode, "othcatcode", "othcatname", "select othcatcode,othcatname from othcatmast where active=1  and othcatmast.othgrpcode in (select option_selected from reservation_parameters where param_id ='1001') order by othcatcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltocartypname, "othcatname", "othcatcode", "select othcatcode,othcatname from othcatmast where active=1  and othcatmast.othgrpcode in (select option_selected from reservation_parameters where param_id ='1001') order by othcatname", True)
+
+            ''driver
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromdrivercode, "drivercode", "drivername", "select drivercode,drivername from drivermaster  where active=1   order by drivercode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromdrivername, "drivername", "drivercode", "select drivercode,drivername from drivermaster  where active=1   order by drivername", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltodrivercode, "drivercode", "drivername", "select drivercode,drivername from drivermaster  where active=1   order by drivercode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltodrivername, "drivername", "drivercode", "select drivercode,drivername from drivermaster  where active=1   order by drivername", True)
+
+            disableallcontrol()
+
+        Else
+            If rbControlall.Checked = True Then
+                ddlFromsectorcode.Value = "[Select]"
+                ddlFromSectorName.Value = "[Select]"
+                ddltosectorcode.Value = "[Select]"
+                ddlTosectorname.Value = "[Select]"
+                ddlFromsectorcode.Disabled = True
+                ddlFromSectorName.Disabled = True
+                ddltosectorcode.Disabled = True
+                ddlTosectorname.Disabled = True
+            Else
+                ddlFromsectorcode.Disabled = False
+                ddlFromSectorName.Disabled = False
+                ddltosectorcode.Disabled = False
+                ddlTosectorname.Disabled = False
+
+            End If
+
+            If Radio1.Checked = True Then
+                ddlfromclientcode.Value = "[Select]"
+                ddlfromclientname.Value = "[Select]"
+                ddltoclientcode.Value = "[Select]"
+                ddltoclientname.Value = "[Select]"
+                ddlfromclientcode.Disabled = True
+                ddlfromclientname.Disabled = True
+                ddltoclientcode.Disabled = True
+                ddltoclientname.Disabled = True
+            Else
+                ddlfromclientcode.Disabled = False
+                ddlfromclientname.Disabled = False
+                ddltoclientcode.Disabled = False
+                ddltoclientname.Disabled = False
+            End If
+
+            If Radio3.Checked = True Then
+                ddlfrompartycode.Value = "[Select]"
+                ddlfrompartyname.Value = "[Select]"
+                ddltopartycode.Value = "[Select]"
+                ddltopartyname.Value = "[Select]"
+                ddlfrompartycode.Disabled = True
+                ddlfrompartyname.Disabled = True
+                ddltopartycode.Disabled = True
+                ddltopartyname.Disabled = True
+            Else
+                ddlfrompartycode.Disabled = False
+                ddlfrompartyname.Disabled = False
+                ddltopartycode.Disabled = False
+                ddltopartyname.Disabled = False
+            End If
+
+            If Radio5.Checked = True Then
+                ddlfromairportcode.Value = "[Select]"
+                ddlfromairportname.Value = "[Select]"
+                ddltoairportcode.Value = "[Select]"
+                ddltoairportname.Value = "[Select]"
+                ddlfromairportcode.Disabled = True
+                ddlfromairportname.Disabled = True
+                ddltoairportcode.Disabled = True
+                ddltoairportname.Disabled = True
+            Else
+                ddlfromairportcode.Disabled = False
+                ddlfromairportname.Disabled = False
+                ddltoairportcode.Disabled = False
+                ddltoairportname.Disabled = False
+            End If
+
+            If Radio7.Checked = True Then
+                ddlfromcartypcode.Value = "[Select]"
+                ddlfromcartypname.Value = "[Select]"
+                ddltocartypcode.Value = "[Select]"
+                ddltocartypname.Value = "[Select]"
+                ddlfromcartypcode.Disabled = True
+                ddlfromcartypname.Disabled = True
+                ddltocartypcode.Disabled = True
+                ddltocartypname.Disabled = True
+            Else
+                ddlfromcartypcode.Disabled = False
+                ddlfromcartypname.Disabled = False
+                ddltocartypcode.Disabled = False
+                ddltocartypname.Disabled = False
+            End If
+
+            If Radio9.Checked = True Then
+                ddlfromdrivercode.Value = "[Select]"
+                ddlfromdrivername.Value = "[Select]"
+                ddltodrivercode.Value = "[Select]"
+                ddltodrivername.Value = "[Select]"
+                ddlfromdrivercode.Disabled = True
+                ddlfromdrivername.Disabled = True
+                ddltodrivercode.Disabled = True
+                ddltodrivername.Disabled = True
+            Else
+                ddlfromdrivercode.Disabled = False
+                ddlfromdrivername.Disabled = False
+                ddltodrivercode.Disabled = False
+                ddltodrivername.Disabled = False
+            End If
+
+            If raddateto.Checked = True Then
+                txtfromdate.Enabled = True
+                txttodate.Enabled = True
+            Else
+                txtfromdate.Enabled = False
+                txttodate.Enabled = False
+            End If
+
+            If radtourto.Checked = True Then
+                txttourfrom.Enabled = True
+                txttourto.Enabled = True
+            Else
+                txttourfrom.Enabled = False
+                txttourto.Enabled = False
+            End If
+        End If
+
+        'objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromflightcode, "flightcode", "partyname", "select flightcode,partyname from flightmast inner join partymast on flightmast.airlinecode =partymast.partycode  where flightmast.active=1  and partymast.sptypecode='AIR' order by partycode", True)
+
+
+
+    End Sub
+
+    Protected Sub BtnClear_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles BtnClear.Click
+
+        ddlFromsectorcode.Value = "[Select]"
+        ddlFromSectorName.Value = "[Select]"
+        ddltosectorcode.Value = "[Select]"
+        ddlTosectorname.Value = "[Select]"
+        ddlfromclientcode.Value = "[Select]"
+        ddlfromclientname.Value = "[Select]"
+        ddltoclientcode.Value = "[Select]"
+        ddltoclientname.Value = "[Select]"
+        ddlfrompartycode.Value = "[Select]"
+        ddlfrompartyname.Value = "[Select]"
+        ddltopartycode.Value = "[Select]"
+        ddltopartyname.Value = "[Select]"
+        ddlfromairportcode.Value = "[Select]"
+        ddlfromairportname.Value = "[Select]"
+        ddltoairportcode.Value = "[Select]"
+        ddltoairportname.Value = "[Select]"
+        ddlfromcartypcode.Value = "[Select]"
+        ddlfromcartypname.Value = "[Select]"
+        ddltocartypcode.Value = "[Select]"
+        ddltocartypname.Value = "[Select]"
+        ddlfromdrivercode.Value = "[Select]"
+        ddlfromdrivername.Value = "[Select]"
+        ddltodrivercode.Value = "[Select]"
+        ddltodrivername.Value = "[Select]"
+
+        txtfromdate.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+        txttodate.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+        txttourfrom.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+        txttourto.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+        'txtfromdate.Text = DateAdd(DateInterval.Month, 1, objectcl.GetSystemDateOnly(Session("dbconnectionName")))
+        disableallcontrol()
+    End Sub
+
+#Region " Validate Page"
+    Public Function ValidatePage() As Boolean
+        'Dim frmdate, todate As Date
+
+        Dim objDateTime As New clsDateTime
+        Try
+
+            If txtFromDate.Text = "" Then
+
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('From date field can not be blank.');", True)
+
+                SetFocus(txtFromDate)
+                ValidatePage = False
+                Exit Function
+            End If
+
+            If CType(txtfromdate.Text, Date) > CType(txttodate.Text, Date) Then
+
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('From date can not be Greater than Todate.');", True)
+
+                SetFocus(txtfromdate)
+                ValidatePage = False
+                Exit Function
+
+            End If
+
+            If CType(txttourfrom.Text, Date) > CType(txttourto.Text, Date) Then
+
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Tour From date can not be Greater than Tour To Date.');", True)
+
+                SetFocus(txttourfrom)
+                ValidatePage = False
+                Exit Function
+
+            End If
+
+
+            ValidatePage = True
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Function
+#End Region
+
+    Private Function disableallcontrol()
+        Radio1.Checked = True
+
+        Radio3.Checked = True
+        Radio5.Checked = True
+        Radio7.Checked = True
+        rbControlall.Checked = True
+        ddlFromsectorcode.Disabled = True
+        ddlFromSectorName.Disabled = True
+        ddltosectorcode.Disabled = True
+        ddlTosectorname.Disabled = True
+        ddlfromclientcode.Disabled = True
+        ddlfromclientname.Disabled = True
+        ddltoclientcode.Disabled = True
+        ddltoclientname.Disabled = True
+        ddlfrompartycode.Disabled = True
+        ddlfrompartyname.Disabled = True
+        ddltopartycode.Disabled = True
+        ddltopartyname.Disabled = True
+        ddlfromairportcode.Disabled = True
+        ddlfromairportname.Disabled = True
+        ddltoairportcode.Disabled = True
+        ddltoairportname.Disabled = True
+        ddlfromcartypcode.Disabled = True
+        ddlfromcartypname.Disabled = True
+        ddltocartypcode.Disabled = True
+        ddltocartypname.Disabled = True
+        ddlfromdrivercode.Disabled = True
+        ddlfromdrivername.Disabled = True
+        ddltodrivercode.Disabled = True
+        ddltodrivername.Disabled = True
+        txtfromdate.Enabled = False
+        txttodate.Enabled = False
+        txttourfrom.Enabled = False
+        txttourto.Enabled = False
+    End Function
+
+    Protected Sub BtnPrint_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles BtnPrint.Click
+        Try
+            If ValidatePage() = True Then
+                'Session.Add("Pageame", "Newclient")
+                'Session.Add("BackPageName", "NewclientSearch.aspx")
+                'Session("ColReportParams") = Nothing
+
+                Dim strReportTitle As String = ""
+                Dim param1 As String = ""
+                Dim param2 As String = ""
+                Dim param3 As String = ""
+                Dim param4 As String = ""
+                Dim param5 As String = ""
+                Dim param6 As String = ""
+
+                Dim strfromdate As String = ""
+                Dim strtodate As String = ""
+
+
+                Dim strsellcodefrom As String = ""
+                Dim strsellcodeto As String = ""
+                Dim strclientfrom As String = ""
+                Dim strclientto As String = ""
+                Dim strpartyfrom As String = ""
+                Dim strpartyto As String = ""
+                Dim strairportfrom As String = ""
+                Dim strairportto As String = ""
+                Dim strairlinefrom As String = ""
+                Dim strairlineto As String = ""
+                Dim strflightfrom As String = ""
+                Dim strflightto As String = ""
+                Dim strgroupby As String = ""
+                Dim strrepfilter As String = ""
+                Dim strreportoption As String = ""
+                Dim strsectorcode As String = ""
+                Dim strtourfromdate As String = ""
+                Dim strtourtodate As String = ""
+                Dim strgroupby1 As String = ""
+                Dim strdateyn As String = ""
+                Dim strdate As String = ""
+
+
+                Dim strarr(6) As String
+                Dim k As Integer
+                Dim P As Integer
+
+                'sector code 
+                strsellcodefrom = IIf(UCase(ddlFromsectorcode.Items(ddlFromsectorcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlFromsectorcode.Items(ddlFromsectorcode.SelectedIndex).Text, "")
+                strsellcodeto = IIf(UCase(ddltosectorcode.Items(ddltosectorcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltosectorcode.Items(ddltosectorcode.SelectedIndex).Text, "")
+
+                'client 
+                strclientfrom = IIf(UCase(ddlfromclientcode.Items(ddlfromclientcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromclientcode.Items(ddlfromclientcode.SelectedIndex).Text, "")
+                strclientto = IIf(UCase(ddltoclientcode.Items(ddltoclientcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltoclientcode.Items(ddltoclientcode.SelectedIndex).Text, "")
+
+                'party 
+                strpartyfrom = IIf(UCase(ddlfrompartycode.Items(ddlfrompartycode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfrompartycode.Items(ddlfrompartycode.SelectedIndex).Text, "")
+                strpartyto = IIf(UCase(ddltopartycode.Items(ddltopartycode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltopartycode.Items(ddltopartycode.SelectedIndex).Text, "")
+
+                'airport 
+                strairportfrom = IIf(UCase(ddlfromairportcode.Items(ddlfromairportcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromairportcode.Items(ddlfromairportcode.SelectedIndex).Text, "")
+                strairportto = IIf(UCase(ddltoairportcode.Items(ddltoairportcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltoairportcode.Items(ddltoairportcode.SelectedIndex).Text, "")
+
+                'airline
+                strairlinefrom = IIf(UCase(ddlfromcartypcode.Items(ddlfromcartypcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromcartypcode.Items(ddlfromcartypcode.SelectedIndex).Text, "")
+                strairlineto = IIf(UCase(ddltocartypcode.Items(ddltocartypcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltocartypcode.Items(ddltocartypcode.SelectedIndex).Text, "")
+
+                'flight
+                strflightfrom = IIf(UCase(ddlfromdrivercode.Items(ddlfromdrivercode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromdrivercode.Items(ddlfromdrivercode.SelectedIndex).Text, "")
+                strflightto = IIf(UCase(ddltodrivercode.Items(ddltodrivercode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltodrivercode.Items(ddltodrivercode.SelectedIndex).Text, "")
+
+
+
+                strgroupby = mygroupresult()
+                strfromdate = Mid(Format(CType(txtfromdate.Text, Date), "u"), 1, 10)
+                strtodate = Mid(Format(CType(txttodate.Text, Date), "u"), 1, 10)
+
+                strtourfromdate = Mid(Format(CType(txttourfrom.Text, Date), "u"), 1, 10)
+                strtourtodate = Mid(Format(CType(txttourto.Text, Date), "u"), 1, 10)
+
+                If radtourto.Checked = True Then
+                    strdateyn = "R"
+                Else
+                    strdateyn = ""
+                End If
+
+                If raddateto.Checked = True Then
+                    strdate = "R"
+                Else
+                    strdate = ""
+                End If
+
+                strReportTitle = " Customer/Supplier Cartype Difference"
+                repfilterstring()
+                excuteprocedure()
+
+                Dim strpop As String = ""
+
+                strpop = "window.open('rptyieldingReport.aspx?Pageame=TranferPricelist&BackPageName=rptTransferPricelistReport.aspx " _
+                     & "&date=" & strdate _
+                     & "&fromdate=" & strfromdate _
+                     & "&todate=" & strtodate _
+                     & "&dateyn=" & strdateyn _
+                      & "&tourfromdate=" & strtourfromdate _
+                     & "&tourtodate=" & strtourtodate _
+            & "&sectorcodefrom=" & strsellcodefrom & "&sectorcodeto=" & strsellcodeto _
+            & "&clientfrom=" & strclientfrom & "&clientto=" & strclientto _
+            & "&partyfrom=" & strpartyfrom & "&partyto=" & strpartyto _
+            & "&airportfrom=" & strairportfrom & "&airportto=" & strairportto _
+            & "&cartypefrom=" & strairlinefrom & "&cartypeto=" & strairlineto _
+            & "&drivercodefrom=" & strflightfrom & "&drivercodeto=" & strflightto _
+            & "&transfertype=" & strgroupby _
+            & "&groupby=" & ddlgroupby.Items(ddlgroupby.SelectedIndex).Text _
+            & "&currency=" & ddlcurrency.SelectedIndex _
+                & "&repfilter=" & repfilterstring() & "&reportoption=" & strreportoption & "&reporttitle=" & strReportTitle & "','RepNewClient','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes' );"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+
+
+
+
+
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objutils.WritErrorLog("rptTransfercostPricelistSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+        End Try
+    End Sub
+    Private Function repfilterstring() As String
+        Dim strrepfilter As String
+        Try
+            If txtfromdate.Text <> "" And raddateto.Checked = True Then
+                strrepfilter = " Request Date From :" & txtfromdate.Text & "-To :" & txttodate.Text
+                'strrepfilter = strrepfilter + "-To :" & txtfromdate.Text
+            End If
+
+            If txttourfrom.Text <> "" And radtourto.Checked = True Then
+                strrepfilter = strrepfilter & " Tour  Date From :" & txttourfrom.Text & " To :" & txttourto.Text
+                'strrepfilter = strrepfilter & "Tour  Date To :" & txttourto.Text
+            End If
+
+            If ddlfromairportcode.Items(ddlfromairportcode.SelectedIndex).Text <> "[Select]" And ddltoairportcode.Items(ddltoairportcode.SelectedIndex).Text <> "[Select]" Then
+                strrepfilter = strrepfilter & " Airport Code From :" & ddlfromairportcode.Items(ddlfromairportcode.SelectedIndex).Text & " To : " & ddltoairportcode.Items(ddltoairportcode.SelectedIndex).Text
+            End If
+
+            If ddlfromcartypcode.Items(ddlfromcartypcode.SelectedIndex).Text <> "[Select]" And ddltocartypcode.Items(ddltocartypcode.SelectedIndex).Text <> "[Select]" Then
+                strrepfilter = strrepfilter & " Car Type Code From :" & ddlfromcartypcode.Items(ddlfromcartypcode.SelectedIndex).Text & "  To : " & ddltocartypcode.Items(ddltocartypcode.SelectedIndex).Text
+            End If
+
+            If ddlfromclientcode.Items(ddlfromclientcode.SelectedIndex).Text <> "[Select]" And ddltoclientcode.Items(ddltoclientcode.SelectedIndex).Text <> "[Select]" Then
+                strrepfilter = strrepfilter & " Client Code From :" & ddlfromclientcode.Items(ddlfromclientcode.SelectedIndex).Text & " To : " & ddltoclientcode.Items(ddltoclientcode.SelectedIndex).Text
+            End If
+
+            If ddlfromdrivercode.Items(ddlfromdrivercode.SelectedIndex).Text <> "[Select]" And ddltodrivercode.Items(ddltodrivercode.SelectedIndex).Text <> "[Select]" Then
+                strrepfilter = strrepfilter & " Driver Code From :" & ddlfromdrivercode.Items(ddlfromdrivercode.SelectedIndex).Text & " To : " & ddltodrivercode.Items(ddltodrivercode.SelectedIndex).Text
+            End If
+
+            If ddlfrompartycode.Items(ddlfrompartycode.SelectedIndex).Text <> "[Select]" And ddltopartycode.Items(ddltopartycode.SelectedIndex).Text <> "[Select]" Then
+                strrepfilter = strrepfilter & " Party Code From :" & ddlfrompartycode.Items(ddlfrompartycode.SelectedIndex).Text & "  To : " & ddltopartycode.Items(ddltopartycode.SelectedIndex).Text
+            End If
+
+            If ddlFromsectorcode.Items(ddlFromsectorcode.SelectedIndex).Text <> "[Select]" And ddltosectorcode.Items(ddltosectorcode.SelectedIndex).Text <> "[Select]" Then
+                strrepfilter = strrepfilter & " Sector Code From : " & ddlFromsectorcode.Items(ddlFromsectorcode.SelectedIndex).Text & "  To : " & ddltosectorcode.Items(ddltosectorcode.SelectedIndex).Text
+            End If
+
+            strrepfilter = strrepfilter & "- " & ddlcurrency.Items(ddlcurrency.SelectedIndex).Text
+            strrepfilter = strrepfilter & " Group by :" & ddlgroupby.Items(ddlgroupby.SelectedIndex).Text
+            strrepfilter = strrepfilter & " Transfer Type : " & ddltransfertype.Items(ddltransfertype.SelectedIndex).Text
+
+
+            repfilterstring = strrepfilter
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            'objutils.WritErrorLog("rptTransfercostPricelistSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+        End Try
+    End Function
+    Private Sub excuteprocedure()
+        Dim mySqlCmd As SqlCommand
+        Dim mySqlReader As SqlDataReader
+        Dim mySqlConn As SqlConnection
+        Dim sqlTrans As SqlTransaction
+        mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+        Try
+            mySqlCmd = New SqlCommand("sp_rep_percar_monthly1", mySqlConn, sqlTrans)
+            mySqlCmd.CommandType = CommandType.StoredProcedure
+            mySqlCmd.Parameters.Add(New SqlParameter("@alldate", SqlDbType.Int)).Value = IIf(raddateto.Checked = True, 1, 0)
+            mySqlCmd.Parameters.Add(New SqlParameter("@fromdate", SqlDbType.VarChar, 10)).Value = Format(CType(txtfromdate.Text, Date), "yyyy/MM/dd")
+            mySqlCmd.Parameters.Add(New SqlParameter("@todate", SqlDbType.VarChar, 10)).Value = Format(CType(txttodate.Text, Date), "yyyy/MM/dd")
+            mySqlCmd.Parameters.Add(New SqlParameter("@transferdate", SqlDbType.Int)).Value = IIf(radtourto.Checked = True, 1, 0)
+
+            mySqlCmd.Parameters.Add(New SqlParameter("@trffromdate", SqlDbType.VarChar, 10)).Value = Format(CType(txttourfrom.Text, Date), "yyyy/MM/dd")
+            mySqlCmd.Parameters.Add(New SqlParameter("@trftodate", SqlDbType.VarChar, 10)).Value = Format(CType(txttourto.Text, Date), "yyyy/MM/dd")
+
+            mySqlCmd.Parameters.Add(New SqlParameter("@agentfrm", SqlDbType.VarChar, 10)).Value = IIf(ddlfromclientcode.Items(ddlfromclientcode.SelectedIndex).Text = "[Select]", DBNull.Value, ddlfromclientcode.Items(ddlfromclientcode.SelectedIndex).Text)
+            mySqlCmd.Parameters.Add(New SqlParameter("@agentto", SqlDbType.VarChar, 10)).Value = IIf(ddltoclientcode.Items(ddltoclientcode.SelectedIndex).Text = "[Select]", DBNull.Value, ddltoclientcode.Items(ddltoclientcode.SelectedIndex).Text)
+
+            mySqlCmd.Parameters.Add(New SqlParameter("@hotfrm", SqlDbType.VarChar, 10)).Value = IIf(ddlfrompartycode.Items(ddlfrompartycode.SelectedIndex).Text = "[Select]", DBNull.Value, ddlfrompartycode.Items(ddlfrompartycode.SelectedIndex).Text)
+            mySqlCmd.Parameters.Add(New SqlParameter("@hotto", SqlDbType.VarChar, 10)).Value = IIf(ddltopartycode.Items(ddltopartycode.SelectedIndex).Text = "[Select]", DBNull.Value, ddltopartycode.Items(ddltopartycode.SelectedIndex).Text)
+
+            mySqlCmd.Parameters.Add(New SqlParameter("@sectorfrm", SqlDbType.VarChar, 10)).Value = IIf(ddlFromsectorcode.Items(ddlFromsectorcode.SelectedIndex).Text = "[Select]", DBNull.Value, ddlFromsectorcode.Items(ddlFromsectorcode.SelectedIndex).Text)
+            mySqlCmd.Parameters.Add(New SqlParameter("@sectorto", SqlDbType.VarChar, 10)).Value = IIf(ddltosectorcode.Items(ddltosectorcode.SelectedIndex).Text = "[Select]", DBNull.Value, ddltosectorcode.Items(ddltosectorcode.SelectedIndex).Text)
+
+            mySqlCmd.Parameters.Add(New SqlParameter("@cartypefrm", SqlDbType.VarChar, 10)).Value = IIf(ddlfromcartypcode.Items(ddlfromcartypcode.SelectedIndex).Text = "[Select]", DBNull.Value, ddlfromcartypcode.Items(ddlfromcartypcode.SelectedIndex).Text)
+            mySqlCmd.Parameters.Add(New SqlParameter("@cartypeto", SqlDbType.VarChar, 10)).Value = IIf(ddltocartypcode.Items(ddltocartypcode.SelectedIndex).Text = "[Select]", DBNull.Value, ddltocartypcode.Items(ddltocartypcode.SelectedIndex).Text)
+
+            mySqlCmd.Parameters.Add(New SqlParameter("@trftype", SqlDbType.VarChar, 10)).Value = mygroupresult()
+
+
+            mySqlCmd.Parameters.Add(New SqlParameter("@driverfrom", SqlDbType.VarChar, 10)).Value = IIf(ddlfromdrivercode.Items(ddlfromdrivercode.SelectedIndex).Text = "[Select]", DBNull.Value, ddlfromdrivercode.Items(ddlfromdrivercode.SelectedIndex).Text)
+            mySqlCmd.Parameters.Add(New SqlParameter("@driverto", SqlDbType.VarChar, 10)).Value = IIf(ddltodrivercode.Items(ddltodrivercode.SelectedIndex).Text = "[Select]", DBNull.Value, ddltodrivercode.Items(ddltodrivercode.SelectedIndex).Text)
+
+
+            mySqlCmd.ExecuteNonQuery()
+
+            clsDBConnect.dbSqlTransation(sqlTrans)              ' sql Transaction disposed 
+            clsDBConnect.dbCommandClose(mySqlCmd)               'sql command disposed
+            clsDBConnect.dbConnectionClose(mySqlConn)
+
+        Catch ex As Exception
+            'ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            'objutils.WritErrorLog("rptTransfercostPricelistSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+        End Try
+
+
+    End Sub
+#Region "Private Sub FillGrid(ByVal strorderby As String, Optional ByVal strsortorder As String = 'ASC')"
+    Private Sub FillGrid()
+        Dim myDS As New DataSet
+        Dim MyCommand As SqlCommand
+        Dim SqlConn1 As SqlConnection
+        Dim myDataAdapter As SqlDataAdapter
+        Dim ObjDate As New clsDateTime
+        Dim strSqlQry As String
+
+        lblMsg.Visible = False
+
+        
+        Try
+
+            'strSqlQry = "select othcatcode,othcatname from othcatmast where othgrpcode='TRFS' "
+
+
+            'SqlConn1 = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                            'Open connection
+            'myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn1)
+            'myDataAdapter.Fill(myDS)
+            'gv_SearchResult.DataSource = myDS
+
+            'If myDS.Tables(0).Rows.Count > 0 Then
+            '    gv_SearchResult.DataBind()
+            'Else
+            '    gv_SearchResult.PageIndex = 0
+            '    gv_SearchResult.DataBind()
+            '    lblMsg.Visible = True
+            '    lblMsg.Text = "Records not found, Please redefine search criteria."
+            'End If
+
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objutils.WritErrorLog("NewclientsSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            'clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            'clsDBConnect.dbConnectionClose(SqlConn)                          'Close connection
+        End Try
+
+    End Sub
+#End Region
+
+    Protected Sub btndisplay_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btndisplay.Click
+
+    End Sub
+
+    Private Function mygroupresult()
+
+        Try
+            Select Case ddltransfertype.Items(ddltransfertype.SelectedIndex).Text
+                Case "Arrival "
+                    mygroupresult = 0
+                Case "Departure "
+                    mygroupresult = 1
+                Case "Shifting "
+                    mygroupresult = 2
+                Case "All"
+                    mygroupresult = 3
+                Case Else
+                    mygroupresult = 0
+            End Select
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+
+
+    End Function
+    
+
+
+
+#Region "Public Sub SortGridColoumn_click()"
+    Public Sub SortGridColoumn_click()
+        'Dim DataTable As DataTable
+        'Dim myDS As New DataSet
+
+
+        'myDS = gv_SearchResult.DataSource
+        'DataTable = myDS.Tables(0)
+        'If IsDBNull(DataTable) = False Then
+        '    Dim dataView As DataView = DataTable.DefaultView
+        '    Session.Add("strsortdirection", objutils.SwapSortDirection(Session("strsortdirection")))
+        '    dataView.Sort = Session("strsortexpression") & " " & objutils.ConvertSortDirectionToSql(Session("strsortdirection"))
+        '    gv_SearchResult.DataSource = dataView
+        '    gv_SearchResult.DataBind()
+        'End If
+    End Sub
+#End Region
+
+    Protected Sub btnhelp_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "window.open('../Help.aspx?hi=NewclientsSearch','_blank','status=1,scrollbars=1,top=135,left=760,width=250,height=500');", True)
+    End Sub
+
+   
+   
+    
+End Class

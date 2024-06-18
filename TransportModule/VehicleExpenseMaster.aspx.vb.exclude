@@ -1,0 +1,272 @@
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Partial Class VehicleMakeMaster
+    Inherits System.Web.UI.Page
+#Region "Global Declaration"
+    Dim objUtils As New clsUtils
+    Dim strSqlQry As String
+    Dim mySqlCmd As SqlCommand
+    Dim mySqlReader As SqlDataReader
+    Dim mySqlConn As SqlConnection
+    Dim sqlTrans As SqlTransaction
+#End Region
+    Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click
+        Try
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+    Protected Sub btnSave_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSave.Click
+        Try
+            If Page.IsValid = True Then
+                Dim flag As Integer = 0
+                Dim optionval As String
+                If ViewState("State") = "New" Or ViewState("State") = "Edit" Then
+                    If checkForDuplicate() = False Then
+                        Exit Sub
+                    End If
+
+                    mySqlConn = clsDBConnect.dbConnection           'connection open
+                    sqlTrans = mySqlConn.BeginTransaction           'SQL  Trans start
+
+                    If ViewState("State") = "New" Then
+                        'optionval = objUtils.GetAutoDocNo("VEMCODE", mySqlConn, sqlTrans)
+                        'txtCode.Value = optionval.Trim
+                        flag = 0
+                    ElseIf ViewState("State") = "Edit" Then
+                        flag = 1
+                    End If
+
+                    mySqlCmd = New SqlCommand("sp_add_mod_vehicleExpensemaster", mySqlConn, sqlTrans)
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@flag", SqlDbType.Int)).Value = flag
+                    mySqlCmd.Parameters.Add(New SqlParameter("@expensecode", SqlDbType.VarChar, 20)).Value = txtCode.Value
+                    mySqlCmd.Parameters.Add(New SqlParameter("@expensename", SqlDbType.VarChar, 100)).Value = CType(txtName.Value.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@adduser", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+
+                    If chkActive.Checked = True Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@active", SqlDbType.Int)).Value = 1
+                    ElseIf chkActive.Checked = False Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@active", SqlDbType.Int)).Value = 0
+                    End If
+
+                    mySqlCmd.ExecuteNonQuery()
+
+                ElseIf ViewState("State") = "Delete" Then
+                    If checkForDeletion() = False Then
+                        Exit Sub
+                    End If
+                    mySqlConn = clsDBConnect.dbConnection           'connection open
+                    sqlTrans = mySqlConn.BeginTransaction           'SQL  Trans start
+
+                    mySqlCmd = New SqlCommand("sp_del_vehicleexpensemaster", mySqlConn, sqlTrans)
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@expensecode", SqlDbType.VarChar, 20)).Value = CType(txtCode.Value.Trim, String)
+                    mySqlCmd.ExecuteNonQuery()
+                End If
+
+                sqlTrans.Commit()    'SQl Tarn Commit
+                clsDBConnect.dbSqlTransation(sqlTrans)              ' sql Transaction disposed 
+                clsDBConnect.dbCommandClose(mySqlCmd)               'sql command disposed
+                clsDBConnect.dbConnectionClose(mySqlConn)           'connection close
+
+                Dim strscript As String = ""
+                strscript = "window.opener.__doPostBack('VehicleMWindowPostBack', '');window.opener.focus();window.close();"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+            End If
+        Catch ex As Exception
+            If mySqlConn.State = ConnectionState.Open Then
+                sqlTrans.Rollback()
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("vehicleExpensemaster.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+    Public Function checkForDeletion() As Boolean
+        checkForDeletion = True
+        'If objUtils.GetDBFieldValueExistnew(Session("dbconnectionName"), "vehicle_expense_master", "expensecode", CType(txtCode.Value.Trim, String)) Then
+        '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This Expense Code is already used for a Vehicles, cannot delete this Vehicle Make Code');", True)
+        '    checkForDeletion = False
+        '    Exit Function
+
+        'End If
+        checkForDeletion = True
+    End Function
+    Protected Sub btnHelp_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnHelp.Click
+        Try
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "window.open('../Help.aspx?hi=Drivers','_blank','status=1,scrollbars=1,top=135,left=760,width=250,height=500');", True)
+        Catch ex As Exception
+
+        End Try
+    End Sub
+    Private Sub DisableControl()
+        If ViewState("State") = "View" Or ViewState("State") = "Delete" Then
+
+            txtName.Disabled = True
+            txtCode.Disabled = True
+            chkActive.Disabled = True
+        ElseIf ViewState("State") = "Edit" Then
+            txtName.Disabled = False
+            txtCode.Disabled = True
+            chkActive.Disabled = False
+        
+        End If
+
+    End Sub
+    Private Sub ShowRecord(ByVal RefCode As String)
+        Try
+            mySqlConn = clsDBConnect.dbConnection           'connection open
+            mySqlCmd = New SqlCommand("Select * from vehicle_expense_master Where expensecode='" & RefCode & "' ", mySqlConn)
+
+            mySqlReader = mySqlCmd.ExecuteReader(CommandBehavior.CloseConnection)
+            If mySqlReader.HasRows Then
+                If mySqlReader.Read() = True Then
+                    If IsDBNull(mySqlReader("expensecode")) = False Then
+                        'Me.txtCode.Value = objUtils.CodeReturn(mySqlReader("vehiclemakecode"), 6)
+                        ViewState.Add("Codeview", mySqlReader("expensecode"))
+                        txtCode.Value = ViewState("Codeview")
+                        'lblText.Text = "1 " & CType(mySqlReader("currcode") & " = ", String)
+                    Else
+                        Me.txtCode.Value = ""
+                    End If
+                    If IsDBNull(mySqlReader("expensename")) = False Then
+                        Me.txtName.Value = CType(mySqlReader("expensename"), String)
+                    Else
+                        Me.txtName.Value = ""
+                    End If
+
+
+                    If IsDBNull(mySqlReader("active")) = False Then
+                        If CType(mySqlReader("active"), String) = "1" Then
+                            chkActive.Checked = True
+                        ElseIf CType(mySqlReader("active"), String) = "0" Then
+                            chkActive.Checked = False
+                        End If
+                    End If
+                End If
+            End If
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VehicleExpenseMaster.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbConnectionClose(mySqlConn)           'connection close
+            clsDBConnect.dbCommandClose(mySqlCmd)               'sql command disposed
+            clsDBConnect.dbReaderClose(mySqlReader)             ' sql reader disposed    
+        End Try
+    End Sub
+
+    Public Function checkForDuplicate() As Boolean
+        'Dim str As String
+        checkForDuplicate = True
+        If ViewState("State") = "New" Then
+            If objUtils.isDuplicatenew(Session("dbconnectionName"), "vehicle_expense_master", "expensecode", CType(txtCode.Value.Trim, String)) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This code is already present.');", True)
+                checkForDuplicate = False
+                Exit Function
+            End If
+
+            If objUtils.isDuplicatenew(Session("dbconnectionName"), "vehicle_expense_master", "expensename", CType(txtName.Value.Trim, String)) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This code is already present.');", True)
+                checkForDuplicate = False
+                Exit Function
+            End If
+
+
+        ElseIf ViewState("State") = "Edit" Then
+
+            If objUtils.isDuplicateForModifynew(Session("dbconnectionName"), "vehicle_expense_master", "expensecode", "expensename", txtName.Value.Trim, CType(txtCode.Value.Trim, String)) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This name is already present.');", True)
+                checkForDuplicate = False
+                Exit Function
+            End If
+
+            
+        End If
+
+        If txtCode.Value = "" Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Code Cant Blank.');", True)
+            checkForDuplicate = False
+            Exit Function
+        End If
+
+    End Function
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        If Page.IsPostBack = False Then
+            Try
+                
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+
+
+                ViewState.Add("State", Request.QueryString("State"))
+                ViewState.Add("RefCode", Request.QueryString("RefCode"))
+
+                If ViewState("State") = "New" Then
+                    SetFocus(txtName)
+                    lblHeading.Text = "New Vehicle Expense Master"
+                    Page.Title = Page.Title + " " + "New Vehicle Expense Master"
+                    btnSave.Text = "Save"
+                    'iden = objUtils.GetString(Session("dbconnectionName"), "SELECT IDENT_CURRENT ('vehiclemakemaster') AS Current_Identity")
+                    'idencmp = objUtils.GetString(Session("dbconnectionName"), "SELECT Count(*) from vehiclemakemaster")
+                    ''ViewState.Add("Codeview", objUtils.GetString(Session("dbconnectionName"), "SELECT IDENT_CURRENT ('vehiclemakemaster')+1 AS Current_Identity"))
+                    'If iden = "1" And idencmp = "0" Then
+                    '    txtCode.Value = objUtils.CodeReturn(objUtils.GetString(Session("dbconnectionName"), "SELECT IDENT_CURRENT ('vehiclemakemaster') AS Current_Identity"), 6)
+                    'Else
+                    '    txtCode.Value = objUtils.CodeReturn(objUtils.GetString(Session("dbconnectionName"), "SELECT IDENT_CURRENT ('vehiclemakemaster')+1 AS Current_Identity"), 6)
+                    'End If
+
+
+                    ViewState.Add("Codeview", txtCode.Value)
+                    btnSave.Attributes.Add("onclick", "return FormValidation('New')")
+
+
+
+                ElseIf ViewState("State") = "Edit" Then
+                    SetFocus(txtName)
+                    lblHeading.Text = "Edit  Vehicle Expense Master"
+                    Page.Title = Page.Title + " " + "Edit Vehicle Expense Master"
+                    btnSave.Text = "Update"
+                    DisableControl()
+
+                    ShowRecord(CType(ViewState("RefCode"), String))
+
+                    btnSave.Attributes.Add("onclick", "return FormValidation('Edit')")
+                ElseIf ViewState("State") = "View" Then
+                    SetFocus(btnCancel)
+                    lblHeading.Text = "View  Vehicle Expense Master"
+                    Page.Title = Page.Title + " " + "View Vehicle Expense Master"
+                    btnSave.Visible = False
+                    btnCancel.Text = "Return to Search"
+                    DisableControl()
+
+                    ShowRecord(CType(ViewState("RefCode"), String))
+
+                ElseIf ViewState("State") = "Delete" Then
+                    SetFocus(btnSave)
+                    lblHeading.Text = "Delete  Vehicle Expense Master"
+                    Page.Title = Page.Title + " " + "Delete Vehicle Expense Master"
+                    btnSave.Text = "Delete"
+                    DisableControl()
+
+                    ShowRecord(CType(ViewState("RefCode"), String))
+                    btnSave.Attributes.Add("onclick", "return FormValidation('Delete')")
+
+                End If
+                    btnCancel.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to cancel?')==false)return false;")
+                    'charcters(txtName)
+
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("VehicleExpenseMaster.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+
+        End If
+    End Sub
+End Class

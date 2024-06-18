@@ -1,0 +1,337 @@
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Partial Class VehicleMakeSearch
+    Inherits System.Web.UI.Page
+
+    Enum GridCol
+        vehiclemakecodeTCol = 0
+        vehiclemakecode = 1
+        vehiclemakename = 2
+        Active = 3
+        DateCreated = 4
+        UserCreated = 5
+        DateModified = 6
+        UserModified = 7
+        Edit = 8
+        View = 9
+        Delete = 10
+    End Enum
+
+#Region "Global Declaration"
+    Dim objUtils As New clsUtils
+    Dim objUser As New clsUser
+    Dim strSqlQry As String
+    Dim mySqlCmd As SqlCommand
+    Dim myDataAdapter As SqlDataAdapter
+    Dim mySqlReader As SqlDataReader
+    Dim SqlConn As SqlConnection
+
+    Dim strWhereCond As String
+#End Region
+    Protected Sub btnClear_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnClear.Click
+        Try
+            txtvehiclemcode.Text = ""
+            txtvehiclemname.Text = ""
+            'FillGrid("vehiclemakecode")
+            Me.ddlOrderBy.SelectedIndex = 0
+            FillGrid("vehiclemakename")
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+    Protected Sub btnSearch_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSearch.Click
+        Try
+            Select Case ddlOrderBy.SelectedIndex
+                Case 0
+                    FillGrid("vehiclemakename")
+                Case 1
+                    FillGrid("vehiclemakecode")
+
+            End Select
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+    Protected Sub btnHelp_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnHelp.Click
+        Try
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "window.open('../Help.aspx?hi=Drivers','_blank','status=1,scrollbars=1,top=135,left=760,width=250,height=500');", True)
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+    Protected Sub btnAddNew_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnAddNew.Click
+        Try
+            Dim strpop As String
+            'strpop = "window.open('VehicleMakeMaster.aspx?State=New','Driver','width='+screen.availWidth+' height='+screen.availHeight+' left=0,top=0 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+            strpop = "window.open('VehicleMakeMaster.aspx?State=New','Driver');"
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+    Protected Sub btnPrint_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnPrint.Click
+        Try
+            Session("ColReportParams") = Nothing
+
+            Dim vmakecode As String
+            Dim strpop As String = ""
+            If txtvehiclemcode.Text <> "" Then
+                vmakecode = objUtils.GetString(Session("dbconnectionName"), "select vehiclemakecode from vehiclemakemaster where vehiclemakecode='" & txtvehiclemcode.Text & "' or vehiclemakecode like'%" & txtvehiclemcode.Text & "'")
+            Else
+                vmakecode = txtvehiclemcode.Text
+            End If
+
+            'strpop = "window.open('rptFLMReport.aspx?Pageame=VehicleMake&BackPageName=VehicleMakeSearch.aspx&vehiclemakecode=" & vmakecode & "&vehiclemakename=" & txtvehiclemname.Text.Trim & "','RepDrivers','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+            strpop = "window.open('rptFLMReport.aspx?Pageame=VehicleMake&BackPageName=VehicleMakeSearch.aspx&vehiclemakecode=" & vmakecode & "&vehiclemakename=" & txtvehiclemname.Text.Trim & "','RepDrivers');"
+            ' strpop = "window.open('rptFLMReport.aspx?vehiclemakecode=" + txtvehiclemakecode.Text.Trim() + "&vehiclemakename=" + txtvehiclemakename.Text.Trim + "','RepDrivers','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VehicleMakeSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub ddlOrderBy_SelectedIndexChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles ddlOrderBy.SelectedIndexChanged
+        Try
+            Select Case ddlOrderBy.SelectedIndex
+                Case 0
+                    FillGrid("vehiclemakename")
+                Case 1
+                    FillGrid("vehiclemakecode")
+
+            End Select
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+   
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        If Page.IsPostBack = False Then
+            Try
+                SetFocus(txtvehiclemcode)
+                Dim AppId As HiddenField = CType(Master.FindControl("hdnAppId"), HiddenField)
+                Dim AppName As HiddenField = CType(Master.FindControl("hdnAppName"), HiddenField)
+                Dim strappid As String = ""
+                Dim strappname As String = ""
+                If AppId Is Nothing = False Then
+                    strappid = AppId.Value
+                End If
+                If AppName Is Nothing = False Then
+                    strappname = AppName.Value
+                End If
+
+                If CType(Session("GlobalUserName"), String) = Nothing Or CType(Session("Userpwd"), String) = Nothing Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                Else
+                    objUser.CheckUserRight(Session("dbconnectionName"), CType(Session("GlobalUserName"), String), CType(Session("Userpwd"), String), _
+                                                       CType(strappname, String), "TransportModule\VehicleMakeSearch.aspx", btnAddNew, btnExportToExcel, _
+                                                       btnPrint, gv_SearchResult, GridCol.Edit, GridCol.Delete, GridCol.View)
+
+                End If
+                Session.Add("strsortExpression", "vehiclemakecode")
+                Session.Add("strsortdirection", SortDirection.Ascending)
+                fillorderby()
+                FillGrid("vehiclemakename")
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("DriversSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+        End If
+        btnClear.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to clear search criteria?')==false)return false;")
+        ClientScript.GetPostBackEventReference(Me, String.Empty)
+        If (Me.IsPostBack And Me.Request("__EVENTTARGET") = "VehicleMWindowPostBack") Then
+            btnSearch_Click(sender, e)
+        End If
+    End Sub
+    Private Sub FillGrid(ByVal strorderby As String, Optional ByVal strsortorder As String = "ASC")
+        Dim myDS As New DataSet
+
+        gv_SearchResult.Visible = True
+        lblMsg.Visible = False
+
+        If gv_SearchResult.PageIndex < 0 Then
+            gv_SearchResult.PageIndex = 0
+        End If
+        strSqlQry = ""
+        Try
+            strSqlQry = "SELECT *,[IsActive]=case when active=1 then 'Active' when active=0 then 'InActive'end  FROM vehiclemakemaster "
+
+            If Trim(BuildCondition) <> "" Then
+                strSqlQry = strSqlQry & " where " & BuildCondition() & " ORDER BY " & strorderby & " " & strsortorder
+            Else
+                strSqlQry = strSqlQry & " ORDER BY " & strorderby & " " & strsortorder
+            End If
+
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            gv_SearchResult.DataSource = myDS
+
+            If myDS.Tables(0).Rows.Count > 0 Then
+                gv_SearchResult.DataBind()
+            Else
+                gv_SearchResult.PageIndex = 0
+                gv_SearchResult.DataBind()
+                lblMsg.Visible = True
+                lblMsg.Text = "Records not found, Please redefine search criteria."
+            End If
+
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VehicleMakeSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            'clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            'clsDBConnect.dbConnectionClose(SqlConn)                          'Close connection
+        End Try
+
+    End Sub
+    Private Sub fillorderby()
+        Try
+            ddlOrderBy.Items.Clear()
+            ddlOrderBy.Items.Add("VehicleMake Name")
+            ddlOrderBy.Items.Add("VehicleMake Code")
+
+            ddlOrderBy.SelectedIndex = 0
+        Catch ex As Exception
+
+        End Try
+
+    End Sub
+    Private Function BuildCondition() As String
+        strWhereCond = ""
+        If txtvehiclemcode.Text.Trim <> "" Then
+            If Trim(strWhereCond) = "" Then
+
+                strWhereCond = " vehiclemakemaster.vehiclemakecode = '" & txtvehiclemcode.Text & "' or vehiclemakemaster.vehiclemakecode LIKE '%" & txtvehiclemcode.Text & "'"
+            End If
+        End If
+
+        If txtvehiclemname.Text.Trim <> "" Then
+            If Trim(strWhereCond) = "" Then
+                strWhereCond = " upper(vehiclemakemaster.vehiclemakename) LIKE '" & Trim(txtvehiclemname.Text.Trim.ToUpper) & "%'"
+
+            Else
+                strWhereCond = strWhereCond & " and  upper(vehiclemakemaster.vehiclemakename) LIKE '" & Trim(txtvehiclemname.Text.Trim.ToUpper) & "%'"
+            End If
+
+
+        End If
+        BuildCondition = strWhereCond
+    End Function
+
+    Protected Sub gv_SearchResult_RowCommand(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gv_SearchResult.RowCommand
+        Try
+            If e.CommandName = "Page" Then Exit Sub
+            Dim lblId As Label
+            lblId = gv_SearchResult.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblCode")
+
+            If e.CommandName = "EditRow" Then
+
+                Dim strpop As String = ""
+                'strpop = "window.open('VehicleMakeMaster.aspx?State=Edit&RefCode=" + CType(lblId.Text.Trim, String) + "','VehicleMakeMaster','width='+screen.availWidth+' height='+screen.availHeight+' left=0,top=0 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                strpop = "window.open('VehicleMakeMaster.aspx?State=Edit&RefCode=" + CType(lblId.Text.Trim, String) + "','VehicleMakeMaster');"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+            ElseIf e.CommandName = "View" Then
+
+                Dim strpop As String = ""
+                'strpop = "window.open('VehicleMakeMaster.aspx?State=View&RefCode=" + CType(lblId.Text.Trim, String) + "','VehicleMakeMaster','width='+screen.availWidth+' height='+screen.availHeight+' left=0,top=0 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                strpop = "window.open('VehicleMakeMaster.aspx?State=View&RefCode=" + CType(lblId.Text.Trim, String) + "','VehicleMakeMaster');"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+            ElseIf e.CommandName = "DeleteRow" Then
+
+                Dim strpop As String = ""
+                'strpop = "window.open('VehicleMakeMaster.aspx?State=Delete&RefCode=" + CType(lblId.Text.Trim, String) + "','VehicleMakeMaster','width='+screen.availWidth+' height='+screen.availHeight+' left=0,top=0 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                strpop = "window.open('VehicleMakeMaster.aspx?State=Delete&RefCode=" + CType(lblId.Text.Trim, String) + "','VehicleMakeMaster');"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VehicleMakeSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub btnExportToExcel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnExportToExcel.Click
+        Dim DS As New DataSet
+        Dim DA As SqlDataAdapter
+        Dim con As SqlConnection
+        Dim objcon As New clsDBConnect
+
+        Try
+            If gv_SearchResult.Rows.Count <> 0 Then
+
+                strSqlQry = "select vehiclemakecode as [VehicleMake Code],vehiclemakename as [VehicleMake Name],[Active]=case when active=1 then 'Active' when active=0 then 'InActive' end,adddate as  [Date Created] ,adduser as  [User Created],moddate as  [Date Modified],moduser as  [User Modified] from vehiclemakemaster "
+
+                If Trim(BuildCondition) <> "" Then
+                    strSqlQry = strSqlQry & " WHERE " & BuildCondition() & " ORDER BY vehiclemakecode "
+                Else
+                    strSqlQry = strSqlQry & " ORDER BY vehiclemakecode"
+                End If
+                con = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+
+                DA = New SqlDataAdapter(strSqlQry, con)
+                DA.Fill(DS, "dirmast")
+
+                objUtils.ExportToExcel(DS, Response)
+                con.Close()
+            Else
+                objUtils.MessageBox("Sorry , No data availabe for export to excel.", Page)
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Sub
+
+    Protected Sub Page_PreInit(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.PreInit
+        Try
+
+
+            If Page.IsPostBack = False Then
+                Dim apid As Integer
+                apid = objUser.GetAppId(Session("dbconnectionName"), CType(Session("AppName"), String))
+                If apid <> 0 Then
+
+                    Select Case apid
+                        Case 1
+                            Me.MasterPageFile = "~/PriceListMaster.master"
+                        Case 2
+                            Me.MasterPageFile = "~/RoomBlock.master"
+                        Case 3
+                            Me.MasterPageFile = "~/ReservationMaster.master"
+                        Case 4
+                            Me.MasterPageFile = "~/AccountsMaster.master"
+                        Case 5
+                            Me.MasterPageFile = "~/UserAdminMaster.master"
+                        Case 6
+                            Me.MasterPageFile = "~/WebAdminMaster.master"
+                        Case 7
+                            Me.MasterPageFile = "~/TransferHistoryMaster.master"
+                        Case 9
+                            Me.MasterPageFile = "~/FleetMaster.master"
+                        Case 10
+                            Me.MasterPageFile = "~/TransferMaster.master"
+                        Case 11
+                            Me.MasterPageFile = "~/ExcursionMaster.master"
+                        Case Else
+                            Me.MasterPageFile = "~/SubPageMaster.master"
+                    End Select
+                Else
+                    Me.MasterPageFile = "~/SubPageMaster.master"
+                End If
+            End If
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+    Protected Sub txtvehiclemcode_TextChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles txtvehiclemcode.TextChanged
+
+    End Sub
+End Class

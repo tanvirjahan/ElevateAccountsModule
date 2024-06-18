@@ -1,0 +1,306 @@
+<%@ Page Language="VB" AutoEventWireup="false" CodeFile="MainPageInventory.aspx.vb" Inherits="MainPageInventory"  MasterPageFile="RoomBlockMaster.master" Strict="true" %>
+<%@ OutputCache location="none" %> 
+   <%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="cc1" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" runat="server" >
+    <style>
+   /* Begin Navigation Bar Styling */
+   
+   .dvOffday
+   {
+       background: #ccc;
+   }
+   .txtCal{
+  background: #f5dfee;
+  background-image: -webkit-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: -moz-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: -ms-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: -o-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: linear-gradient(to bottom, #f5f5f5, #f0d8ec);
+  -webkit-border-radius: 5;
+  -moz-border-radius: 5;
+  border-radius: 5px;
+  font-family: Arial;
+  color: #050005;
+  font-size: 14px;
+  padding: 5px 10px 5px 10px;
+  border: solid #ccc 1px;
+  text-decoration: none;
+}
+
+.txtCal:hover {
+  background: #f5f5f5;
+  background-image: -webkit-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: -moz-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: -ms-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: -o-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: linear-gradient(to bottom, #f5f5f5, #f0d8ec);
+  text-decoration: none;
+}
+   
+   
+   .buttonCal 
+   {
+       background-color: #555555;
+       color:White;
+       font-size: 20px;
+        border: solid #555555 1px;
+       } /* Black */
+   #nav {
+      width: 100%;
+      float: left;
+      margin: 0 0 3em 0;
+      padding: 0;
+      list-style: none;
+       /*background-color: #f2f2f2; 
+         border-top: 1px solid #ccc;
+          border-bottom: 1px solid #ccc; 
+       */
+     
+       font: medium /2.0 Arial, Helvetica, sans-serif;
+     }
+   #nav li {
+      float: left; }
+   #nav li a {
+      display: block;
+      padding: 8px 15px;
+      text-decoration: none;
+      font-weight: bold;
+      color: #069;
+        /*  border-right: 1px solid #ccc; */
+       }
+   #nav li a:hover {
+      color: #c00;
+      background-color: #fff; }
+   /* End navigation bar styling. */
+   
+   /* This is just styling for this specific page. 
+   body {
+      background-color: #555; 
+      font: small/1.3 Arial, Helvetica, sans-serif; }*/
+   #wrap {
+      width: 750px;
+      margin: 0 auto;
+      background-color: #fff; }
+   h1 {
+      font-size: 1.5em;
+      padding: 1em 8px;
+      color: #333;
+      background-color: #069;
+      margin: 0; }
+   #content {
+      padding: 0 50px 30px; }
+    .style1
+    {
+        width: 100%;
+    }
+      .LabelStyle
+    {
+          font: small Arial, Helvetica, sans-serif;
+        color:  #575757;
+        font-weight:bold;
+        padding-top:10px;
+        padding-bottom:10px;
+    }
+       .LabelSubHeadingStyle
+    {
+          font: small Arial, Helvetica, sans-serif;
+        color:  #575757;
+        font-weight:bold;
+        padding-top:10px;
+        padding-bottom:10px;
+    }
+        .LabelStyle
+    {
+          font: small Arial, Helvetica, sans-serif;
+        color:  #575757;
+               padding-top:10px;
+        padding-bottom:10px;
+    }
+       .DropdownStyle
+    {
+          font: small Arial, Helvetica, sans-serif;
+        color:  #575757;
+        height:25px;
+        width:90%;
+    }
+    .checkboxStyle
+    {
+          font: small Arial, Helvetica, sans-serif;
+        color:  #575757;
+        height:25px;
+        width:90%;
+    }
+</style>
+    <table style="width: 100%">
+        <tr>
+            <td>
+               </td>
+        </tr>
+        <tr>
+            <td>
+                <table style="width: 100%">
+                    <tr>
+                        <td width="15%" valign="top">
+                            <div id="dvFilter"  style="border-right: 1px solid #ccc;margin-top:-32px;padding-top:10px;padding-left:10px;" >
+                                <table class="style1">
+                                    <tr>
+                                        <td><div style="padding-bottom:10px;" >
+                                            <asp:Label ID="Label1" CssClass="LabelSubHeadingStyle" runat="server" Text="FILTER BY"></asp:Label></div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                        <div> 
+                                            <table class="style1">
+                                                <tr>
+                                                    <td>
+                                                       <asp:DropDownList ID="ddlhotelName" CssClass="DropdownStyle" runat="server">
+                                                <asp:ListItem Selected="True">Hotel Nane</asp:ListItem>
+                                            </asp:DropDownList></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                       <asp:DropDownList ID="ddlroomName" CssClass="DropdownStyle" runat="server">
+                                                <asp:ListItem Selected="True">Room Name</asp:ListItem>
+                                            </asp:DropDownList></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                         <asp:DropDownList ID="ddlMarket" CssClass="DropdownStyle" runat="server">
+                                                <asp:ListItem Selected="True">Market</asp:ListItem>
+                                            </asp:DropDownList></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <asp:DropDownList ID="ddlAgency" CssClass="DropdownStyle" runat="server">
+                                                <asp:ListItem Selected="True">Agency</asp:ListItem>
+                                            </asp:DropDownList></td>
+                                                </tr>
+                                            </table>
+                                            </div>
+                                            
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><div style="padding-top:10px;padding-bottom:10px; border-top: 1px solid #ccc;" >
+                                            <asp:Label ID="Label2" CssClass="LabelSubHeadingStyle" runat="server" Text="INVENTORY TYPE"></asp:Label></div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><div style=" border-bottom: 1px solid #ccc;"">
+                                            <table class="style1">
+                                                <tr>
+                                                    <td>
+                                                        <div  style="float:left;margin-top:-5px;">  <asp:Image ID="Image1" ImageUrl="images/crystaltoolbar/bullet-yellow.ico" Width="25px" runat="server" /></div>
+                                          <div style="float:left" >
+                                              <asp:Label ID="Label3" runat="server" CssClass="LabelStyle" Text="Financial"></asp:Label></div> <div style="float:right;text-align:right"><asp:CheckBox ID="chkFinacial" runat="server" TextAlign="Right" 
+                                                Text="" CssClass="checkboxStyle" /></div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                    <div  style="float:left;margin-top:-5px;">     <asp:Image ID="Image2"  ImageUrl="images/crystaltoolbar/bullet-red.ico"  Width="25px" runat="server" /></div>
+                                     <div  style="float:left">
+                                         <asp:Label ID="Label4"  CssClass="LabelStyle"  runat="server" Text="General"></asp:Label></div>   <div  style="float:right;text-align:right"><asp:CheckBox ID="chkGenerak" runat="server" TextAlign="Right" Text=" " 
+                                                CssClass="checkboxStyle" /></div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div  style="float:left;margin-top:-5px;">      <asp:Image ID="Image3"  ImageUrl="images/crystaltoolbar/bullet-blue.ico"  Width="25px" runat="server" /></div>
+                                   <div  style="float:left">
+                                       <asp:Label ID="Label5"   CssClass="LabelStyle"  runat="server" Text="Dummy Booking "></asp:Label></div> <div  style="float:right;text-align:right">      <asp:CheckBox ID="chkDummyBooking" runat="server" TextAlign="Left" 
+                                                Text="" CssClass="checkboxStyle" /></div>  </td>
+                                                </tr>
+                                            </table>
+                                            </div>
+                                       
+                                        </td>
+                                    </tr>
+                                                                     <tr>
+                                        <td><div style="padding-top:10px;padding-bottom:10px;" >
+                                            <asp:Label ID="Label9" CssClass="LabelSubHeadingStyle" runat="server" Text="SALES TYPE"></asp:Label></div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                                       <div style="padding-top:10px;padding-bottom:10px; border-bottom: 1px solid #ccc;"> <table class="style1">
+                                                <tr>
+                                                    <td>
+                                                                  <div style="float:left" >
+                                              <asp:Label ID="Label6" runat="server" CssClass="LabelStyle" Text="FREE Sale"></asp:Label></div> <div style="float:right;text-align:right"><asp:CheckBox ID="CheckBox1" runat="server" TextAlign="Right" 
+                                                Text="" CssClass="checkboxStyle" /></div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                   
+                                     <div  style="float:left">
+                                         <asp:Label ID="Label7"  CssClass="LabelStyle"  runat="server" Text="STOP Sale"></asp:Label></div>   <div  style="float:right;text-align:right"><asp:CheckBox ID="CheckBox2" runat="server" TextAlign="Right" Text=" " 
+                                                CssClass="checkboxStyle" /></div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                      
+                                   <div  style="float:left">
+                                       <asp:Label ID="Label8"   CssClass="LabelStyle"  runat="server" Text="On Request "></asp:Label></div> <div  style="float:right;text-align:right">      <asp:CheckBox ID="CheckBox3" runat="server" TextAlign="Left" 
+                                                Text="" CssClass="checkboxStyle" /></div>  </td>
+                                                </tr>
+                                            </table></div> </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            &nbsp;</td>
+                                    </tr>
+                                </table>
+                            </div></td>
+                        <td width="85%" valign="top" >
+                             <div id="dvCalendar" style="padding-left:10px;"><div style="float:right;padding-bottom:10px;padding-right:30px;">
+                                 <asp:Button ID="btnBack" CssClass="buttonCal" runat="server" Text="&lt;" />
+                                 <asp:TextBox ID="txtMonthYear" CssClass="txtCal" Width="130px" runat="server" 
+                                     Enabled="False"></asp:TextBox> 
+                                 <asp:Button ID="btnNext"  CssClass="buttonCal"  runat="server" Text="&gt;" />
+                                 </div>
+                             <div></div>
+                           <%--  <div id="dvWeekDays"> <div  style="float:left;padding-right:125px;"><span  class="LabelStyle" >MON</span> </div> <div style="float:left;padding-right:100px;"><span  class="LabelStyle">TUE</span></div> <div style="float:left;padding-right:100px;"><span  class="LabelStyle">WED</span></div> <div style="float:left;padding-right:100px;"><span  class="LabelStyle">THU</span></div> <div style="float:left;padding-right:100px;"><span  class="LabelStyle">FRI</span></div> <div style="float:left;padding-right:100px;"><span  class="LabelStyle">SAT</span></div> <div style="float:left;padding-right:100px;"><span  class="LabelStyle" span>SUN</span></div></div>--%>
+                             <div>   <asp:UpdatePanel ID="UpdatePanelCalendar" runat="server">
+                             <ContentTemplate>
+                                 <asp:DataList ID="dlMonthlyCalendar" runat="server" RepeatColumns="7"  Width="99%"
+                                     RepeatDirection="Horizontal">
+                        
+                                     <ItemTemplate>
+                                     <div style= "width:100%;">
+                                      <asp:Label ID="lblDay" runat="server"  width="90%" Text='<%# Eval("theDayName") %>'  CssClass="LabelStyle"
+                                                         Visible="true"></asp:Label>
+                                     <div id="dvDay" runat="server" style= "border: 1px solid #ccc; width:90%;height:100px;margin-bottom:10px;">
+                                         <table class="style1">
+                                             <tr>
+                                                 <td>
+                                                     &nbsp;</td>
+                                                 <td align="right">
+                                                     <asp:Label ID="lblDate" runat="server" Text='<%# Eval("DayNumber") %>' 
+                                                         CssClass="LabelStyle"
+                                                         ForeColor="White" Font-Bold="False"></asp:Label>&nbsp;</td>
+                                             </tr>
+                                             <tr>
+                                                 <td>
+                                                     &nbsp;</td>
+                                                 <td>
+                                                    
+                                                 </td>
+                                             </tr>
+                                         </table></div></div>
+                                     </ItemTemplate>
+                                 </asp:DataList>
+                             </ContentTemplate>
+                                 </asp:UpdatePanel></div>
+                               
+                             </div></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+ </asp:Content>

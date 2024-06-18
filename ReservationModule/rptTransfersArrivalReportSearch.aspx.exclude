@@ -1,0 +1,552 @@
+﻿<%@ Page Title="" Language="VB" MasterPageFile="~/ReservationMaster.master" AutoEventWireup="false"
+    CodeFile="rptTransfersArrivalReportSearch.aspx.vb" Inherits="rptTransfersArrivalReportSearch" %>
+    
+    <%@ Register assembly="AjaxControlToolkit" namespace="AjaxControlToolkit" tagprefix="asp" %>
+<%@ Register Assembly="System.Web.Extensions, Version=1.0.61025.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+    Namespace="System.Web.UI" TagPrefix="asp" %>
+    <%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="cc1" %>
+       <%@ Register Assembly="EclipseWebSolutions.DatePicker" Namespace="EclipseWebSolutions.DatePicker"
+    TagPrefix="ews" %>
+ 
+<%@ OutputCache Location="none" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" runat="Server">
+    <script src="../Content/vendor/jquery-1.11.0.js" type="text/javascript" charset="utf-8"></script>  
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function () {
+
+
+            SectorAutoCompleteExtenderKeyUp();
+            CountryAutoCompleteExtenderKeyUp();
+            AgentsAutoCompleteExtenderKeyUp();
+            HotelsAutoCompleteExtenderKeyUp();
+            HotelCitysAutoCompleteExtenderKeyUp();
+            FlightCodesAutoCompleteExtenderKeyUp();
+        });
+                function DateSelectCalExt() {
+                    var txtfromDate = document.getElementById("<%=txtfromDate.ClientID%>");
+                    if (txtfromDate.value != '') {
+                        var calendarBehavior1 = $find("<%=dpFromDate.ClientID %>");  // document.getElementById("<%=dpFromDate.ClientID%>"); 
+                        var date = calendarBehavior1._selectedDate;
+
+                        var dp = txtfromDate.value.split("/");
+                        var newDt = new Date(dp[2] + "/" + dp[1] + "/" + dp[0]);
+                        newDt = getFormatedDate(newDt);
+                        newDt = new Date(newDt);
+                        calendarBehavior1.set_selectedDate(newDt);
+                    }
+                    
+
+                }   
+        function AgentsAutoCompleteExtenderKeyUp() {
+
+            $("#<%= TxtAgentName.ClientID %>").bind("change", function () {
+
+                if (document.getElementById('<%=TxtAgentName.ClientID%>').value == '') {
+
+                    document.getElementById('<%=TxtAgentCode.ClientID%>').value = '';
+                }
+
+            });
+
+            $("#<%= TxtAgentName.ClientID %>").keyup(function (event) {
+
+                if (document.getElementById('<%=TxtAgentName.ClientID%>').value == '') {
+
+                    document.getElementById('<%=TxtAgentCode.ClientID%>').value = '';
+                }
+
+            });
+
+        }
+        function FlightCodesAutoCompleteExtenderKeyUp() {
+
+            $("#<%= TxtFlightName.ClientID %>").bind("change", function () {
+
+                if (document.getElementById('<%=TxtFlightName.ClientID%>').value == '') {
+
+                    document.getElementById('<%=TxtFlightCode.ClientID%>').value = '';
+                }
+
+            });
+
+            $("#<%= TxtFlightName.ClientID %>").keyup(function (event) {
+
+                if (document.getElementById('<%=TxtFlightName.ClientID%>').value == '') {
+
+                    document.getElementById('<%=TxtFlightCode.ClientID%>').value = '';
+                }
+
+            });
+
+        }
+        function HotelCitysAutoCompleteExtenderKeyUp() {
+
+            $("#<%= TxtCityName.ClientID %>").bind("change", function () {
+
+                if (document.getElementById('<%=TxtCityName.ClientID%>').value == '') {
+
+                    document.getElementById('<%=TxtCityCode.ClientID%>').value = '';
+                }
+
+            });
+
+            $("#<%= TxtCityName.ClientID %>").keyup(function (event) {
+
+                if (document.getElementById('<%=TxtCityName.ClientID%>').value == '') {
+
+                    document.getElementById('<%=TxtCityCode.ClientID%>').value = '';
+                }
+
+            });
+
+        }
+        function HotelsAutoCompleteExtenderKeyUp() {
+
+            $("#<%= TxtHotelName.ClientID %>").bind("change", function () {
+
+                if (document.getElementById('<%=TxtHotelName.ClientID%>').value == '') {
+
+                    document.getElementById('<%=TxtHotelCode.ClientID%>').value = '';
+                }
+
+            });
+
+            $("#<%= TxtHotelName.ClientID %>").keyup(function (event) {
+
+                if (document.getElementById('<%=TxtHotelName.ClientID%>').value == '') {
+
+                    document.getElementById('<%=TxtHotelCode.ClientID%>').value = '';
+                }
+
+            });
+
+        }
+
+        function CountryAutoCompleteExtenderKeyUp() {
+
+            $("#<%= TxtCtryName.ClientID %>").bind("change", function () {
+
+                if (document.getElementById('<%=TxtCtryName.ClientID%>').value == '') {
+
+                    document.getElementById('<%=TxtCtryCode.ClientID%>').value = '';
+                }
+
+            });
+
+            $("#<%= TxtCtryName.ClientID %>").keyup(function (event) {
+
+                if (document.getElementById('<%=TxtCtryName.ClientID%>').value == '') {
+
+                    document.getElementById('<%=TxtCtryCode.ClientID%>').value = '';
+                }
+
+            });
+
+        }
+        function SectorAutoCompleteExtenderKeyUp() {
+
+            $("#<%= Txtsectorname.ClientID %>").bind("change", function () {
+
+                if (document.getElementById('<%=Txtsectorname.ClientID%>').value == '') {
+
+                    document.getElementById('<%=Txtsectorcode.ClientID%>').value = '';
+                }
+
+            });
+
+            $("#<%= Txtsectorname.ClientID %>").keyup(function (event) {
+
+                if (document.getElementById('<%=Txtsectorname.ClientID%>').value == '') {
+
+                    document.getElementById('<%=Txtsectorcode.ClientID%>').value = '';
+                }
+
+            });
+
+        }
+
+        function flightcodesautocompleteselected(source, eventArgs) {
+
+            if (eventArgs != null) {
+                document.getElementById('<%=TxtFlightCode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=TxtFlightCode.ClientID%>').value = '';
+            }
+
+        }
+        function citysautocompleteselected(source, eventArgs) {
+
+            if (eventArgs != null) {
+                document.getElementById('<%=TxtCityCode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=TxtCityCode.ClientID%>').value = '';
+            }
+
+        }
+        function hotelsautocompleteselected(source, eventArgs) {
+
+            if (eventArgs != null) {
+                document.getElementById('<%=TxtHotelCode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=TxtHotelCode.ClientID%>').value = '';
+            }
+
+        }
+        function agentsautocompleteselected(source, eventArgs) {
+
+            if (eventArgs != null) {
+                document.getElementById('<%=TxtAgentCode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=TxtAgentCode.ClientID%>').value = '';
+            }
+
+        }
+        function countryautocompleteselected(source, eventArgs) {
+
+            if (eventArgs != null) {
+                document.getElementById('<%=TxtCtryCode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=TxtCtryCode.ClientID%>').value = '';
+            }
+
+        }
+
+        function sectorautocompleteselected(source, eventArgs) {
+
+            if (eventArgs != null) {
+                document.getElementById('<%=Txtsectorcode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=Txtsectorcode.ClientID%>').value = '';
+            }
+
+        }
+       
+       
+        function ShowProgress() {
+
+            var ModalPopupLoading = $find("ModalPopupLoading");
+            ModalPopupLoading.show();
+            $.removeCookie('Downloaded', { path: '/' });
+            //Check if receive cookie from server by second
+            intervalProgress = setInterval("$.checkDownloadFileCompletely()", 1000);
+        }
+
+        function HideProgess() {
+            var ModalPopupLoading = $find("ModalPopupLoading");
+            ModalPopupLoading.hide(500);
+        }
+
+        $.checkDownloadFileCompletely = function () {
+            var cookieValue = $.getCookie('Downloaded');
+            console.log(cookieValue + "---> Cookie Value;");
+            if (cookieValue == 'True') {
+                $.removeCookie('Downloaded');
+                clearInterval(intervalProgress);
+                HideProgess();
+            }
+        }
+
+        /* get cookie from document.cookie */
+        $.getCookie = function (cookieName) {
+            var cookieValue = document.cookie;
+            var c_start = cookieValue.indexOf(" " + cookieName + "=");
+            if (c_start == -1) {
+                c_start = cookieValue.indexOf(cookieName + "=");
+            }
+            if (c_start == -1) {
+                cookieValue = null;
+            }
+            else {
+                c_start = cookieValue.indexOf("=", c_start) + 1;
+                var c_end = cookieValue.indexOf(";", c_start);
+                if (c_end == -1) {
+                    c_end = cookieValue.length;
+                }
+                cookieValue = unescape(cookieValue.substring(c_start, c_end));
+            }
+            return cookieValue;
+        }
+
+        /* Remove cookie in document.cookie */
+        $.removeCookie = function (cookieName) {
+            var cookies = document.cookie.split(";");
+
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i];
+                var eqPos = cookie.indexOf("=");
+                var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                if (name == cookieName) {
+                    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                }
+            }
+        }
+    </script>
+    <script type="text/javascript">
+
+        var prm = Sys.WebForms.PageRequestManager.getInstance();
+        prm.add_initializeRequest(InitializeRequestUserControl);
+        prm.add_endRequest(EndRequestUserControl);
+
+        function InitializeRequestUserControl(sender, args) {
+
+        }
+
+        function EndRequestUserControl(sender, args) {
+            AutoCompleteExtenderKeyUp();
+            AutoCompleteExtenderCountryKeyUp();
+            AutoCompleteExtenderAgentKeyUp();
+        }        
+    </script>
+  <table style="border: 2px solid gray; width: 351px; height: 156px;">
+                    <tr style="padding-top:10px;padding-left:10px;">
+                        <td align="center" colspan="5">
+                            <asp:Label ID="lblHeading" runat="server" Text="ARRIVAL REPORT" CssClass="field_heading"
+                                Width="486px" Height="15px"></asp:Label>
+                        </td>
+                    </tr>
+                    <tr >
+                        <td class="td_cell" style="padding-top:15px;padding-left:15px;width: 181px" >
+                           Date of Arrival<span style="color: #ff0000"> <span class="td_cell">*</span></span>
+                        </td>
+                        <td style="width: 392px;padding-top:15px;padding-left:15px;"  >
+                           
+                            <asp:TextBox ID="txtFromDate" tabindex="1" runat="server" onchange="filltodate(this);" Width="75px"></asp:TextBox>
+                                        <asp:ImageButton ID="ImgBtnFrmDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                                            TabIndex="2" />
+                                        <cc1:CalendarExtender ID="dpFromDate" runat="server" Format="dd/MM/yyyy" OnClientDateSelectionChanged="DateSelectCalExt"
+                                            PopupButtonID="ImgBtnFrmDt" PopupPosition="Right" TargetControlID="txtFromDate">
+                                        </cc1:CalendarExtender>
+                                        <cc1:MaskedEditExtender ID="MeFromDate" runat="server" Mask="99/99/9999" MaskType="Date"
+                                            TargetControlID="txtFromDate">
+                                        </cc1:MaskedEditExtender>
+                                        <cc1:MaskedEditValidator ID="MevFromDate" runat="server" ControlExtender="MeFromDate"
+                                            ControlToValidate="txtFromDate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                            EmptyValueMessage="Date is required" ErrorMessage="MeFromDate" InvalidValueBlurredMessage="Invalid Date"
+                                            InvalidValueMessage="Invalid Date" TooltipMessage="Input a Date in Date/Month/Year">
+                                        </cc1:MaskedEditValidator> 
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="td_cell" style="width: 181px;padding-top:15px;padding-left:15px;">
+                            Country Group 
+                        </td>
+                        <td style="width: 392px;padding-top:15px;padding-left:15px;"  >
+                            <input   id="txtName" class="field_input" tabindex="2" type="text"
+                                maxlength="25" runat="server"  style="display:none"  />
+                                         
+                        <asp:TextBox ID="TxtSectorName" runat="server" AutoPostBack="True"
+                            CssClass="field_input" MaxLength="25" TabIndex="3" Width="297px"></asp:TextBox>
+                            <asp:TextBox ID="TxtSectorCode" runat="server" style="display:none"   ></asp:TextBox>
+                            <asp:AutoCompleteExtender ID="TxtSectorName_AutoCompleteExtender" runat="server" CompletionInterval="10"
+                            CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                            CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                            EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                            ServiceMethod="GetCountryGroups" TargetControlID="TxtSectorName" OnClientItemSelected="sectorautocompleteselected" >
+                        </asp:AutoCompleteExtender>
+        
+                    </td>
+                      
+                    </tr>
+                    <tr>
+                        <td class="td_cell" style="width: 181px;padding-top:15px;padding-left:15px;">
+                           Country 
+                        </td>
+                        <td style="width: 392px;padding-top:15px;padding-left:15px;"  >
+                                               <asp:TextBox ID="TxtCtryName" runat="server" AutoPostBack="True"
+                            CssClass="field_input" MaxLength="25" TabIndex="4" Width="297px"></asp:TextBox>
+                            <asp:TextBox ID="TxtCtryCode" runat="server" style="display:none"   ></asp:TextBox>
+                            <asp:AutoCompleteExtender ID="TxtCtryName_AutoCompleteExtender" runat="server" CompletionInterval="10"
+                            CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                            CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                            EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                            ServiceMethod="GetCountrys" TargetControlID="TxtCtryName" OnClientItemSelected="countryautocompleteselected" >
+                        </asp:AutoCompleteExtender>
+              
+                        </td>
+                    </tr>
+                              <tr>
+                        <td class="td_cell" style="width: 181px;padding-top:15px;padding-left:15px;">
+                            Agent 
+                        </td>
+                        <td style="width: 392px;padding-top:15px;padding-left:15px;"  >
+                                    <asp:TextBox ID="TxtAgentCode" runat="server" style="display:none"   ></asp:TextBox>
+                                               <asp:TextBox ID="TxtAgentName" runat="server" AutoPostBack="True"
+                            CssClass="field_input" MaxLength="25" TabIndex="5" Width="297px"></asp:TextBox>
+                       
+                            <asp:AutoCompleteExtender ID="TxtAgentName_AutoCompleteExtender" runat="server" CompletionInterval="10"
+                            CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                            CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                            EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                            ServiceMethod="GetAgents" TargetControlID="TxtAgentName" OnClientItemSelected="agentsautocompleteselected" >
+                        </asp:AutoCompleteExtender>
+              
+                  
+                        </td>
+                    </tr>
+                              <tr>
+                        <td class="td_cell" style="width: 181px;padding-top:15px;padding-left:15px;">
+                           Hotel 
+                        </td>
+                         <td style="width: 392px;padding-top:15px;padding-left:15px;"  >
+                              
+                                               <asp:TextBox ID="TxtHotelName" runat="server" AutoPostBack="True"
+                            CssClass="field_input" MaxLength="25" TabIndex="6" Width="297px"></asp:TextBox>
+                            <asp:TextBox ID="TxtHotelCode" runat="server" style="display:none"   ></asp:TextBox>
+                            <asp:AutoCompleteExtender ID="TxtHotelName_AutoCompleteExtender" runat="server" CompletionInterval="10"
+                            CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                            CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                            EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                            ServiceMethod="GetHotels" TargetControlID="TxtHotelName" OnClientItemSelected="hotelsautocompleteselected" >
+                        </asp:AutoCompleteExtender>
+              
+                  
+                        </td>
+                    </tr>
+                              <tr>
+                        <td class="td_cell" style="width: 181px;padding-top:15px;padding-left:15px;">
+                            Hotel City 
+                        </td>
+                        <td style="width: 392px;padding-top:15px;padding-left:15px;"  >
+                            <asp:TextBox ID="TxtCityCode" runat="server" style="display:none"   ></asp:TextBox>
+                                               <asp:TextBox ID="TxtCityName" runat="server" AutoPostBack="True"
+                            CssClass="field_input" MaxLength="25" TabIndex="7" Width="297px"></asp:TextBox>
+                           <asp:AutoCompleteExtender ID="TxtCityName_AutoCompleteExtender" runat="server" CompletionInterval="10"
+                            CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                            CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                            EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                            ServiceMethod="GetHotelcitys" TargetControlID="TxtCityName" OnClientItemSelected="citysautocompleteselected" >
+                        </asp:AutoCompleteExtender>
+              
+                        </td>
+                    </tr>
+                                  <tr>
+                        <td class="td_cell" style="width: 181px;padding-top:15px;padding-left:15px;">
+                           Flight 
+                        </td>
+                        <td style="width: 392px;padding-top:15px;padding-left:15px;"  >
+                     <asp:TextBox ID="TxtFlightCode" runat="server" style="display:none"   ></asp:TextBox>
+                                               <asp:TextBox ID="TxtFlightName" runat="server" AutoPostBack="True"
+                            CssClass="field_input" MaxLength="25" TabIndex="8" Width="297px"></asp:TextBox>
+                           <asp:AutoCompleteExtender ID="TxtFlightName_AutoCompleteExtender" runat="server" CompletionInterval="10"
+                            CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                            CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                            EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                            ServiceMethod="GetFlightDetails" TargetControlID="TxtFlightName" OnClientItemSelected="flightcodesautocompleteselected" >
+                        </asp:AutoCompleteExtender>
+                        </td>
+                    </tr>
+                                    <tr>
+                        <td class="td_cell" style="width: 181px;padding-top:15px;padding-left:15px;">
+                           Grouping 
+                        </td>
+                        <td  class="td_cell"style="width: 392px;padding-top:15px;padding-left:15px;"  >
+      
+  <asp:DropDownList ID="GroupBy" width="300px" TabIndex ="9" runat="server" >
+  <asp:ListItem  Text ="FlightNumber" Value="0"  />
+<asp:ListItem  Text ="ReservationNumber" Value="1"  />
+<asp:ListItem Text ="Hotel"  Value="2" />
+<asp:ListItem  Text ="Agent" Value="3"  />
+ 
+<asp:ListItem  Text ="FlightTime" Value="4"  />
+<asp:ListItem Text ="Country" Value="5" />
+  </asp:DropDownList>
+<%--<asp:RadioButtonList ID="GroupBy" runat="server" RepeatLayout="Flow" RepeatDirection="Horizontal" >
+<asp:ListItem  Text ="FlightNumber" Value="0"  />
+<asp:ListItem  Text ="ReservationNumber" Value="1"  />
+<asp:ListItem Text ="Hotel"  Value="2" />
+<asp:ListItem  Text ="Agent" Value="3"  />
+ 
+<asp:ListItem  Text ="FlightTime" Value="4"  />
+<asp:ListItem Text ="Country" Value="5" />
+
+</asp:RadioButtonList>
+--%>
+                        
+             
+                   
+                        </td>
+                    </tr>
+                                    <tr>
+                        <td class="td_cell" style="width: 181px;padding-top:15px;padding-left:15px;">
+                           Flight 
+                        </td>
+                        <td style="width: 392px;padding-top:15px;padding-left:15px;" class="td_cell"  >
+                      <asp:CheckBox ID="chkflightonly" Text="OnlyFlight" runat="server" TabIndex ="10" />
+                           <asp:CheckBox ID="chkshiftingonly"  Text="Only Shifting" runat="server" 
+                                TabIndex-="11" Visible="False" />
+                        </td>
+                    </tr>
+                                       <tr>
+                        <td class="td_cell" style="width: 181px;padding-top:15px;padding-left:15px;">
+                           Division 
+                        </td>
+                        <td style="width: 392px;padding-top:15px;padding-left:15px;"  >
+                        <asp:DropDownList ID="ddldivisions" Width="300px" runat="server" TabIndex="12" ></asp:DropDownList>
+        
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="td_cell" style="width: 181px;padding-top:15px;padding-left:15px;">
+                        </td>
+                        <td style="width: 392px" >
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 181px">
+                        
+                            <asp:Button ID="btnCancel" TabIndex="13" runat="server"  visible="false" Text="Return To Search" 
+                                CssClass="field_button" Width="148px">
+                            </asp:Button>
+                       
+                         
+                           
+                        </td>
+                        <td style="width: 392px"  >
+                             <asp:Button ID="btnLoadReport" TabIndex="14" runat="server" Text="Load Report" OnClientClick ="ShowProgress()" CssClass="field_button">
+                            </asp:Button>      &nbsp;       &nbsp;
+                      
+                          
+&nbsp;</td>
+                    </tr>
+                    <tr>
+                    </tr>
+                                     <tr style="display: none">
+                        <td style="width: 100%; padding: 10px 0px 12px 0px" align="center">
+                            <asp:Button ID="Button1" runat="server" Text="Help" Font-Bold="False" CssClass="search_button"
+                                Style="display: none"></asp:Button>
+                            &nbsp;&nbsp;<asp:Button ID="btnAddNew" runat="server" Text="Add New" Font-Bold="False"
+                                CssClass="btn" Style="display: none"></asp:Button>  
+                                                 <asp:Button ID="btnprint" runat="server" CssClass="btn" Font-Bold="False"
+                                Text="Export To Excel" Style="display: none" />                          
+                            <asp:Button ID="btnExportToExcel" runat="server" CssClass="btn" Font-Bold="False"
+                                Text="Export To Excel" Style="display: none" />
+                            <asp:GridView ID="gvSearchResult" runat="server" style="display:none"></asp:GridView> 
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+    <asp:GridView ID="gv_SearchResult" runat="server" AutoGenerateColumns="False" 
+                                                BackColor="White" BorderColor="#999999" BorderStyle="None" 
+                                               CssClass="td_cell" Font-Size="10px">
+                                                 </asp:GridView>
+     
+     <center>
+    <div id="Loading1" runat="server" style="height: 150px; width: 500px; vertical-align: middle">
+        <img alt="" id="Image1" runat="server" src="~/Images/loader-progressbar.gif" width="150" />
+        <h2 style="color: #06788B">
+            Processing please wait...</h2>
+    </div>
+    </center>
+   <asp:ModalPopupExtender ID="ModalPopupLoading" runat="server" BehaviorID="ModalPopupLoading"
+        TargetControlID="btnInvisibleLoading" CancelControlID="btnCloseLoading" PopupControlID="Loading1"
+        BackgroundCssClass="ModalPopupBG">
+    </asp:ModalPopupExtender>
+    <input id="btnInvisibleLoading" runat="server" type="button" value="Cancel" style="display: none" />
+    <input id="btnCloseLoading" runat="server" type="button" value="Cancel" style="display: none" />         
+</asp:Content>

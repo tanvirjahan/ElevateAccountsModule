@@ -1,0 +1,1367 @@
+﻿
+#Region "Namespace"
+Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Collections.Generic
+Imports MyClasses
+#End Region
+
+Partial Class TransportModule_TransfersRequestEntry
+    Inherits System.Web.UI.Page
+
+#Region "Global Declarations"
+    Dim objUtils As New clsUtils
+    Dim objUser As New clsUser
+    Dim strSqlQry As String
+    Dim strWhereCond As String
+    Dim SqlConn As SqlConnection
+    Dim SqlCmd As SqlCommand
+    Dim myDataAdapter As SqlDataAdapter
+    Dim dpFDate As EclipseWebSolutions.DatePicker.DatePicker
+    Dim dpTDate As EclipseWebSolutions.DatePicker.DatePicker
+    Dim mySqlReader As SqlDataReader
+    Dim mySqlConn As SqlConnection
+    Dim ObjDate As New clsDateTime
+    Dim sqlTrans As SqlTransaction
+    Dim chkSel As CheckBox
+    Dim otypecode1, otypecode2, english As String
+    Dim strStatus As Boolean = False
+    Dim gvRow As GridViewRow
+    Dim lblLineNo As Label
+    Dim chkDel As CheckBox
+    Dim ImgBtnFromDate As ImageButton
+    Dim txtAgentName As HtmlInputText
+    Dim sqlstr As String
+    Dim lstExcursionHeader As New List(Of clsExcursionHedaer)
+    Dim dtTransfersDetails As New DataTable
+    Dim priidchngsperson As Integer = 50
+    Dim myappid As Integer = 10
+    Dim cntCount As Integer = 0
+    Dim dtTemp As DataTable
+#End Region
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+
+        Try
+
+            If Page.IsPostBack = False Then
+
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+
+                txtConversionRate.Attributes.Add("readonly", "readonly")
+                Session("Pickfromhotel") = False
+                If Session("StatusClick") = "Excursion" Then
+                    btncopy.Enabled = False
+
+                Else
+                    btncopy.Enabled = True
+                End If
+
+                Session.Add("TransfersRequestState", Request.QueryString("State"))
+                Session.Add("RequestRefCode", Request.QueryString("RefCode"))
+
+                Session("TransfersRequestSubEntryState") = Request.QueryString("State")
+                txtconnection.Value = Session("dbconnectionName")
+                txtdecimal.Value = objUtils.GetDBFieldFromLongnew(Session("dbconnectionName"), "reservation_parameters", "option_selected", "param_id", 509)
+
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlCustomerName, "agentname", "agentcode", "Select ltrim(rtrim(agentcode))agentcode,ltrim(rtrim(agentname))agentname from agentmast where active=1 and agentcode not in(select agentcode from agents_locked) order by agentname", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSellingCode, "trfsellcode", "trfsellname", "select rtrim(ltrim(trfsellcode)) as trfsellcode, rtrim(ltrim(trfsellname)) as trfsellname from trfsellmast where active=1 order by trfsellcode", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSellingName, "trfsellname", "trfsellcode", "select rtrim(ltrim(trfsellcode)) as trfsellcode, rtrim(ltrim(trfsellname)) as trfsellname from trfsellmast where active=1 order by trfsellname", True)
+                'objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSellingCode, "trfsellcode", "trfsellname", "select distinct rtrim(ltrim(trfsellmast.trfsellname))trfsellname,ltrim(rtrim(trfsellmast.trfsellcode))trfsellcode from trfsellmast inner join agentmast on agentmast.trfsellcode=trfsellmast.trfsellcode where trfsellmast.active=1 order by trfsellname", True)
+                'objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSellingName, "trfsellname", "trfsellcode", "select distinct rtrim(ltrim(excsellmast.excsellname))excsellname,ltrim(rtrim(excsellmast.excsellcode))excsellcode from excsellmast inner join agentmast on agentmast.excsellcode=excsellmast.excsellcode where excsellmast.active=1 order by excsellname", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlPaymentCode, "paycode", "payname", "  select ltrim(rtrim(paycode))paycode, ltrim(rtrim(payname))payname from paymentmodemaster order by payname", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlPaymentName, "payname", "paycode", "  select ltrim(rtrim(paycode))paycode, ltrim(rtrim(payname))payname from paymentmodemaster order by payname", True)
+
+                'objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSPersoncode, "UserCode", "UserName", "select rtrim(ltrim(UserCode)) as UserCode, rtrim(ltrim(UserName)) as UserName from Usermaster where active=1 order by UserCode", True)
+                'objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSpersonName, "UserName", "UserCode", "select rtrim(ltrim(UserCode)) as UserCode, rtrim(ltrim(UserName)) as UserName from Usermaster where active=1 order by UserName", True)
+                '05082014
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSPersoncode, "UserCode", "UserName", "select distinct rtrim(ltrim(usermaster.UserCode)) as UserCode, rtrim(ltrim(UserName)) as UserName from Usermaster inner join agentmast on agentmast.spersoncode =usermaster.usercode where usermaster.active=1 ", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSpersonName, "UserName", "UserCode", "select distinct rtrim(ltrim(usermaster.UserCode)) as UserCode, rtrim(ltrim(usermaster.UserName)) as UserName from Usermaster inner join agentmast on agentmast.spersoncode =usermaster.usercode  where usermaster.active=1 ", True)
+
+
+
+
+                otypecode1 = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select option_selected from reservation_parameters where param_id=1104")
+                otypecode2 = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select option_selected from reservation_parameters where param_id=1105")
+                english = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select option_selected from reservation_parameters where param_id=1107")
+
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlLanguageCode, "nationalityname", "nationalitycode", " select ltrim(rtrim(nationalitycode))nationalitycode,ltrim(rtrim(nationalityname))nationalityname from nationality_master where showinexcursions=1 and active=1 order by nationalityname", True, english)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlCurrency, "currcode", "currcode", "select distinct agentmast.currcode,currrates.convrate FROM agentmast INNER JOIN currrates ON agentmast.currcode = currrates.currcode WHERE tocurr=(select option_selected from reservation_parameters where param_id=457)", True)
+                'NumbersForTextbox(txtCreditCardNo)
+                'vij
+                Session("Savecompleated") = ""
+
+                CreateDataSourceSubEntry()
+
+                If CType(Session("TransfersRequestState"), String) = "AddRow" Then
+                    txtUserCode.Value = CType(Session("GlobalUserName"), String)
+                    Dim RefCode As String
+                    RefCode = CType(Session("ManageTicketRefCode"), String)
+                    btnSave.Text = "Save"
+                    'vij
+                    dpDate.Text = Today
+                    FilGrid(gvTransfersRequest, True, True, 2)
+
+                ElseIf CType(Session("TransfersRequestState"), String) = "EditRow" Then
+                    Dim RefCode As String
+                    RefCode = CType(Session("RequestRefCode"), String)
+                    ShowRecord(RefCode)
+                    ShowTransfersRequest_Details(RefCode)
+                    btnSave.Text = "Final Update"
+
+                ElseIf CType(Session("TransfersRequestState"), String) = "ViewRow" Then
+                    Dim RefCode As String
+                    RefCode = CType(Session("RequestRefCode"), String)
+                    ShowRecord(RefCode)
+                    ShowTransfersRequest_Details(RefCode)
+                    DisableControls()
+                    btnSave.Visible = False
+                    lblHeading.Text = "View Transfers Request"
+                    'btnPrint.Visible = True
+                End If
+
+                Dim typ As Type
+                typ = GetType(DropDownList)
+
+
+                If (Page.ClientScript.IsClientScriptIncludeRegistered(typ, "TADDScript.js")) = False Then
+                    Page.ClientScript.RegisterClientScriptInclude(typ, "TADDScript.js", "TADDScript.js")
+
+                    'ddlCustomerName.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+                    ddlSPersoncode.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+                    ddlSpersonName.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+                    ddlLanguageCode.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+                    'ddlPaymentCode.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+                    'ddlPaymentName.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+                    ddlSellingCode.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+                    ddlSellingName.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+
+                End If
+                Excursion_Details()
+            End If
+
+
+            If Page.IsPostBack = True Then
+
+                Session("StatusClick") = ""
+                sqlstr = ""
+                sqlstr = "SELECT agentmast.currcode,currrates.convrate FROM agentmast INNER JOIN currrates ON "
+                sqlstr = sqlstr + "agentmast.currcode = currrates.currcode WHERE tocurr=(select option_selected from reservation_parameters where param_id=457) "
+                sqlstr = sqlstr + " and agentcode='" & CType(txtAgent.Value, String) & "'"
+
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlCurrency, "currcode", "currcode", sqlstr, True)
+                If ddlCurrency.Items.Count > 0 Then
+                    ddlCurrency.SelectedIndex = 0
+                End If
+
+
+
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSPersoncode, "UserCode", "UserName", "select distinct rtrim(ltrim(usermaster.UserCode)) as UserCode, rtrim(ltrim(UserName)) as UserName from Usermaster inner join agentmast on agentmast.spersoncode =usermaster.usercode where usermaster.active=1 ", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSpersonName, "UserName", "UserCode", "select distinct rtrim(ltrim(usermaster.UserCode)) as UserCode, rtrim(ltrim(usermaster.UserName)) as UserName from Usermaster inner join agentmast on agentmast.spersoncode =usermaster.usercode  where usermaster.active=1 ", True)
+                ddlSpersonName.Value = hdnsperson.Value
+                ddlSPersoncode.Value = ddlSpersonName.Items(ddlSpersonName.SelectedIndex).Text
+            End If
+
+
+
+            'sales person user rights 
+            If changesalesperson(priidchngsperson) = "1" Then
+                ddlSPersoncode.Disabled = False
+                ddlSpersonName.Disabled = False
+            Else
+                ddlSPersoncode.Disabled = True
+                ddlSpersonName.Disabled = True
+            End If
+
+
+            If Session("Savecompleated") = "showprintbtn" Then
+                btnPrint.Visible = True
+            End If
+
+            ClientScript.GetPostBackEventReference(Me, String.Empty)
+            If (Me.IsPostBack And Me.Request("__EVENTTARGET") = "TransfersRequestEntryWindowPostBack") Then
+                FillGridBySubEntry()
+            End If
+
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("TransfersRequestEntry.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+
+#Region "Numbers"
+    Public Sub Numbers(ByVal txtbox As HtmlInputText)
+        txtbox.Attributes.Add("onkeypress", "return OnlyNumber(event)")
+    End Sub
+#End Region
+
+#Region "NumbersForTextbox"
+    Public Sub NumbersForTextbox(ByVal txtbox As TextBox)
+        txtbox.Attributes.Add("onkeypress", "return OnlyNumber(event)")
+    End Sub
+#End Region
+
+
+    Public Sub FilGrid(ByVal grd As GridView, ByVal showrecord As Boolean, Optional ByVal blnload As Boolean = False, Optional ByVal count As Integer = 1)
+
+        Try
+
+            Dim lngcnt As Long
+            If blnload = True Then
+                lngcnt = 1
+            Else
+                lngcnt = count
+            End If
+            If (showrecord) Then
+
+                gvTransfersRequest.DataSource = CreateDataSource(lngcnt)
+                gvTransfersRequest.DataBind()
+                If lngcnt = 0 Then
+                    ' lblMsg.Visible = True
+                    btnSave.Enabled = False
+                End If
+                gvTransfersRequest.Visible = True
+                Exit Sub
+            End If
+            gvTransfersRequest.DataBind()
+            gvTransfersRequest.Visible = True
+            'txtgridrows.Value = grd.Rows.Count
+
+
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+        End Try
+
+    End Sub
+
+    Private Function CreateDataSource(ByVal lngcount As Long) As DataView
+
+        Try
+
+            Dim dt As DataTable
+            Dim dr As DataRow
+            Dim i As Integer
+            dt = New DataTable
+            dt.Columns.Add(New DataColumn("requestid", GetType(String)))
+            dt.Columns.Add(New DataColumn("tlineno", GetType(String)))
+            dt.Columns.Add(New DataColumn("transferdate", GetType(String)))
+            dt.Columns.Add(New DataColumn("transfertype", GetType(String)))
+            dt.Columns.Add(New DataColumn("startingpoint", GetType(String)))
+
+
+            dt.Columns.Add(New DataColumn("endingpoint", GetType(String)))
+
+            'vij06082014
+            dt.Columns.Add(New DataColumn("pickupdate", GetType(String)))
+
+
+            dt.Columns.Add(New DataColumn("pickuptime", GetType(String)))
+
+            dt.Columns.Add(New DataColumn("cartype", GetType(String)))
+            dt.Columns.Add(New DataColumn("units", GetType(String)))
+            dt.Columns.Add(New DataColumn("price", GetType(String)))
+            dt.Columns.Add(New DataColumn("salecurrency", GetType(String)))
+
+            dt.Columns.Add(New DataColumn("salevalue", GetType(String)))
+            dt.Columns.Add(New DataColumn("hotelcode", GetType(String)))
+            dt.Columns.Add(New DataColumn("shifthotelcode", GetType(String)))
+            dt.Columns.Add(New DataColumn("roomno", GetType(String)))
+            dt.Columns.Add(New DataColumn("adults", GetType(String)))
+
+            dt.Columns.Add(New DataColumn("child", GetType(String)))
+            dt.Columns.Add(New DataColumn("guestname", GetType(String)))
+            dt.Columns.Add(New DataColumn("flightcode", GetType(String)))
+            dt.Columns.Add(New DataColumn("flighttime", GetType(String)))
+            dt.Columns.Add(New DataColumn("complementcust", GetType(String)))
+
+            dt.Columns.Add(New DataColumn("invno", GetType(String)))
+            dt.Columns.Add(New DataColumn("creditnoteno", GetType(String)))
+            dt.Columns.Add(New DataColumn("remarks", GetType(String)))
+            dt.Columns.Add(New DataColumn("handling_currency", GetType(String)))
+            dt.Columns.Add(New DataColumn("handling_value", GetType(String)))
+
+            dt.Columns.Add(New DataColumn("tran_state", GetType(String)))
+            dt.Columns.Add(New DataColumn("excursionid", GetType(String)))
+            dt.Columns.Add(New DataColumn("excrlineno", GetType(String)))
+            dt.Columns.Add(New DataColumn("resrequestid", GetType(String)))
+            dt.Columns.Add(New DataColumn("resrlineno", GetType(String)))
+            dt.Columns.Add(New DataColumn("supcartype", GetType(String)))
+            dt.Columns.Add(New DataColumn("costprice", GetType(Decimal)))
+            dt.Columns.Add(New DataColumn("supplierref", GetType(String)))
+            dt.Columns.Add(New DataColumn("pagingboard", GetType(Integer)))
+            dt.Columns.Add(New DataColumn("compfromsup", GetType(Integer)))
+            dt.Columns.Add(New DataColumn("flightdate", GetType(String)))
+
+            dt.Rows.Add("1", "1", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "0", "", 0, 0, "")
+
+            'For i = 1 To lngcount
+            '    dr = dt.NewRow()
+            '    dr(0) = i
+            '    dt.Rows.Add(dr)
+            'Next
+
+            CreateDataSource = New DataView(dt)
+
+            Session("DtTransfersSubEntry") = dt
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+            CreateDataSource = Nothing
+        End Try
+
+    End Function
+
+    Protected Sub btnSave_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSave.Click
+
+        Dim GvRow As GridViewRow
+        Dim ObjDate As New clsDateTime
+        Dim chk As CheckBox
+        Dim frmdt As TextBox
+        Dim todt As TextBox
+        Dim RmCode As HtmlSelect
+        Dim lblroomcodee As Label
+        Dim lblstopsale As Label
+        Dim ivCnt As Integer
+
+        Try
+            If Page.IsValid = True Then
+
+                If Not ValidateGridOneRow() And Not Session("Pickfromhotel") Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Please enter one record in grid');", True)
+                    Exit Sub
+                End If
+
+                If CType(Session("TransfersRequestSubEntryState"), String) = "AddRow" Or CType(Session("TransfersRequestSubEntryState"), String) = "EditRow" Then
+
+
+                    'Dim lstExcursionHeader As New List(Of clsExcursionHedaer)
+                    'lstExcursionHeader = Session("lstExcursionHeader")
+
+
+                    'Inserting into Header Table
+                    mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+                    sqlTrans = mySqlConn.BeginTransaction                                           'SQL  Trans start
+
+                    Dim optionval As String
+
+                    If CType(Session("TransfersRequestSubEntryState"), String) = "AddRow" Then
+                        optionval = objUtils.GetAutoDocNo("TRFBOOK", mySqlConn, sqlTrans)
+                        hdnTransferid.Value = optionval.Trim
+                        SqlCmd = New SqlCommand("sp_add_transfers_header", mySqlConn, sqlTrans)
+                    ElseIf CType(Session("TransfersRequestSubEntryState"), String) = "EditRow" Then
+                        SqlCmd = New SqlCommand("sp_mod_transfers_header", mySqlConn, sqlTrans)
+                    End If
+
+                    SqlCmd.CommandType = CommandType.StoredProcedure
+
+                    SqlCmd.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = hdnTransferid.Value.Trim
+                    SqlCmd.Parameters.Add(New SqlParameter("@requestdate", SqlDbType.VarChar, 20)).Value = Format(CType(dpDate.Text, Date), "yyyy/MM/dd")
+
+                    SqlCmd.Parameters.Add(New SqlParameter("@usercode", SqlDbType.VarChar, 20)).Value = txtUserCode.Value
+                    SqlCmd.Parameters.Add(New SqlParameter("@agentcode", SqlDbType.VarChar, 20)).Value = txtAgent.Value
+
+                    SqlCmd.Parameters.Add(New SqlParameter("@agentref", SqlDbType.VarChar, 20)).Value = txtClientRef.Text 'ddlLanguageCode.Value
+                    SqlCmd.Parameters.Add(New SqlParameter("@adddate", SqlDbType.DateTime)).Value = Format(CType(DateTime.Now, Date), "yyyy/MM/dd")
+
+                    SqlCmd.Parameters.Add(New SqlParameter("@adduser", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                    SqlCmd.Parameters.Add(New SqlParameter("@moddate", SqlDbType.DateTime)).Value = Format(CType(DateTime.Now, Date), "yyyy/MM/dd")
+
+                    SqlCmd.Parameters.Add(New SqlParameter("@moduser", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                    SqlCmd.Parameters.Add(New SqlParameter("@tsellcode", SqlDbType.VarChar, 20)).Value = ddlSellingCode.Items(ddlSellingCode.SelectedIndex).Text
+
+                    SqlCmd.Parameters.Add(New SqlParameter("@currcode", SqlDbType.VarChar, 20)).Value = ddlCurrency.Items(ddlCurrency.SelectedIndex).Text
+                    SqlCmd.Parameters.Add(New SqlParameter("@convrate", SqlDbType.Decimal, 18, 12)).Value = txtConversionRate.Text
+
+                    SqlCmd.Parameters.Add(New SqlParameter("@spersoncode", SqlDbType.VarChar, 20)).Value = ddlSPersoncode.Items(ddlSPersoncode.SelectedIndex).Text
+                    SqlCmd.Parameters.Add(New SqlParameter("@paycode", SqlDbType.VarChar, 20)).Value = ddlPaymentCode.Items(ddlPaymentCode.SelectedIndex).Text
+
+                    SqlCmd.Parameters.Add(New SqlParameter("@nationalitycode", SqlDbType.VarChar, 20)).Value = ""
+                    SqlCmd.Parameters.Add(New SqlParameter("@language", SqlDbType.VarChar, 200)).Value = ddlLanguageCode.Items(ddlLanguageCode.SelectedIndex).Text
+
+                    SqlCmd.ExecuteNonQuery()
+
+                    'Inserting into Detail Table
+                    Dim tLineNo As Integer = 1
+                    dtTransfersDetails = Session("DtTransfersSubEntry")
+
+                    'vij
+                    If CType(Session("TransfersRequestSubEntryState"), String) = "EditRow" Then
+                        SqlCmd = New SqlCommand("sp_del_transfers_detail", mySqlConn, sqlTrans)
+                        SqlCmd.CommandType = CommandType.StoredProcedure
+                        SqlCmd.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = hdnTransferid.Value.Trim
+                        ''SqlCmd.Parameters.Add(New SqlParameter("@tlineno", SqlDbType.VarChar, 20)).Value = CType(tLineNo, Integer)
+                        SqlCmd.ExecuteNonQuery()
+                    End If
+
+                    If Session("Pickfromhotel") Then
+                        cntCount = dtTransfersDetails.Rows.Count - 1
+                    Else
+                        cntCount = dtTransfersDetails.Rows.Count - 2
+                    End If
+                    For i = 0 To cntCount
+
+                        ivCnt = dtTransfersDetails.Rows(i)("units")
+                        ' ********************** Inserting records into transfers_booking_detailnew tables ********************
+                        If CType(Session("TransfersRequestSubEntryState"), String) = "AddRow" Then
+                            SqlCmd = New SqlCommand("sp_add_transfers_detail", mySqlConn, sqlTrans)
+                        ElseIf CType(Session("TransfersRequestSubEntryState"), String) = "EditRow" Then
+                            'Deleting first and then inserting
+                            'SqlCmd = New SqlCommand("sp_del_transfers_detail", mySqlConn, sqlTrans)
+                            'SqlCmd.CommandType = CommandType.StoredProcedure
+                            'SqlCmd.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = hdnTransferid.Value.Trim
+                            'SqlCmd.ExecuteNonQuery()
+                            ' updating the transfers request ***********************
+                            dtTransfersDetails = Session("DtTransfersSubEntry")
+                            SqlCmd = New SqlCommand("sp_add_transfers_detail", mySqlConn, sqlTrans)
+                        End If
+
+                        SqlCmd.CommandType = CommandType.StoredProcedure
+                        SqlCmd.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = CType(hdnTransferid.Value.Trim, String)
+                        SqlCmd.Parameters.Add(New SqlParameter("@tlineno", SqlDbType.Int)).Value = CType(tLineNo, Integer)
+                        SqlCmd.Parameters.Add(New SqlParameter("@transferdate", SqlDbType.DateTime)).Value = CType(dtTransfersDetails.Rows(i)("transferdate"), DateTime)
+                        SqlCmd.Parameters.Add(New SqlParameter("@transfertype", SqlDbType.Int)).Value = CType(dtTransfersDetails.Rows(i)("transfertype"), Integer)
+                        SqlCmd.Parameters.Add(New SqlParameter("@startingpoint", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("startingpoint").ToString
+
+                        SqlCmd.Parameters.Add(New SqlParameter("@endingpoint", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("endingpoint").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@cartype", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("cartype").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@units", SqlDbType.Int)).Value = CType(dtTransfersDetails.Rows(i)("units"), Integer)
+                        SqlCmd.Parameters.Add(New SqlParameter("@price", SqlDbType.Decimal, 18, 4)).Value = Val(dtTransfersDetails.Rows(i)("price"))
+                        SqlCmd.Parameters.Add(New SqlParameter("@salecurrency", SqlDbType.Money)).Value = Val(dtTransfersDetails.Rows(i)("salecurrency"))
+
+                        SqlCmd.Parameters.Add(New SqlParameter("@salevalue", SqlDbType.Money)).Value = Val(dtTransfersDetails.Rows(i)("salevalue"))
+                        SqlCmd.Parameters.Add(New SqlParameter("@hotelcode", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("hotelcode").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@shifthotelcode", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("shifthotelcode").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@roomno", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("roomno").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@adults", SqlDbType.Int)).Value = CType(dtTransfersDetails.Rows(i)("adults"), Integer)
+
+                        SqlCmd.Parameters.Add(New SqlParameter("@child", SqlDbType.Int)).Value = CType(dtTransfersDetails.Rows(i)("child"), Integer)
+                        SqlCmd.Parameters.Add(New SqlParameter("@guestname", SqlDbType.VarChar, 500)).Value = dtTransfersDetails.Rows(i)("guestname").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@flightcode", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("flightcode").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@flighttime", SqlDbType.VarChar, 10)).Value = dtTransfersDetails.Rows(i)("flighttime").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@complementcust", SqlDbType.Int)).Value = CType(dtTransfersDetails.Rows(i)("complementcust"), Integer)
+
+                        SqlCmd.Parameters.Add(New SqlParameter("@invno", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("invno").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@creditnoteno", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("creditnoteno").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@remarks", SqlDbType.VarChar, 500)).Value = dtTransfersDetails.Rows(i)("remarks").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@handling_currency", SqlDbType.Money)).Value = Val(dtTransfersDetails.Rows(i)("handling_currency"))
+                        SqlCmd.Parameters.Add(New SqlParameter("@handling_value", SqlDbType.Money)).Value = Val(dtTransfersDetails.Rows(i)("handling_value"))
+
+                        SqlCmd.Parameters.Add(New SqlParameter("@tran_state", SqlDbType.VarChar, 1)).Value = dtTransfersDetails.Rows(i)("tran_state").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@excursionid", SqlDbType.VarChar, 20)).Value = txtexcid.Text.ToString 'dtTransfersDetails.Rows(i)("excursionid").ToString
+                        Dim ExcursionLineNo As Integer = 0
+                        Dim resrlineno As Integer = 0
+                        Try
+                            ExcursionLineNo = Val(txtexculno.Text) 'Val(dtTransfersDetails.Rows(i)("excrlineno"))
+                            resrlineno = Val(dtTransfersDetails.Rows(i)("resrlineno"))
+                        Catch ex As Exception
+                        End Try
+
+                        SqlCmd.Parameters.Add(New SqlParameter("@excrlineno", SqlDbType.Int)).Value = ExcursionLineNo
+                        SqlCmd.Parameters.Add(New SqlParameter("@resrequestid", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("resrequestid").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@resrlineno", SqlDbType.Int)).Value = resrlineno
+                        SqlCmd.Parameters.Add(New SqlParameter("@supcartype", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("supcartype").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@costprice", SqlDbType.Decimal, 18, 4)).Value = Val(dtTransfersDetails.Rows(i)("costprice"))
+                        SqlCmd.Parameters.Add(New SqlParameter("@supplierref", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("supplierref").ToString
+                        SqlCmd.Parameters.Add(New SqlParameter("@pagingboard", SqlDbType.Int)).Value = CType(dtTransfersDetails.Rows(i)("pagingboard"), Integer)
+                        SqlCmd.Parameters.Add(New SqlParameter("@flightdate", SqlDbType.DateTime)).Value = CType(dtTransfersDetails.Rows(i)("flightdate"), DateTime)
+
+                        SqlCmd.ExecuteNonQuery()
+
+                        If CType(Session("TransfersRequestSubEntryState"), String) = "EditRow" Then
+                            SqlCmd = New SqlCommand("sp_del_transfers_subdetails", mySqlConn, sqlTrans)
+                            SqlCmd.CommandType = CommandType.StoredProcedure
+                            SqlCmd.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = hdnTransferid.Value.Trim
+                            'vij
+                            SqlCmd.Parameters.Add(New SqlParameter("@tlineno", SqlDbType.VarChar, 20)).Value = CType(tLineNo, Integer)
+                            SqlCmd.ExecuteNonQuery()
+                        End If
+
+                        ' ********************** Inserting records into transfer_booking_subdetail tables ********************
+                        For j = 1 To Val(dtTransfersDetails.Rows(i)("units"))
+                            SqlCmd = New SqlCommand("sp_add_transfer_booking_subdetail", mySqlConn, sqlTrans)
+                            SqlCmd.CommandType = CommandType.StoredProcedure
+                            SqlCmd.Parameters.Add(New SqlParameter("@tlineno", SqlDbType.VarChar, 20)).Value = CType(tLineNo, String)
+                            SqlCmd.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = CType(hdnTransferid.Value.Trim, String)
+                            SqlCmd.Parameters.Add(New SqlParameter("@vlineno", SqlDbType.Int)).Value = j
+                            SqlCmd.Parameters.Add(New SqlParameter("@transfermode", SqlDbType.Int)).Value = 0
+                            SqlCmd.Parameters.Add(New SqlParameter("@status", SqlDbType.Int)).Value = DBNull.Value
+                            SqlCmd.Parameters.Add(New SqlParameter("@vehiclecode", SqlDbType.VarChar, 20)).Value = dtTransfersDetails.Rows(i)("units").ToString
+
+                            SqlCmd.Parameters.Add(New SqlParameter("@drivercode", SqlDbType.VarChar, 20)).Value = DBNull.Value
+                            SqlCmd.Parameters.Add(New SqlParameter("@pickupdate", SqlDbType.DateTime)).Value = Format(CType(dtTransfersDetails.Rows(i)("pickupdate"), Date), "yyyy/MM/dd")
+                            SqlCmd.Parameters.Add(New SqlParameter("@pickuptime", SqlDbType.VarChar, 50)).Value = dtTransfersDetails.Rows(i)("pickuptime").ToString
+                            SqlCmd.Parameters.Add(New SqlParameter("@suppliercode", SqlDbType.VarChar, 20)).Value = DBNull.Value
+                            SqlCmd.Parameters.Add(New SqlParameter("@suppliercurr", SqlDbType.VarChar, 20)).Value = DBNull.Value
+
+                            SqlCmd.Parameters.Add(New SqlParameter("@costprice", SqlDbType.Decimal, 18, 4)).Value = 0
+                            SqlCmd.Parameters.Add(New SqlParameter("@costcurrency", SqlDbType.Money)).Value = 0
+                            SqlCmd.Parameters.Add(New SqlParameter("@costconvrate", SqlDbType.Decimal, 18, 4)).Value = 0
+                            SqlCmd.Parameters.Add(New SqlParameter("@costvalue", SqlDbType.Money)).Value = 0
+                            SqlCmd.Parameters.Add(New SqlParameter("@complementsup", SqlDbType.Int)).Value = dtTransfersDetails.Rows(i)("compfromsup").ToString '0
+
+                            SqlCmd.Parameters.Add(New SqlParameter("@incominginvno", SqlDbType.VarChar, 20)).Value = DBNull.Value
+                            SqlCmd.Parameters.Add(New SqlParameter("@remarks", SqlDbType.VarChar, 500)).Value = dtTransfersDetails.Rows(i)("remarks").ToString
+
+                            SqlCmd.ExecuteNonQuery()
+
+                        Next
+                        ''2107
+                        tLineNo = tLineNo + 1
+                    Next
+
+                    sqlTrans.Commit()
+                    clsDBConnect.dbSqlTransation(sqlTrans)              ' sql Transaction disposed 
+                    clsDBConnect.dbCommandClose(SqlCmd)               'sql command disposed
+                    clsDBConnect.dbConnectionClose(mySqlConn)           'connection close
+
+
+                    Session("RequestRefCode") = ""
+                    Session("TransfersRequestSubEntryLineNo") = ""
+                    If CType(Session("TransfersRequestSubEntryState"), String) = "AddRow" Then
+                        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Record Saved Sucessfully. Click OK to Return Search Page');", True)
+                    ElseIf CType(Session("TransfersRequestSubEntryState"), String) = "EditRow" Then
+                        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Record Updated Sucessfully. Click OK to Return Search Page');", True)
+                    End If
+                End If
+
+                Dim strscript As String = ""
+                strscript = "window.opener.__doPostBack('TransfersWindowPostBack', '');window.opener.focus();window.close();"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+            End If
+
+        Catch ex As Exception
+            If mySqlConn.State = ConnectionState.Open Then
+                sqlTrans.Rollback()
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+            objUtils.WritErrorLog("TransfersRequestEntry.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+
+    Protected Sub gvTransfersRequest_RowCommand(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gvTransfersRequest.RowCommand
+
+        Try
+            If e.CommandName = "Page" Then
+                Exit Sub
+            End If
+
+            Dim lblId As New Label
+
+            If e.CommandName = "AddRow" Then
+                lblId.Text = e.CommandArgument.ToString
+                Session.Add("ExConvRate", "")
+                Session("ExConvRate") = 1 'xtConversionRate.Text.Trim
+                'vij
+                Session.Add("convrate", txtConversionRate.Text)
+                Session.Add("Excid", txtexcid.Text)
+                Dim strpop As String = ""
+
+                If Trim(Request.QueryString("State")) = "AddRow" Then
+                    strpop = "window.open('TransfersRequestSubEntry.aspx?State=AddRow&RefCode=" + CType(Session("RequestRefCode"), String) + "&LineNo=" + CType(lblId.Text, String) + "&Sellingcode=" + CType(ddlSellingCode.Items(ddlSellingCode.SelectedIndex).Text, String) + "&SpersonCode=" + "&TicketNo=" + "','TransfersRequestSubEntry','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+                    Exit Sub
+                ElseIf Trim(Request.QueryString("State")) = "EditRow" Then
+                    'strpop = "window.open('ExcursionRequestSubEntry.aspx?State=EditRow&RefCode=" + CType(Session("ExcursionRequestRefCode"), String) + "&LineNo=" + CType(lblId.Text, String) + "','ExcursionRequestSubEntry','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                    strpop = "window.open('TransfersRequestSubEntry.aspx?State=EditRow&RefCode=" + CType(Session("RequestRefCode"), String) + "&LineNo=" + CType(lblId.Text, String) + "&Sellingcode=" + CType(ddlSellingCode.Items(ddlSellingCode.SelectedIndex).Text, String) + "','TransfersRequestSubEntry','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+                ElseIf Trim(Request.QueryString("State")) = "ViewRow" Then
+                    strpop = "window.open('TransfersRequestSubEntry.aspx?State=ViewRow&RefCode=" + CType(Session("RequestRefCode"), String) + "&LineNo=" + CType(lblId.Text, String) + "&Sellingcode=" + CType(ddlSellingCode.Items(ddlSellingCode.SelectedIndex).Text, String) + "','TransfersRequestSubEntry','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+                End If
+            End If
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("TransfersRequestSubEntry.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+    Protected Sub gvTransfersRequest_RowDataBound(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvTransfersRequest.RowDataBound
+
+        Dim btnSelect As Button
+        If e.Row.RowType = DataControlRowType.DataRow Then
+            btnSelect = e.Row.FindControl("btnSelect")
+            btnSelect.Attributes.Add("onclick", "return FormValidation('New')")
+
+            'Dim txtconvrate As TextBox = CType(e.Row.FindControl("txtc"), TextBox)
+
+
+            Dim lblAmend As Label
+            Dim lblCancel As Label
+            If e.Row.RowType = DataControlRowType.DataRow Then
+                lblAmend = e.Row.FindControl("lblAmend")
+                lblCancel = e.Row.FindControl("lblCancel")
+
+                If lblAmend.Text = "1" Then
+                    e.Row.BackColor = System.Drawing.Color.FromName("#FF934A")
+                End If
+
+                If lblCancel.Text = "1" Then
+                    e.Row.BackColor = System.Drawing.Color.FromName("#ff3300")
+                End If
+
+            End If
+
+
+        End If
+
+    End Sub
+
+
+    Private Sub CreateDataSourceSubEntry()
+
+        Try
+            dtTransfersDetails.Columns.Add(New DataColumn("requestid", GetType(Integer)))
+            dtTransfersDetails.Columns.Add(New DataColumn("tlineno", GetType(Integer)))
+            dtTransfersDetails.Columns.Add(New DataColumn("transferdate", GetType(DateTime)))
+            dtTransfersDetails.Columns.Add(New DataColumn("transfertype", GetType(Integer)))
+            dtTransfersDetails.Columns.Add(New DataColumn("startingpoint", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("endingpoint", GetType(String)))
+
+            dtTransfersDetails.Columns.Add(New DataColumn("pickupdate", GetType(DateTime)))
+
+
+
+            dtTransfersDetails.Columns.Add(New DataColumn("pickuptime", GetType(String)))
+
+            dtTransfersDetails.Columns.Add(New DataColumn("cartype", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("units", GetType(Integer)))
+            dtTransfersDetails.Columns.Add(New DataColumn("price", GetType(Decimal)))
+            dtTransfersDetails.Columns.Add(New DataColumn("salecurrency", GetType(Decimal)))
+            dtTransfersDetails.Columns.Add(New DataColumn("salevalue", GetType(Decimal)))
+
+            dtTransfersDetails.Columns.Add(New DataColumn("hotelcode", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("shifthotelcode", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("roomno", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("adults", GetType(Integer)))
+            dtTransfersDetails.Columns.Add(New DataColumn("child", GetType(Integer)))
+
+            dtTransfersDetails.Columns.Add(New DataColumn("guestname", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("flightcode", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("flighttime", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("complementcust", GetType(Integer)))
+            dtTransfersDetails.Columns.Add(New DataColumn("invno", GetType(String)))
+
+            dtTransfersDetails.Columns.Add(New DataColumn("creditnoteno", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("remarks", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("handling_currency", GetType(Decimal)))
+            dtTransfersDetails.Columns.Add(New DataColumn("handling_value", GetType(Decimal)))
+            dtTransfersDetails.Columns.Add(New DataColumn("tran_state", GetType(String)))
+
+            dtTransfersDetails.Columns.Add(New DataColumn("excursionid", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("excrlineno", GetType(Integer)))
+            dtTransfersDetails.Columns.Add(New DataColumn("resrequestid", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("resrlineno", GetType(Integer)))
+            dtTransfersDetails.Columns.Add(New DataColumn("supcartype", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("costprice", GetType(Decimal)))
+            dtTransfersDetails.Columns.Add(New DataColumn("supplierref", GetType(String)))
+            dtTransfersDetails.Columns.Add(New DataColumn("pagingboard", GetType(Integer)))
+            '05082014
+            dtTransfersDetails.Columns.Add(New DataColumn("compfromsup", GetType(Integer)))
+
+            dtTransfersDetails.Columns.Add(New DataColumn("flightdate", GetType(DateTime)))
+
+            Session("DtTransfersSubEntry") = dtTransfersDetails
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+        End Try
+
+    End Sub
+
+
+    Private Sub FillGridBySubEntry()
+
+        Try
+            Dim DtTransfersSubEntry As New DataTable
+            Dim DtTransfersSubEntryShow As New DataTable
+
+            DtTransfersSubEntry = Session("DtTransfersSubEntry")
+
+            DtTransfersSubEntryShow.Clear()
+            DtTransfersSubEntryShow = Session("DtTransfersSubEntry")
+
+
+            If DtTransfersSubEntry.Rows.Count > 0 Then
+                If Not strStatus Then
+
+                    Dim drBlank As DataRow
+                    drBlank = DtTransfersSubEntryShow.NewRow()
+                    If Not Session("Pickfromhotel") Then
+                        DtTransfersSubEntryShow.Rows.Add(drBlank)
+                        Session("Pickfromhotel") = False
+                    End If
+                    gvTransfersRequest.DataSource = DtTransfersSubEntryShow
+                    gvTransfersRequest.DataBind()
+                    gvTransfersRequest.Visible = True
+                    CalculateTotalInGrid(DtTransfersSubEntryShow)
+                Else
+                    gvTransfersRequest.DataSource = DtTransfersSubEntryShow
+                    gvTransfersRequest.DataBind()
+                    gvTransfersRequest.Visible = True
+                End If
+            Else
+                gvTransfersRequest.Visible = False
+            End If
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+        End Try
+
+
+    End Sub
+
+    Private Sub ShowRecord(ByVal RefCode As String)
+
+        Try
+            strSqlQry = "select th.requestid requestid,th.requestdate requestdate,th.usercode usercode,th.agentcode agentcode,a.agentname agentname, " & _
+                "th.agentref agentref,th.adddate adddate,th.adduser adduser,th.moddate moddate,th.moduser moduser,th.tsellcode tsellcode, " & _
+                "th.currcode currcode,th.convrate convrate,th.spersoncode spersoncode,th.paycode paycode,th.nationalitycode nationalitycode, " & _
+                "th.languagename languagename from transfers_booking_header th, agentmast a where th.requestid='" & RefCode & "' and a.agentcode=th.agentcode"
+
+            'strSqlQry = "select * from transfers_booking_header where requestid='" & RefCode & "'"
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+            SqlCmd = New SqlCommand(strSqlQry, SqlConn)
+            mySqlReader = SqlCmd.ExecuteReader
+            If mySqlReader.Read = True Then
+
+                If IsDBNull(mySqlReader("requestid")) = False Then
+                    txtTransferId.Text = mySqlReader("requestid")
+                    hdnTransferid.Value = mySqlReader("requestid")
+                End If
+
+                If IsDBNull(mySqlReader("requestdate")) = False Then
+                    dpDate.Text = mySqlReader("requestdate")
+                End If
+
+                If IsDBNull(mySqlReader("adduser")) = False Then
+                    txtUserCode.Value = mySqlReader("adduser")
+                End If
+
+                If IsDBNull(mySqlReader("agentcode")) = False Then
+                    txtAgent.Value = mySqlReader("agentcode")
+                    'ddlCustomerName.Items(ddlCustomerName.SelectedIndex).Text = mySqlReader("agentname")
+                    ddlCustomerName.Value = mySqlReader("agentcode")
+                    txtagntnametodsp.Value = mySqlReader("agentname")
+                    'ddlCustomerName.Attributes.Add("onchange", "fnCustomerName('" & mySqlReader("agentcode") & "')")
+                End If
+
+                If IsDBNull(mySqlReader("currcode")) = False Then
+                    ddlCurrency.Value = mySqlReader("currcode")
+                    hdnCurrencyCode.Value = mySqlReader("currcode")
+                End If
+
+                If IsDBNull(mySqlReader("tsellcode")) = False Then
+                    ddlSellingCode.Items(ddlSellingCode.SelectedIndex).Text = mySqlReader("tsellcode")
+                    ddlSellingName.Value = ddlSellingCode.Items(ddlSellingCode.SelectedIndex).Value
+                End If
+
+                If IsDBNull(mySqlReader("nationalitycode")) = False Then
+                    ddlLanguageCode.Value = mySqlReader("nationalitycode")
+                End If
+
+                If IsDBNull(mySqlReader("agentref")) = False Then
+                    txtClientRef.Text = mySqlReader("agentref")
+                End If
+
+
+                If IsDBNull(mySqlReader("convrate")) = False Then
+                    txtConversionRate.Text = mySqlReader("convrate")
+                End If
+
+                If IsDBNull(mySqlReader("paycode")) = False Then
+                    ddlPaymentCode.Items(ddlPaymentCode.SelectedIndex).Text = mySqlReader("paycode")
+                    hdnpayment.Value = mySqlReader("paycode")
+                    ddlPaymentName.Value = ddlPaymentCode.Items(ddlPaymentCode.SelectedIndex).Value
+                End If
+
+                If IsDBNull(mySqlReader("spersoncode")) = False Then
+                    ddlSPersoncode.Items(ddlSPersoncode.SelectedIndex).Text = mySqlReader("spersoncode")
+                    ddlSpersonName.Value = ddlSPersoncode.Items(ddlSPersoncode.SelectedIndex).Value
+                    hdnsperson.Value = mySqlReader("spersoncode")
+                End If
+
+                'sales person user rights 
+                If changesalesperson(priidchngsperson) = "1" Then
+                    ddlSPersoncode.Disabled = False
+                    ddlSpersonName.Disabled = False
+                Else
+                    ddlSPersoncode.Disabled = True
+                    ddlSpersonName.Disabled = True
+                End If
+
+
+            End If
+
+        Catch ex As Exception
+            If SqlConn.State = ConnectionState.Open Then SqlConn.Close()
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+            objUtils.WritErrorLog("ExcursionStopSales.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+        Finally
+            clsDBConnect.dbCommandClose(SqlCmd)
+            clsDBConnect.dbReaderClose(mySqlReader)
+            clsDBConnect.dbConnectionClose(SqlConn)
+        End Try
+
+    End Sub
+
+
+    Private Sub ShowTransfersRequest_Details(ByVal RefCode As String)
+
+        Dim MyDs As New DataTable
+        Dim MyDsShow As New DataTable
+        Try
+
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+
+            'strSqlQry = "select td.requestid requestid,td.tlineno tlineno,td.transferdate transferdate,td.transfertype transfertype, " & _
+            '    "td.startingpoint startingpoint,td.endingpoint endingpoint,td.cartype cartype,td.units units,td.price price, " & _
+            '    "td.salecurrency salecurrency,td.salevalue salevalue,tb.pickupdate pickupdate,tb.pickuptime pickuptime, " & _
+            '    "td.hotelcode hotelcode,td.shifthotelcode shifthotelcode,td.roomno roomno,td.adults adults,td.child child,td.guestname guestname, " & _
+            '    "td.flightcode flightcode,td.flighttime flighttime,td.complementcust complementcust,td.invno invno,td.creditnoteno creditnoteno,td.remarks remarks," & _
+            '    "td.handling_currency handling_currency,td.handling_value handling_value,td.tran_state tran_state,td.excursionid excursionid, " & _
+            '    "td.excrlineno excrlineno,td.resrequestid resrequestid,td.resrlineno resrlineno,td.supcartype supcartype from " & _
+            '    "transfers_booking_detailnew td,transfer_booking_subdetail tb where td.requestid=tb.requestid and td.tlineno =tb.tlineno and td.requestid='" & RefCode & "'"
+            '2107
+            'and td.tlineno =tb.tlineno
+
+
+            strSqlQry = "select td.requestid requestid,td.tlineno tlineno,td.transferdate transferdate,td.transfertype transfertype, td.startingpoint startingpoint,td.endingpoint endingpoint,td.cartype cartype,td.units units,td.price price, td.salecurrency salecurrency,td.salevalue salevalue, (Select Top 1 tb.pickupdate From transfer_booking_subdetail tb where td.requestid=tb.requestid and td.tlineno =tb.tlineno)  pickupdate,(Select Top 1 tb.pickuptime From transfer_booking_subdetail tb where td.requestid=tb.requestid and td.tlineno =tb.tlineno) pickuptime, td.hotelcode hotelcode,td.shifthotelcode shifthotelcode,td.roomno roomno,td.adults adults,td.child child,td.guestname guestname, td.flightcode flightcode,td.flighttime flighttime,td.complementcust complementcust,td.invno invno,td.creditnoteno creditnoteno,td.remarks remarks,td.handling_currency handling_currency,td.handling_value handling_value,td.tran_state tran_state,isnull(td.excursionid,'') excursionid, isnull(td.excrlineno,0) excrlineno,td.resrequestid resrequestid,td.resrlineno resrlineno,td.supcartype supcartype,td.costprice,td.supplierref,td.pagingboard,(Select Top 1 tb.complementsup From transfer_booking_subdetail tb where td.requestid=tb.requestid and td.tlineno =tb.tlineno) compfromsup,flightdate from transfers_booking_detailnew td where  td.requestid='" & RefCode & "'"
+
+            SqlCmd = New SqlCommand(strSqlQry, SqlConn)
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(MyDsShow)
+
+            If MyDsShow.Rows.Count > 0 Then
+                txtexcid.Text = MyDsShow.Rows.Item(0)("excursionid")
+                txtexculno.Text = MyDsShow.Rows.Item(0)("excrlineno")
+                MyDs = MyDsShow
+
+                If CType(Session("TransfersRequestState"), String) = "ViewRow" Then
+
+
+                Else
+                    Dim drBlank As DataRow
+                    drBlank = MyDs.NewRow()
+                    MyDsShow.Rows.Add(drBlank)
+                End If
+
+                gvTransfersRequest.DataSource = MyDsShow
+                gvTransfersRequest.DataBind()
+                SqlConn.Close()
+                gvTransfersRequest.Visible = True
+
+
+                CalculateTotalInGrid(MyDs)
+            Else
+                gvTransfersRequest.Visible = False
+                SqlConn.Close()
+
+            End If
+
+            Session("DtTransfersSubEntry") = MyDs
+
+        Catch ex As Exception
+            If SqlConn.State = ConnectionState.Open Then SqlConn.Close()
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+            objUtils.WritErrorLog("TransfersRequestEntry.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+
+    Private Sub DisableControls()
+
+        txtAgent.Disabled = True
+        ddlCurrency.Disabled = True
+        ddlLanguageCode.Disabled = True
+        dpDate.Enabled = False
+        txtUserCode.Disabled = True
+        ddlCustomerName.Disabled = True
+        ddlLanguageCode.Disabled = True
+        ddlPaymentCode.Disabled = True
+        ddlPaymentName.Disabled = True
+        txtConversionRate.Enabled = False
+        ddlSellingCode.Disabled = True
+        ddlSellingName.Disabled = True
+        ddlSPersoncode.Disabled = True
+        ddlSpersonName.Disabled = True
+
+        txtagntnametodsp.Disabled = True
+        txtClientRef.Enabled = False
+
+    End Sub
+
+    Private Function ValidateGridOneRow() As Boolean
+        Try
+            If gvTransfersRequest.Rows.Count = 1 Then
+                Return False
+            Else
+                Return True
+            End If
+        Catch ex As Exception
+            Return False
+        End Try
+    End Function
+
+    Protected Sub btnExit_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnExit.Click
+        Dim strscript As String = ""
+        strscript = "window.opener.__doPostBack('TransfersRequestEntryWindowPostBack', '');window.opener.focus();window.close();"
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+    End Sub
+
+    Protected Sub btnReturn_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnReturn.Click
+        Dim strscript As String = ""
+        strscript = "window.opener.__doPostBack('TransfersWindowPostBack', '');window.opener.focus();window.close();"
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+    End Sub
+
+    Private Sub CalculateTotalInGrid(ByVal Dt As DataTable)
+        Dim MyDt As New DataTable
+        Dim totalSaleAmt, totalSaleAmtAED, totalCostAmt, totalCostAmtAED As Decimal
+        Dim i As Integer = 0
+        Dim MyRows As Integer = 0
+        totalSaleAmt = 0
+        totalSaleAmtAED = 0
+        totalCostAmt = 0
+        totalCostAmtAED = 0
+        MyDt = Dt
+
+        If CType(Session("ExcursionRequestState"), String) = "ViewRow" Then
+            MyRows = MyDt.Rows.Count - 1
+        Else
+            MyRows = MyDt.Rows.Count - 2
+        End If
+        Try
+
+
+            If MyDt.Rows.Count > 0 Then
+                For i = 0 To MyRows
+                    totalSaleAmt = totalSaleAmt + CType(MyDt.Rows(i).Item("salecurrency"), Decimal)
+                    totalSaleAmtAED = totalSaleAmtAED + CType(MyDt.Rows(i).Item("salevalue"), Decimal)
+                    'totalCostAmt = totalCostAmt + CType(MyDt.Rows(i).Item("price"), Decimal)
+                    'totalCostAmtAED = totalCostAmtAED + CType(MyDt.Rows(i).Item("costAmountAED"), Decimal)
+                Next
+
+                txtTotalSaleAmount.Text = Math.Round(totalSaleAmt, CType(txtdecimal.Value, Integer))
+                txtTotalSaleAmountAED.Text = Math.Round(totalSaleAmtAED, CType(txtdecimal.Value, Integer))
+                'txtTotalCostAmount.Text = Math.Round(totalCostAmt, CType(txtdecimal.Value, Integer))
+                'txtTotalCostAmountAED.Text = Math.Round(totalCostAmtAED, CType(txtdecimal.Value, Integer))
+
+            End If
+
+
+
+        Catch ex As Exception
+            If SqlConn.State = ConnectionState.Open Then SqlConn.Close()
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+            objUtils.WritErrorLog("ExcursionRequestEntry.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub btnPrint_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnPrint.Click
+        'If ddlTransferType.SelectedIndex = 0 Then
+        '    rdnbdeparture.Checked = False
+        '    rdnbdeparture.Disabled = True
+
+        'Else
+
+        '    rdnbdeparture.Checked = True
+        '    rdnarrival.Checked = False
+
+        'End If
+
+
+
+        divtransfer.Style("display") = "block"
+        divtransfer.Style("visibility") = "visibile"
+        divtransfer.Style("position") = "absolute"
+        divtransfer.Style("top") = "200px"
+        divtransfer.Style("z-index") = "100px"
+
+    End Sub
+
+    Protected Sub btnReport_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnReport.Click
+        Try
+            Dim transfertype As Integer
+            'If ViewState("TransfersState") = "Arrival" Then
+            '    transfertype = 0
+            'Else
+
+            '    transfertype = 1
+            'End If
+
+            If rdnarrival.Checked = True Then
+                transfertype = 0
+            Else
+                transfertype = 1
+
+            End If
+
+            Dim strpop As String = ""
+
+            strpop = "window.open('rptReportNew.aspx?Pageame=TransferVoucher&BackPageName=TransfersRequest.aspx&transfertype=" & transfertype & "&Refcode=" & Request.QueryString("RefCode") & "','RepPrint','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+            divtransfer.Style("display") = "none"
+            divtransfer.Style("visibility") = "hidden"
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("PrintPopUp.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+        End Try
+    End Sub
+
+    Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click
+        divtransfer.Style("display") = "none"
+        divtransfer.Style("visibility") = "hidden"
+    End Sub
+
+    Private Function changesalesperson(ByVal mypriid As Integer) As String
+        Dim mySqlCmd As SqlCommand
+        Dim mySqlReader As SqlDataReader
+        Dim mySqlConn As SqlConnection
+        Dim myDataAdapter As SqlDataAdapter
+        Dim sqlTrans As SqlTransaction
+        mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+        Try
+            Dim chksel As HtmlInputCheckBox
+            Dim i As Integer = 0
+
+            mySqlCmd = New SqlCommand("sp_changesalesperson", mySqlConn, sqlTrans)
+            mySqlCmd.CommandType = CommandType.StoredProcedure
+
+            mySqlCmd.Parameters.Add(New SqlParameter("@user", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+            mySqlCmd.Parameters.Add(New SqlParameter("@appid", SqlDbType.VarChar, 10)).Value = myappid 'CType(Master.FindControl("hdnAppId"), HiddenField).Value
+            mySqlCmd.Parameters.Add(New SqlParameter("@priid", SqlDbType.Int)).Value = mypriid
+            Dim param1 As SqlParameter
+            Dim param2 As SqlParameter
+            param1 = New SqlParameter
+            param1.ParameterName = "@showsperson"
+            param1.Direction = ParameterDirection.Output
+            param1.DbType = DbType.String
+            param1.Size = 200
+            mySqlCmd.Parameters.Add(param1)
+
+
+            'myDataAdapter = New SqlDataAdapter(mySqlCmd)
+            Dim str1 As String = ""
+            Dim str2 As String = ""
+            Dim newno As String = ""
+
+            mySqlCmd.ExecuteNonQuery()
+            changesalesperson = param1.Value.ToString()
+
+
+            'clsDBConnect.dbSqlTransation(sqlTrans)              ' sql Transaction disposed 
+            'sql command disposed
+            clsDBConnect.dbConnectionClose(mySqlConn)
+
+        Catch ex As Exception
+            'ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            'objutils.WritErrorLog("rptTransfercostPricelistSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+        End Try
+
+
+    End Function
+
+
+
+    Protected Sub btncopy_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btncopy.Click
+        Try
+            Dim dt As New DataTable
+            Dim dr As DataRow
+
+            Dim gvRow As GridViewRow
+
+
+            Dim chkselect As New CheckBox
+            Dim lbltransferdate As New Label
+            If Session("DtTransfersSubEntry") IsNot Nothing Then
+                dt = Session("DtTransfersSubEntry")
+
+
+                dt.Rows(dt.Rows.Count - 1).Delete()
+
+
+                For Each gvRow In gvTransfersRequest.Rows
+                    '    gvTransfersRequest.DataKeys.(gvRow.RowIndex).Item("tlineno")
+                    chkselect = gvRow.FindControl("chkselect")
+                    If chkselect.Checked = True Then
+                        dr = dt.NewRow
+                        dr("requestid") = IIf(hdnTransferid.Value.Trim = "", gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("requestid").ToString, hdnTransferid.Value.Trim) 'IIf(Request.QueryString("RefCode") = "", 1, Request.QueryString("RefCode"))
+                        dr("tlineno") = gvTransfersRequest.Rows.Count  'IIf(Request.QueryString("LineNo") = "", CType(NewRLineNo, Integer), Request.QueryString("LineNo")) 'CType(NewRLineNo, Integer)
+                        dr("transferdate") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("transferdate").ToString  'CType(ddlTransferDate.Text, DateTime)
+                        dr("transfertype") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("transfertype").ToString  'CType(ddlTransferType.SelectedIndex, Integer)
+                        dr("startingpoint") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("startingpoint").ToString  'CType(ddlStartingName.Value, String)
+                        dr("endingpoint") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("endingpoint").ToString  'CType(ddlEndingName.Value, String)
+
+                        dr("pickupdate") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("pickupdate").ToString 'CType(txtPickUp.Text, DateTime)
+
+                        dr("flightdate") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("flightdate").ToString 'CType(txtPickUp.Text, DateTime)
+
+                        dr("pickuptime") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("pickuptime").ToString  ' CType(txtPickUpTime.Text, String)
+
+                        dr("cartype") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("cartype").ToString  'CType(ddlCarTypeName.Value, String)
+                        dr("units") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("units").ToString  'CType(txtVehicle.Text, String)
+
+
+                        dr("price") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("price").ToString  ' IIf(Trim(txtSalesPrice.Text) = "", 0.0, CType(txtSalesPrice.Text, Decimal))
+                        dr("salecurrency") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("salecurrency").ToString  ' IIf(Trim(txtSale.Text) = "", 0.0, CType(txtSale.Text, Decimal))
+
+                        dr("salevalue") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("salevalue").ToString  ' IIf(Trim(txtSaleValue.Text) = "", 0.0, CType(txtSaleValue.Text, Decimal))
+
+
+                        dr("hotelcode") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("hotelcode").ToString  ' CType(txtHotelValue.Value, String)
+                        dr("shifthotelcode") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("shifthotelcode").ToString  ' ddlShiftHotelName.Value 'CType(txtShiftHotel.Value, String)
+                        dr("roomno") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("roomno").ToString  ' CType(txtRoomNum.Text, String)
+                        dr("adults") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("adults").ToString  ' CType(txtAdult.Text, Integer)
+                        dr("child") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("child").ToString  'CType(txtChild.Text, Integer)
+                        dr("guestname") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("guestname").ToString  ' CType(txtGuestName.Text, String)
+                        dr("flightcode") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("flightcode").ToString  ' CType(ddlFlightCode.Items(ddlFlightCode.SelectedIndex).Text, String) 'CType(ddlFlightCode.Value, String)
+                        dr("flighttime") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("flighttime").ToString  'CType(txtFlightTime.Text, String)
+                        dr("complementcust") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("complementcust").ToString  ' IIf(CType(chC.Checked, Integer) = True, 1, 0)
+                        dr("invno") = DBNull.Value
+                        dr("creditnoteno") = DBNull.Value
+                        dr("remarks") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("remarks").ToString  'CType(txtRemarks.Text, String)
+                        dr("handling_currency") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("handling_currency").ToString  'IIf(Trim(txtHandling.Text) = "", 0.0, CType(txtHandling.Text, Decimal))
+                        dr("handling_value") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("handling_value").ToString  ' IIf(Trim(txtHandlingValue.Text) = "", 0.0, CType(txtHandlingValue.Text, Decimal))
+                        dr("tran_state") = DBNull.Value
+                        dr("excursionid") = DBNull.Value
+                        dr("excrlineno") = 0
+                        dr("resrequestid") = DBNull.Value
+                        dr("resrlineno") = 0
+                        dr("supcartype") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("supcartype").ToString  'CType(ddlSupplierCar.Value, String)
+                        dr("costprice") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("costprice").ToString  'IIf(Trim(txtCostPrice.Text) = "", 0.0, CType(txtCostPrice.Text, Decimal))
+                        dr("pagingboard") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("pagingboard").ToString  'IIf(CType(chp.Checked, Integer) = True, 1, 0)
+                        dr("supplierref") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("supplierref").ToString  'CType(txtSupplierRef.Text, String)
+                        dr("compfromsup") = gvTransfersRequest.DataKeys(gvRow.RowIndex).Item("compfromsup").ToString  'IIf(CType(chkcompfrmsup.Checked, Integer) = True, 1, 0)
+
+                        dt.Rows.Add(dr)
+                        dr = dt.NewRow
+                        dt.Rows.Add(dr)
+                        gvTransfersRequest.DataSource = dt
+                        dtTransfersDetails = dt
+                        Session("DtTransfersSubEntry") = dt
+                        gvTransfersRequest.DataBind()
+                        CalculateTotalInGrid(dt)
+                        Exit Sub
+
+                    End If
+
+
+                Next
+
+            End If
+
+
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+
+    Protected Sub btnSelect_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSelect.Click
+        Session("StatusClick") = "Excursion"
+        ModalPopupDays.Show()
+
+    End Sub
+
+    Private Sub Excursion_Details()
+
+        Try
+
+            Dim MyDs As New DataTable
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+            '1-Arrival 0-Departure
+            'strSqlQry = "select ltrim(rtrim(flightcode))flightcode,flight_tranid,city,arrivetime1,airport from flightmast where  active=1 and type=1 "
+            strSqlQry = "select  h.excid excusionid,d.rlineno rlineno,h.requestdate requestdate,d.tourdate tourdate,d.othtypcode " _
+                        & "othtypcode,ot.othtypname othtypname,p.partycode partycode,p.partyname partyname,d.guestname guestname,d.roomno roomno,d.adults adults, " _
+                        & "d.child child,h.plgrpcode plgrpcode,h.ticketno ticketno,h.paycode paycode,h.collectby collectby,h.payref payref, " _
+                        & "h.prepaidid prepaidid,d.pickuptime pickuptime,d.remarks remarks,a.agentname,h.agentcode,a.trfsellcode,a.currcode,a.spersoncode" _
+                        & " from excursions_header h (nolock),excursions_detail d (nolock),othtypmast ot(nolock),partymast p(nolock),agentmast a(nolock)" _
+                        & " where d.othtypcode=ot.othtypcode and d.hotel=p.partycode and h.excid=d.excid and h.agentcode=a.agentcode and  ISNULL(d.trfno,'')='' and isnull(d.trf_required,0)=1  order by excusionid desc"
+
+
+            SqlCmd = New SqlCommand(strSqlQry, SqlConn)
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(MyDs)
+
+            If MyDs.Rows.Count > 0 Then
+                gv_Excursion.DataSource = MyDs
+                gv_Excursion.DataBind()
+                gv_Excursion.Visible = True
+            Else
+                gv_Excursion.Visible = False
+            End If
+
+        Catch ex As Exception
+            If SqlConn.State = ConnectionState.Open Then SqlConn.Close()
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+            objUtils.WritErrorLog("TransfersRequestEntry.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+
+    Protected Sub gv_Excursion_RowCommand(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gv_Excursion.RowCommand
+
+        Try
+            If e.CommandName = "Page" Then
+                Exit Sub
+            End If
+            strStatus = True
+            Dim strEndPoint As String
+            Dim lblExcusionNo, lblrlineno, lblticketno, lblpaymode, lbladult, lblchild, lblroomno, lblguestnm, lblpartynm,
+                lblremarks, lblagent, lblagentcd, lblsellcode, lblcurcode, lblsperson, lblpartycode, lbltourdate, lblpicktime As Label
+
+            lblExcusionNo = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblExcusionNo")
+            lblrlineno = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblrlineno")
+            lblticketno = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblticketno")
+            lblpaymode = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblpaymode")
+            lbladult = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lbladult")
+            lblchild = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblchild")
+            lblroomno = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblroomno")
+            lblguestnm = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblguestnm")
+            lblpartynm = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblpartynm")
+            lblpicktime = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblpicktime")
+            lblremarks = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblremarks")
+            lblagent = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblagent")
+            lblagentcd = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblagentcd")
+            lblsellcode = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblsellcode")
+            lblcurcode = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblcurcode")
+            lblsperson = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblsperson")
+            lblpartycode = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblpartycode")
+            lbltourdate = gv_Excursion.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lbltourdate")
+
+            Dim sqlstr As String
+            sqlstr = "select airportbordername,airportbordercode from view_airportsectormast where " & _
+                "airportbordercode =(select sectorgroupcode from sectormaster where sectorcode= (select  sectorcode from " & _
+                "partymast where partycode='" & lblpartycode.Text & "'))"
+
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+            SqlCmd = New SqlCommand(sqlstr, SqlConn)
+            mySqlReader = SqlCmd.ExecuteReader
+            If mySqlReader.Read = True Then
+
+                If IsDBNull(mySqlReader("airportbordercode")) = False Then
+                    strEndPoint = mySqlReader("airportbordercode")
+                End If
+            End If
+
+            txtAgent.Value = lblagentcd.Text
+            If e.CommandName = "SelectRow" Then
+
+                Session("RowState") = ""
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "ExcursionScript",
+                                                        "FillExcursionDetails('" & lblExcusionNo.Text.Trim & "','" & lblrlineno.Text.Trim & "','" _
+                                                        & lblticketno.Text.Trim & "','" & lblpaymode.Text.Trim & "','" & lbladult.Text.Trim & "','" & lblchild.Text.Trim _
+                                                        & "','" & lblagentcd.Text.Trim & "','" & lblagent.Text.Trim & "','" & lblsellcode.Text.Trim & "','" & lblcurcode.Text.Trim _
+                                                        & "','" & lblsperson.Text.Trim & "');", True)
+
+                CreateTempDatatable()
+                Dim dataRow As DataRow
+                dataRow = dtTemp.NewRow
+                dataRow(0) = 1
+                dataRow(1) = lbladult.Text
+                dataRow(2) = lblchild.Text
+                dataRow(3) = lblroomno.Text
+                dataRow(4) = lblguestnm.Text
+                dataRow(5) = lblpicktime.Text
+                dataRow(6) = lblremarks.Text
+                dataRow(7) = lblExcusionNo.Text
+                dataRow(8) = lblrlineno.Text
+                dataRow(9) = lblpartycode.Text
+                dataRow(10) = lbltourdate.Text
+                dtTemp.Rows.Add(dataRow)
+
+                Dim dts As New DataTable
+                dts = Session("DtTransfersSubEntry")
+
+                If CType(Session("TransfersRequestState"), String) = "AddRow" Then
+                    For i = 0 To dts.Rows.Count - 1
+
+                        For j = 0 To dtTemp.Rows.Count - 1
+                            If (Val(dts.Rows.Item(i)("tlineno")) > 0) Then
+                                If dtTemp.Rows.Item(j)("tlineno") = Val(dts.Rows.Item(i)("tlineno")) Then
+                                    dts.Rows.Item(i)("adults") = Val(dtTemp.Rows.Item(j)("adult"))
+                                    dts.Rows.Item(i)("child") = Val(dtTemp.Rows.Item(j)("child"))
+                                    dts.Rows.Item(i)("roomno") = dtTemp.Rows.Item(j)("roomno").ToString
+                                    dts.Rows.Item(i)("guestname") = dtTemp.Rows.Item(j)("guestname").ToString
+                                    dts.Rows.Item(i)("pickuptime") = dtTemp.Rows.Item(j)("pickuptime").ToString
+                                    dts.Rows.Item(i)("remarks") = dtTemp.Rows.Item(j)("remarks").ToString
+                                    dts.Rows.Item(i)("excursionid") = dtTemp.Rows.Item(j)("excursionid").ToString
+                                    dts.Rows.Item(i)("excrlineno") = Val(dtTemp.Rows.Item(j)("excrlineno"))
+                                    dts.Rows.Item(i)("transferdate") = dtTemp.Rows.Item(j)("tourdate").ToString
+                                    dts.Rows.Item(i)("hotelcode") = dtTemp.Rows.Item(j)("partycode").ToString
+                                    dts.Rows.Item(i)("endingpoint") = strEndPoint
+                                End If
+                            End If
+                        Next
+                    Next
+                Else
+                    For i = 0 To dts.Rows.Count - 2
+
+                        For j = 0 To dtTemp.Rows.Count - 1
+                            If (Val(dts.Rows.Item(i)("tlineno")) > 0) Then
+                                If dtTemp.Rows.Item(j)("tlineno") = Val(dts.Rows.Item(i)("tlineno")) Then
+                                    dts.Rows.Item(i)("adults") = Val(dtTemp.Rows.Item(j)("adult"))
+                                    dts.Rows.Item(i)("child") = Val(dtTemp.Rows.Item(j)("child"))
+                                    dts.Rows.Item(i)("roomno") = dtTemp.Rows.Item(j)("roomno").ToString
+                                    dts.Rows.Item(i)("guestname") = dtTemp.Rows.Item(j)("guestname").ToString
+                                    dts.Rows.Item(i)("pickuptime") = dtTemp.Rows.Item(j)("pickuptime").ToString
+                                    dts.Rows.Item(i)("remarks") = dtTemp.Rows.Item(j)("remarks").ToString
+                                    dts.Rows.Item(i)("excursionid") = dtTemp.Rows.Item(j)("excursionid").ToString
+                                    dts.Rows.Item(i)("excrlineno") = Val(dtTemp.Rows.Item(j)("excrlineno"))
+                                    dts.Rows.Item(i)("transferdate") = dtTemp.Rows.Item(j)("tourdate").ToString
+                                    dts.Rows.Item(i)("hotelcode") = dtTemp.Rows.Item(j)("partycode").ToString
+                                    dts.Rows.Item(i)("endingpoint") = strEndPoint
+                                End If
+                            End If
+                        Next
+                    Next
+                End If
+                dts.AcceptChanges()
+                Session("DtTransfersSubEntry") = dts
+                Session("Pickfromhotel") = True
+                FillGridBySubEntry()
+
+
+            End If
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("TransfersRequestEntry.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+    Private Sub CreateTempDatatable()
+        dtTemp = New DataTable
+        dtTemp.Columns.Add("tlineno", GetType(String))
+        dtTemp.Columns.Add("adult", GetType(String))
+        dtTemp.Columns.Add("child", GetType(String))
+        dtTemp.Columns.Add("roomno", GetType(String))
+        dtTemp.Columns.Add("guestname", GetType(String))
+        dtTemp.Columns.Add("pickuptime", GetType(String))
+        dtTemp.Columns.Add("remarks", GetType(String))
+        dtTemp.Columns.Add("excursionid", GetType(String))
+        dtTemp.Columns.Add("excrlineno", GetType(String))
+        dtTemp.Columns.Add("partycode", GetType(String))
+        dtTemp.Columns.Add("tourdate", GetType(String))
+    End Sub
+
+
+
+End Class

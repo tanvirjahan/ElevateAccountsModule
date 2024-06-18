@@ -1,0 +1,105 @@
+﻿<%@ Page Language="VB" AutoEventWireup="false" CodeFile="VisaCategory.aspx.vb" Inherits="VisaCategory"
+    MasterPageFile="~/SubPageMaster.master" Strict="true" %>
+
+<%@ Register Assembly="System.Web.Extensions, Version=1.0.61025.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+    Namespace="System.Web.UI" TagPrefix="asp" %>
+<%@ OutputCache Location="none" %>
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" runat="server">
+    <script language="javascript" type="text/javascript">
+        function FormValidation(state) {
+            if ((document.getElementById("<%=txtCode.ClientID%>").value == "") || (document.getElementById("<%=txtName.ClientID%>").value == "")) {
+                if (document.getElementById("<%=txtCode.ClientID%>").value == "") {
+                    document.getElementById("<%=txtCode.ClientID%>").focus();
+                    alert("Code field can not be blank");
+                    return false;
+                }
+                else if (document.getElementById("<%=txtName.ClientID%>").value == "") {
+                    document.getElementById("<%=txtName.ClientID%>").focus();
+                    alert("Name field can not be blank");
+                    return false;
+                }
+            }
+            else {
+                if (state == 'New') { if (confirm('Are you sure you want to save Nationality?') == false) return false; }
+                if (state == 'Edit') { if (confirm('Are you sure you want to update Nationality?') == false) return false; }
+                if (state == 'Delete') { if (confirm('Are you sure you want to delete Nationality?') == false) return false; }
+            }
+        }
+    </script>
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <table style="border-right: gray 2px solid; border-top: gray 2px solid; border-left: gray 2px solid;
+                border-bottom: gray 2px solid">
+                <tbody>
+                    <tr>
+                        <td class="td_cell" align="center" colspan="2">
+                            <asp:Label ID="lblHeading" runat="server" Text="Add New Market" CssClass="field_heading"
+                                Width="415px">
+                            </asp:Label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 145px" class="td_cell">
+                            <span>Code</span> <span style="color: red" class="td_cell">*</span>
+                        </td>
+                        <td style="color: #000000">
+                            <input style="width: 194px" id="txtCode" class="field_input" tabindex="1" type="text"
+                                maxlength="20" runat="server" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 145px; height: 24px" class="td_cell">
+                            Name <span style="color: red" class="td_cell">*</span>
+                        </td>
+                        <td>
+                            <input style="width: 194px" id="txtName" class="txtbox" tabindex="2" type="text"
+                                maxlength="100" runat="server" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 145px; height: 24px" class="td_cell">
+                            Language <span style="color: red" class="td_cell">*</span>
+                        </td>
+                        <td>
+                            <input style="width: 194px" id="txtLanguage" class="txtbox" tabindex="2" type="text"
+                                runat="server" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 145px; height: 16px" class="td_cell">
+                            Active
+                        </td>
+                        <td style="height: 16px">
+                            <input id="chkActive" tabindex="3" type="checkbox" checked runat="server" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 145px; height: 16px;" class="td_cell">
+                            Show in Excursions
+                        </td>
+                        <td style="height: 16px">
+                            <input id="chkshowexc" tabindex="3" type="checkbox" checked runat="server" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 145px">
+                            <asp:Button ID="btnSave" runat="server" CssClass="btn" TabIndex="5" Text="Save" />
+                        </td>
+                        <td>
+                            <asp:Button ID="btnCancel" runat="server" CssClass="btn" TabIndex="6" Text="Return To Search" />
+                            &nbsp;&nbsp;
+                            <asp:Button ID="btnhelp" runat="server" __designer:wfdid="w19" CssClass="btn" OnClick="btnhelp_Click"
+                                TabIndex="5" Text="Help" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <asp:Label ID="lblwebserviceerror" runat="server" Style="display: none" Text="Webserviceerror"></asp:Label>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </ContentTemplate>
+    </asp:UpdatePanel>
+</asp:Content>

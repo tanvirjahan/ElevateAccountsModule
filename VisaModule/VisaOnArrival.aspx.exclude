@@ -1,0 +1,122 @@
+﻿<%@ Page Title="" Language="VB" MasterPageFile="~/SubPageMaster.master" AutoEventWireup="false"
+    CodeFile="VisaOnArrival.aspx.vb" Inherits="VisaOnArrival" %>
+
+<%@ Register Assembly="System.Web.Extensions, Version=1.0.61025.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+    Namespace="System.Web.UI" TagPrefix="asp" %>
+<%@ OutputCache Location="none" %>
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" runat="Server">
+    <script language="javascript" type="text/javascript">
+        function FormValidation(state) {
+            if ((document.getElementById("<%=txtCtryCode.ClientID%>").value == "") || (document.getElementById("<%=txtCtryName.ClientID%>").value == "") || (document.getElementById("<%=txtRegionCode.ClientID%>").value == "")) {
+                if (document.getElementById("<%=txtCtryCode.ClientID%>").value == "") {
+                    alert("Country Code can not be blank");
+                    return false;
+                }
+                else if (document.getElementById("<%=txtCtryName.ClientID%>").value == "") {
+                    document.getElementById("<%=txtCtryName.ClientID%>").focus();
+                    alert("Country Name can not be blank");
+                    return false;
+                }
+                else if (document.getElementById("<%=txtRegion.ClientID%>").value == "" || document.getElementById("<%=txtRegionCode.ClientID%>").value == "") {                    
+                    alert("Region can not be blank");
+                    return false;
+                }
+            }
+            else {
+                if (state == 'New') { if (confirm('Are you sure! Do you want to save Country?') == false) return false; }
+                if (state == 'Edit') { if (confirm('Are you sure! Do you want to update Country?') == false) return false; }
+                if (state == 'Delete') { if (confirm('Are you sure! Do you want to delete Country?') == false) return false; }
+            }
+        }
+        function CountryAutoCompleteSelected(source, eventArgs) {
+            if (eventArgs != null) {
+                var getVal = eventArgs.get_value().toString();
+                var selectVal = getVal.split('|');
+                if (selectVal[0] != null)
+                    document.getElementById('<%=txtCtryCode.ClientID%>').value = selectVal[0];
+                if (selectVal.length == 3) {
+                    document.getElementById('<%=txtRegionCode.ClientID%>').value = selectVal[1];
+                    document.getElementById('<%=txtRegion.ClientID%>').value = selectVal[2];
+                }
+            }
+            else {
+                document.getElementById('<%=txtCtryCode.ClientID%>').value = '';
+                document.getElementById('<%=txtRegionCode.ClientID%>').value = '';
+                document.getElementById('<%=txtRegion.ClientID%>').value = '';
+            }
+        }
+    </script>
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <table style="border-right: gray 2px solid; border-top: gray 2px solid; border-left: gray 2px solid;
+                border-bottom: gray 2px solid; width: 60%;">
+                <tr>
+                    <td class="td_cell" align="center" style="width: 100%;">
+                        <asp:Label ID="lblHeading" runat="server" Text="New Visa on Arrival Country" Style="vertical-align: middle;"
+                            CssClass="field_heading" Width="100%" Height="18px">
+                        </asp:Label>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 100%">
+                        <table cellpadding="10px" style="width: 100%">
+                            <tr>
+                                <td class="td_cell" style="width:30%">
+                                    <span>Country Code</span> <span style="color: red" class="td_cell">*</span>
+                                </td>
+                                <td style="color: #000000 ; width:70%">
+                                    <input style="width: 70%" id="txtCtryCode" class="field_input" tabindex="1" type="text"
+                                        maxlength="20" runat="server" disabled="disabled" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="td_cell">
+                                    Country Name<span style="color: red" class="td_cell">*</span>
+                                </td>
+                                <td >
+                                    <asp:TextBox ID="txtCtryName" CssClass="txtbox" runat="server" TabIndex="2" MaxLength="300" Width="70%"></asp:TextBox>                                    
+                                    <asp:Button ID="btnRoomUpdate" runat="server" Style="display: none" />
+                                    <asp:AutoCompleteExtender ID="txtCtryName_AutoCompleteExtender" runat="server" CompletionInterval="10"
+                                        CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                        CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                        EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                                        ServiceMethod="GetCountriesList" TargetControlID="txtCtryName" OnClientItemSelected="CountryAutoCompleteSelected">
+                                    </asp:AutoCompleteExtender>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="td_cell">
+                                    Region Name<span style="color: red" class="td_cell">*</span>
+                                </td>
+                                <td>
+                                    <input style="width: 70%; display:none" id="txtRegionCode" type="text"
+                                        runat="server" />
+                                    <input style="width: 70%" id="txtRegion" class="txtbox" tabindex="3" type="text"
+                                        runat="server" disabled="disabled" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="td_cell">
+                                    Active
+                                </td>
+                                <td style="height: 16px">
+                                    <input id="chkActive" tabindex="4" type="checkbox" checked="checked" runat="server" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" align="center">
+                                    <asp:Button ID="btnSave" runat="server" CssClass="btn" TabIndex="5" Text="Save" />&nbsp;&nbsp;
+                                    <asp:Button ID="btnCancel" runat="server" CssClass="btn" TabIndex="6" Text="Return To Search" />
+                                    &nbsp;&nbsp;
+                                    <asp:Button ID="btnhelp" runat="server" CssClass="btn" OnClick="btnhelp_Click" TabIndex="6"
+                                        Text="Help" />
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </ContentTemplate>
+    </asp:UpdatePanel>
+</asp:Content>

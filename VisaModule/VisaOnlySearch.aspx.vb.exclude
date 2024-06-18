@@ -1,0 +1,554 @@
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Web.Services
+Imports System.Collections.Generic
+Imports System.IO
+
+Partial Class VisaOnlySearch
+    Inherits System.Web.UI.Page
+
+#Region "Global Declaration"
+    Dim objUtils As New clsUtils
+    Dim objUser As New clsUser
+    Dim strSqlQry As String
+    Dim strWhereCond As String
+    Dim SqlConn As SqlConnection
+    Dim myCommand As SqlCommand
+    Dim myReader As SqlDataReader
+    Dim myDataAdapter As SqlDataAdapter
+    Dim sqlTrans As SqlTransaction
+#End Region
+
+#Region "Enum GridCol"
+    Enum GridCol
+        requestid = 0
+        requestDate = 1
+        agency = 2
+        agencyRef = 3
+        arrivaldate = 4
+        sponsor = 5
+        noofvisa = 6
+        visavalue = 7
+        addUser = 8
+        addDate = 9
+        edit = 10
+        view = 11
+        delete = 12
+        print = 13
+    End Enum
+#End Region
+
+#Region "Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load
+        If IsPostBack = False Then
+            Try
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+                Dim strappid As String = ""
+                Dim strappname As String = ""
+                strappid = "13"
+                strappname = objUser.GetAppName(Session("dbconnectionName"), strappid)
+                objUser.CheckUserRight(Session("dbconnectionName"), CType(Session("GlobalUserName"), String), CType(Session("Userpwd"), String), _
+                                                       CType(strappname, String), "VisaModule\VisaOnlySearch.aspx?appid=13", btnAddNew, btnExportToExcel, _
+                                                       btnPrint, gvSearch:=gvVisaOnly, EditColumnNo:=GridCol.edit, ViewColumnNo:=GridCol.view, DeleteColumnNo:=GridCol.delete, PrintColumnNo:=GridCol.print)
+                Page.Title = Page.Title + " " + "Visa Only Booking"
+                Session("DtVisaOnlyDynamic") = Nothing
+                Dim dtDynamic = New DataTable()
+                Dim dcCode = New DataColumn("Code", GetType(String))
+                Dim dcValue = New DataColumn("Value", GetType(String))
+                Dim dcCodeAndValue = New DataColumn("CodeAndValue", GetType(String))
+                dtDynamic.Columns.Add(dcCode)
+                dtDynamic.Columns.Add(dcValue)
+                dtDynamic.Columns.Add(dcCodeAndValue)
+                Session("DtVisaOnlyDynamic") = dtDynamic
+
+                Session.Add("strsortExpression", "RequestId")
+                Session.Add("strsortdirection", SortDirection.Descending)
+                RowsPerPageCUS.SelectedIndex = 1
+
+                FillGridNew()
+
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("VisaOnlySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+        End If
+        If (Me.IsPostBack And Me.Request("__EVENTTARGET") = "VisaOnlyBookingPostBack") Then
+            FillGridNew()
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnvsprocess_Click(sender As Object, e As System.EventArgs) Handles btnvsprocess.Click"
+    Protected Sub btnvsprocess_Click(sender As Object, e As System.EventArgs) Handles btnvsprocess.Click
+        Try
+            FilterGrid()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Private Sub FilterGrid()"
+    Private Sub FilterGrid()
+        Dim lsSearchTxt As String = ""
+        lsSearchTxt = txtvsprocesssplit.Text
+        Dim lsProcessInventory As String = ""
+        Dim lsProcessAll As String = ""
+
+        Dim lsMainArr As String()
+        lsMainArr = objUtils.splitWithWords(lsSearchTxt, "|~,")
+        For i = 0 To lsMainArr.GetUpperBound(0)
+            Select Case lsMainArr(i).Split(":")(0).ToString.ToUpper.Trim
+                Case "REQUEST ID"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("REQUEST ID", lsProcessInventory, "REQUEST ID")
+                Case "FAMILY NAME"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("FAMILY NAME", lsProcessInventory, "FAMILY NAME")
+                Case "FIRST NAME"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("FIRST NAME", lsProcessInventory, "FIRST NAME")
+                Case "AGENT"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("AGENT", lsProcessInventory, "AGENT")
+                Case "AGENCY REF"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("AGENCY REF", lsProcessInventory, "AGENCY REF")
+                Case "SPONSOR"
+                    lsProcessInventory = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("SPONSOR", lsProcessInventory, "SPONSOR")
+                Case "TEXT"
+                    lsProcessAll = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("TEXT", lsProcessAll, "TEXT")
+            End Select
+        Next
+
+        Dim dtt As DataTable
+        dtt = Session("DtVisaOnlyDynamic")
+        dlList.DataSource = dtt
+        dlList.DataBind()
+
+        FillGridNew() 'Bind Gird based selection 
+    End Sub
+#End Region
+
+#Region " Function sbAddToDataTable(ByVal lsName As String, ByVal lsValue As String, ByVal lsShortCode As String) As Boolean"
+    Function sbAddToDataTable(ByVal lsName As String, ByVal lsValue As String, ByVal lsShortCode As String) As Boolean
+        Dim iFlag As Integer = 0
+        Dim dtt As DataTable
+        dtt = Session("DtVisaOnlyDynamic")
+        If dtt.Rows.Count >= 0 Then
+            For i = 0 To dtt.Rows.Count - 1
+                If dtt.Rows(i)("Code").ToString.Trim.ToUpper = lsName.Trim.ToUpper And dtt.Rows(i)("Value").ToString.Trim.ToUpper = lsValue.Trim.ToUpper Then
+                    iFlag = 1
+                End If
+            Next
+            If iFlag = 0 Then
+                dtt.NewRow()
+                dtt.Rows.Add(lsName.Trim.ToUpper, lsValue.Trim.ToUpper, lsShortCode.Trim.ToUpper & ": " & lsValue.Trim)
+                Session("DtVisaOnlyDynamic") = dtt
+            End If
+        End If
+        Return True
+    End Function
+#End Region
+
+#Region "Protected Sub btnResetSelection_Click(sender As Object, e As System.EventArgs) Handles btnResetSelection.Click"
+    Protected Sub btnResetSelection_Click(sender As Object, e As System.EventArgs) Handles btnResetSelection.Click
+        Dim dtt As DataTable
+        dtt = Session("DtVisaOnlyDynamic")
+        If dtt.Rows.Count > 0 Then
+            dtt.Clear()
+        End If
+        Session("DtVisaOnlyDynamic") = dtt
+        dlList.DataSource = dtt
+        dlList.DataBind()
+        FillGridNew()
+    End Sub
+#End Region
+
+#Region "Protected Sub lbClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)"
+    Protected Sub lbClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            Dim myButton As Button = CType(sender, Button)
+            Dim dlItem As DataListItem = CType((CType(sender, Button)).NamingContainer, DataListItem)
+            Dim lnkcode As Button = CType(dlItem.FindControl("lnkcode"), Button)
+            Dim lnkvalue As Button = CType(dlItem.FindControl("lnkvalue"), Button)
+            Dim dtDynamics As New DataTable
+            dtDynamics = Session("DtVisaOnlyDynamic")
+            If dtDynamics.Rows.Count > 0 Then
+                Dim j As Integer
+                For j = dtDynamics.Rows.Count - 1 To 0 Step j - 1
+                    If lnkcode.Text.Trim.ToUpper = dtDynamics.Rows(j)("code").ToString.Trim.ToUpper And lnkvalue.Text.Trim.ToUpper = dtDynamics.Rows(j)("Value").ToString.Trim.ToUpper Then
+                        dtDynamics.Rows.Remove(dtDynamics.Rows(j))
+                    End If
+                Next
+            End If
+            Session("DtVisaOnlyDynamic") = dtDynamics
+            dlList.DataSource = dtDynamics
+            dlList.DataBind()
+            FillGridNew()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnSearch_Click(sender As Object, e As System.EventArgs) Handles btnSearch.Click"
+    Protected Sub btnSearch_Click(sender As Object, e As System.EventArgs) Handles btnSearch.Click
+        Try
+            FillGridNew()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnResetSearch_Click(sender As Object, e As System.EventArgs) Handles btnResetSearch.Click"
+    Protected Sub btnResetSearch_Click(sender As Object, e As System.EventArgs) Handles btnResetSearch.Click
+        txtFromDate.Text = ""
+        txtToDate.Text = ""
+        txtArrivalFromDt.Text = ""
+        txtArrivalToDt.Text = ""
+        FillGridNew()
+    End Sub
+#End Region
+
+#Region "Private Sub FillGridNew()"
+    Private Sub FillGridNew()
+        Try
+            Dim strBindCondition As String = ""
+            strBindCondition = BuildConditionNew()
+            Dim pagevaluecus = RowsPerPageCUS.SelectedValue
+            Dim myDS As New DataSet
+            lblMsg.Visible = False
+            If gvVisaOnly.PageIndex < 0 Then gvVisaOnly.PageIndex = 0
+            strSqlQry = ""
+            Dim strorderby As String = Session("strsortexpression")
+            Dim strsortorder As String = "Desc"
+            strSqlQry = "select h.RequestId, h.RequestDate, a.agentname as Agency,h.agentRef as AgencyRef, h.ArrivalDate, p.partyname as Sponsor,NoOfVisas+isnull(NoOfVisa_Child,0) NoOfVisas,VisaValue,h.addDate,h.AddUser,ISNULL(v.VisaApplied,0) as VisaApplied from " &
+            "visabooking_header h(nolock) inner join agentmast a(nolock) on h.AgentCode=a.agentcode " &
+            "inner join partymast p(nolock) on h.SponsorId=p.partycode and sptypecode like 'VISA' " &
+            "left outer join (select RequestId, count(*) as VisaApplied from Visa_guest where VisaStatus is not null and VisaStatus <>100 and PartyCode='VisaOnlyBooking' group by requestid) as v on h.RequestId=v.RequestId "
+            If strBindCondition <> "" Then
+                strSqlQry = strSqlQry & " where " & strBindCondition & " ORDER BY " & strorderby & " " & strsortorder
+            Else
+                strSqlQry = strSqlQry & " ORDER BY " & strorderby & " " & strsortorder
+            End If
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                gvVisaOnly.DataSource = myDS.Tables(0)
+                gvVisaOnly.PageSize = pagevaluecus
+                gvVisaOnly.DataBind()
+            Else
+                gvVisaOnly.PageIndex = 0
+                gvVisaOnly.DataBind()
+                lblMsg.Visible = True
+                lblMsg.Text = "Records not found, Please redefine search criteria."
+            End If
+            clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            clsDBConnect.dbConnectionClose(SqlConn)
+        Catch ex As Exception
+            If Not SqlConn Is Nothing Then
+                If SqlConn.State = ConnectionState.Open Then
+                    clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+                    clsDBConnect.dbConnectionClose(SqlConn)
+                End If
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Private Function BuildConditionNew() As String"
+    Private Function BuildConditionNew() As String
+        Dim dtt As DataTable
+        dtt = Session("DtVisaOnlyDynamic")
+        Dim strRequestIDValue As String = ""
+        Dim strFamilyNameValue As String = ""
+        Dim strFirstNameValue As String = ""
+        Dim strAgentValue As String = ""
+        Dim strAgentRefValue As String = ""
+        Dim strSponsorValue As String = ""
+        Dim strTextValue As String = ""
+        Try
+            If dtt.Rows.Count > 0 Then
+                For i As Integer = 0 To dtt.Rows.Count - 1
+                    If dtt.Rows(i)("Code").ToString = "REQUEST ID" Then
+                        If strRequestIDValue <> "" Then
+                            strRequestIDValue = strRequestIDValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strRequestIDValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "FAMILY NAME" Then
+                        If strFamilyNameValue <> "" Then
+                            strFamilyNameValue = strFamilyNameValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strFamilyNameValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "FIRST NAME" Then
+                        If strFirstNameValue <> "" Then
+                            strFirstNameValue = strFirstNameValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strFirstNameValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "AGENT" Then
+                        If strAgentValue <> "" Then
+                            strAgentValue = strAgentValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strAgentValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "AGENCY REF" Then
+                        If strAgentRefValue <> "" Then
+                            strAgentRefValue = strAgentRefValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strAgentRefValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "SPONSOR" Then
+                        If strSponsorValue <> "" Then
+                            strSponsorValue = strSponsorValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strSponsorValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "TEXT" Then
+                        If strTextValue <> "" Then
+                            strTextValue = strTextValue + "," + dtt.Rows(i)("Value").ToString
+                        Else
+                            strTextValue = dtt.Rows(i)("Value").ToString
+                        End If
+                    End If
+                Next
+            End If
+            strWhereCond = ""
+            If strRequestIDValue.Trim <> "" Then
+                strWhereCond = "h.RequestId IN (" & Trim(strRequestIDValue.Trim.ToUpper) & ")"
+            End If
+            If strFamilyNameValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "h.RequestId in (select RequestId from VisaBooking_guest where LastName in (" & Trim(strFamilyNameValue.Trim.ToUpper) & "))"
+                Else
+                    strWhereCond = strWhereCond & "and h.RequestId in (select RequestId from VisaBooking_guest where LastName in (" & Trim(strFamilyNameValue.Trim.ToUpper) & "))"
+                End If
+            End If
+            If strFirstNameValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "h.RequestId in (select RequestId from VisaBooking_guest where FirstName in (" & Trim(strFirstNameValue.Trim.ToUpper) & "))"
+                Else
+                    strWhereCond = strWhereCond & "and h.RequestId in (select RequestId from VisaBooking_guest where FirstName in (" & Trim(strFirstNameValue.Trim.ToUpper) & "))"
+                End If
+            End If
+            If strAgentValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "a.agentName in (" & Trim(strAgentValue.Trim.ToUpper) & ")"
+                Else
+                    strWhereCond = strWhereCond & "and a.agentName in (" & Trim(strAgentValue.Trim.ToUpper) & ")"
+                End If
+            End If
+            If strAgentRefValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "h.agentRef in (" & Trim(strAgentRefValue.Trim.ToUpper) & ")"
+                Else
+                    strWhereCond = strWhereCond & "and h.agentRef in (" & Trim(strAgentRefValue.Trim.ToUpper) & ")"
+                End If
+            End If
+            If strSponsorValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "p.partyName in (" & Trim(strSponsorValue.Trim.ToUpper) & ")"
+                Else
+                    strWhereCond = strWhereCond & "and p.partyName in (" & Trim(strSponsorValue.Trim.ToUpper) & ")"
+                End If
+            End If
+            If strTextValue <> "" Then
+                Dim lsMainArr As String()
+                Dim strValue As String = ""
+                Dim strWhereCond1 As String = ""
+                lsMainArr = objUtils.splitWithWords(strTextValue, ",")
+                For i = 0 To lsMainArr.GetUpperBound(0)
+                    strValue = ""
+                    strValue = lsMainArr(i)
+                    If strValue <> "" Then
+                        If Trim(strWhereCond1) = "" Then
+                            strWhereCond1 = "h.RequestId in (select RequestId from VisaBooking_guest where LastName like '%" & Trim(strValue.Trim.ToUpper) & "%') or h.RequestID in (select RequestId from VisaBooking_guest where FirstName like '%" & Trim(strValue.Trim.ToUpper) & "%') or a.agentName like '%" & Trim(strValue.Trim.ToUpper) & "%' or " &
+                            "h.agentref like '%" & Trim(strValue.Trim.ToUpper) & "%' or p.partyname like '%" & Trim(strValue.Trim.ToUpper) & "%'"
+                        Else
+                            strWhereCond1 = strWhereCond1 & " or h.RequestId in (select RequestId from VisaBooking_guest where LastName like '%" & Trim(strValue.Trim.ToUpper) & "%') or h.RequestID in (select RequestId from VisaBooking_guest where FirstName like '%" & Trim(strValue.Trim.ToUpper) & "%') or a.agentName like '%" & Trim(strValue.Trim.ToUpper) & "%' or " &
+                            "h.agentref like '%" & Trim(strValue.Trim.ToUpper) & "%' or p.partyname like '%" & Trim(strValue.Trim.ToUpper) & "%'"
+                        End If
+                    End If
+                Next
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = "(" & strWhereCond1 & ")"
+                Else
+                    strWhereCond = strWhereCond & " AND (" & strWhereCond1 & ")"
+                End If
+            End If
+            If txtFromDate.Text.Trim <> "" And txtToDate.Text <> "" Then
+                If Trim(strWhereCond) = "" Then
+
+                    strWhereCond = " (CONVERT(datetime, convert(varchar(10),h.RequestDate,103),103) between CONVERT(datetime, '" + txtFromDate.Text + "',103) and CONVERT(datetime, '" + txtToDate.Text + "',103)) "
+                Else
+                    strWhereCond = strWhereCond & "  and (CONVERT(datetime, convert(varchar(10),h.RequestDate,103),103)  between CONVERT(datetime, '" + txtFromDate.Text + "',103) and CONVERT(datetime,'" + txtToDate.Text + "',103)) "
+                End If
+            End If
+            If txtArrivalFromDt.Text.Trim <> "" And txtArrivalToDt.Text <> "" Then
+                If Trim(strWhereCond) = "" Then
+
+                    strWhereCond = " (CONVERT(datetime, convert(varchar(10),h.ArrivalDate,103),103) between CONVERT(datetime, '" + txtArrivalFromDt.Text + "',103) and CONVERT(datetime, '" + txtArrivalToDt.Text + "',103)) "
+                Else
+                    strWhereCond = strWhereCond & "  and (CONVERT(datetime, convert(varchar(10),h.ArrivalDate,103),103) between CONVERT(datetime, '" + txtArrivalFromDt.Text + "',103) and CONVERT(datetime, '" + txtArrivalToDt.Text + "',103)) "
+                End If
+            End If
+            BuildConditionNew = strWhereCond
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            BuildConditionNew = ""
+        End Try
+    End Function
+#End Region
+
+#Region "Protected Sub btnHelp_Click(sender As Object, e As System.EventArgs) Handles btnHelp.Click"
+    Protected Sub btnHelp_Click(sender As Object, e As System.EventArgs) Handles btnHelp.Click
+
+    End Sub
+#End Region
+
+#Region "Protected Sub btnAddNew_Click(sender As Object, e As System.EventArgs) Handles btnAddNew.Click"
+    Protected Sub btnAddNew_Click(sender As Object, e As System.EventArgs) Handles btnAddNew.Click
+        Dim strpop As String = ""
+        strpop = "window.open('VisaOnlyBooking.aspx?appid=13&State=New','VisaOnlyBooking');"
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup1", strpop, True)
+    End Sub
+#End Region
+
+#Region "Protected Sub RowsPerPageCUS_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles RowsPerPageCUS.SelectedIndexChanged"
+    Protected Sub RowsPerPageCUS_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles RowsPerPageCUS.SelectedIndexChanged
+        FillGridNew()
+    End Sub
+#End Region
+
+#Region "Protected Sub gvVisaOnly_PageIndexChanging(sender As Object, e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gvVisaOnly.PageIndexChanging"
+    Protected Sub gvVisaOnly_PageIndexChanging(sender As Object, e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gvVisaOnly.PageIndexChanging
+        gvVisaOnly.PageIndex = e.NewPageIndex
+        FillGridNew()
+    End Sub
+#End Region
+
+#Region "Protected Sub gvVisaOnly_RowCommand(sender As Object, e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gvVisaOnly.RowCommand"
+    Protected Sub gvVisaOnly_RowCommand(sender As Object, e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gvVisaOnly.RowCommand
+        Try
+            If e.CommandName = "Page" Then Exit Sub
+            If e.CommandName = "Sort" Then Exit Sub
+            Dim lblRequestNo As Label
+            lblRequestNo = gvVisaOnly.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblRequestNo")
+            lblRequestNo.Text = lblRequestNo.Text.Replace("<span style = 'background-color:#ffcc99'>", "")
+            lblRequestNo.Text = lblRequestNo.Text.Replace("</span>", "")
+            Dim strpop As String = ""
+            If e.CommandName = "View" Then
+                strpop = "window.open('VisaOnlyBooking.aspx?appid=13&State=View&ID=" + CType(lblRequestNo.Text.Trim, String) + "','VisaOnlyBooking');"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup1", strpop, True)
+            ElseIf e.CommandName = "EditVisa" Then
+                strpop = "window.open('VisaOnlyBooking.aspx?appid=13&State=Edit&ID=" + CType(lblRequestNo.Text.Trim, String) + "','VisaOnlyBooking');"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup1", strpop, True)
+            ElseIf e.CommandName = "DeleteVisa" Then
+                strpop = "window.open('VisaOnlyBooking.aspx?appid=13&State=Delete&ID=" + CType(lblRequestNo.Text.Trim, String) + "','VisaOnlyBooking');"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup1", strpop, True)
+            ElseIf e.CommandName = "Print" Then
+
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub gvVisaOnly_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvVisaOnly.RowDataBound"
+    Protected Sub gvVisaOnly_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvVisaOnly.RowDataBound
+        If e.Row.RowType = DataControlRowType.DataRow Then
+            Dim lblVisaApplied As Label = e.Row.FindControl("lblVisaApplied")
+            If lblVisaApplied.Text.Trim <> "0" Then
+                Dim lbtnEdit As LinkButton = e.Row.FindControl("lbtnEdit")
+                Dim lbtnDelete As LinkButton = e.Row.FindControl("lbtnDelete")
+                lbtnEdit.Visible = False
+                lbtnDelete.Visible = False
+            End If
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub gvVisaOnly_Sorting(sender As Object, e As System.Web.UI.WebControls.GridViewSortEventArgs) Handles gvVisaOnly.Sorting"
+    Protected Sub gvVisaOnly_Sorting(sender As Object, e As System.Web.UI.WebControls.GridViewSortEventArgs) Handles gvVisaOnly.Sorting
+        Session.Add("strsortexpression", e.SortExpression)
+        SortGridColoumn()
+    End Sub
+#End Region
+
+#Region "Public Sub SortGridColoumn()"
+    Public Sub SortGridColoumn()
+        Dim DataTable As DataTable
+        FillGridNew()
+        DataTable = gvVisaOnly.DataSource
+        If IsDBNull(DataTable) = False Then
+            Dim dataView As DataView = DataTable.DefaultView
+            Session.Add("strsortdirection", objUtils.SwapSortDirection(Session("strsortdirection")))
+            dataView.Sort = Session("strsortexpression") & " " & objUtils.ConvertSortDirectionToSql(Session("strsortdirection"))
+            gvVisaOnly.DataSource = dataView
+            gvVisaOnly.DataBind()
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnExportToExcel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnExportToExcel.Click"
+    Protected Sub btnExportToExcel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnExportToExcel.Click
+        Dim strBindCondition As String = ""
+        Try
+            If gvVisaOnly.Rows.Count > 0 Then
+                strBindCondition = BuildConditionNew()
+                Dim strorderby As String = Session("strsortexpression")
+                Dim strsortorder As String = IIf(Session("strsortdirection") = "0", "Asc", "Desc")
+                Dim myDS As New DataSet
+                strSqlQry = "select h.RequestId, convert(varchar(10), h.RequestDate,103) as RequestDate, a.agentname as Agency,h.agentRef as AgencyRef, convert(varchar(10), h.ArrivalDate,103) as ArrivalDate, p.partyname as Sponsor,NoOfVisas,VisaValue,h.addDate,h.AddUser from " &
+                "visabooking_header h(nolock) inner join agentmast a(nolock) on h.AgentCode=a.agentcode " &
+                "inner join partymast p(nolock) on h.SponsorId=p.partycode and sptypecode like 'VISA' "
+                If strBindCondition <> "" Then
+                    strSqlQry = strSqlQry & " where " & strBindCondition & " ORDER BY " & strorderby & " " & strsortorder
+                Else
+                    strSqlQry = strSqlQry & " ORDER BY " & strorderby & " " & strsortorder
+                End If
+                SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+                myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+                myDataAdapter.Fill(myDS, "VisaBooking_Header")
+                objUtils.ExportToExcel(myDS, Response)
+                clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+                clsDBConnect.dbConnectionClose(SqlConn)
+            Else
+                objUtils.MessageBox("Sorry , No data availabe for export to excel.", Page)
+            End If
+        Catch ex As Exception
+            If Not SqlConn Is Nothing Then
+                If SqlConn.State = ConnectionState.Open Then
+                    clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+                    clsDBConnect.dbConnectionClose(SqlConn)
+                End If
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Sub
+#End Region
+
+End Class

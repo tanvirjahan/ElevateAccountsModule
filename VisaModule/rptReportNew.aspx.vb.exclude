@@ -1,0 +1,466 @@
+Imports CrystalDecisions.CrystalReports.Engine
+Imports CrystalDecisions.CrystalReports
+Imports CrystalDecisions.Shared
+Imports CrystalDecisions.Web
+Imports CrystalDecisions.ReportSource
+Imports System.Data
+Imports System.Data.SqlClient
+Imports System.IO
+
+
+
+
+Partial Class rptReportNew
+    Inherits System.Web.UI.Page
+    Dim repDeocument As New ReportDocument
+    Dim rptcompanyname As String
+    Dim rptreportname As String
+    Dim objutils As New clsUtils
+    Dim strSelectionFormula As String = ""
+    Dim strReportTitle As String = ""
+
+    Dim fromdate As String = ""
+    Dim todate As String = ""
+    Dim supcode As String = ""
+    Dim supcodeto As String = ""
+    Dim plgrpcode As String = ""
+    Dim plgrpcodeto As String = ""
+    Dim agentcode As String = ""
+    Dim agentcodeto As String = ""
+    Dim groupby As Integer = 0
+    Dim reptype As Integer = 0
+    Dim filterby As Integer = 0
+    Dim reportfor As Integer = 0    
+    Protected Sub Page_Init(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Init
+        rptcompanyname = CType(objUtils.ExecuteQueryReturnSingleValuenew(Session("dbconnectionName"), "select conm from columbusmaster"), String)
+        Dim strReportName As String = ""
+ViewState.Add("Pageame", Request.QueryString("Pageame"))
+        ViewState.Add("BackPageName", Request.QueryString("BackPageName"))
+
+        If CType(ViewState("BackPageName"), String) = "" Then
+            'Response.Redirect("Login.aspx", False)
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+        Else
+            If CType(ViewState("Pageame"), String) = "" Then
+                'Response.Redirect(CType(Session("BackPageName"), String), False)
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+                Exit Sub
+            Else
+                Select Case CType(ViewState("Pageame"), String)
+                    Case "VisaApplied"
+                        strReportName = CType(Server.MapPath("~\Report\rptVisaApplied.rpt"), String)
+                        rptreportname = "Report - Applied Visa Detail."
+                        strReportTitle = " Applied Visa Detail."
+                        BindParams()
+                        Exit Select
+                    Case "Visa Not Applied"
+                        strReportName = CType(Server.MapPath("~\Report\rptVisaNotApprv.rpt"), String)
+                        rptreportname = "Report - Not Applied Visa Detail."
+                        strReportTitle = " Not Applied Visa Detail."
+                        BindParams()
+                        Exit Select
+                    Case "Visa Not Ready"
+                        strReportName = CType(Server.MapPath("~\Report\rptVisaNotReady.rpt"), String)
+                        rptreportname = "Report - Not Ready Visa Detail."
+                        'strReportTitle = " Not Ready Visa Detail."
+                        BindParams()
+                        Exit Select
+                    Case "Visa Pending for Confirmation"
+                        strReportName = CType(Server.MapPath("~\Report\rptVisaPendingConf.rpt"), String)
+                        rptreportname = "Report - Visa Pending For Confirmation."
+                        'strReportTitle = " Visa Pending For Confirmation."
+                        BindParams()
+                        Exit Select
+                    Case "Visa Charges"
+                        strReportName = CType(Server.MapPath("~\Report\rptVisaCharges.rpt"), String)
+                        rptreportname = "Report - Visa Charges Details."
+                        'strReportTitle = " Visa Pending For Confirmation."
+                        BindParams()
+                        Exit Select
+                    Case "Visa Confirmed"
+                        strReportName = CType(Server.MapPath("~\Report\rptVisaConf.rpt"), String)
+                        rptreportname = "Report - Confirmed Visa Details."
+                        'strReportTitle = " Visa Pending For Confirmation."
+                        BindParams()
+                        Exit Select
+                    Case "Visa Summary Report"
+                        strReportName = CType(Server.MapPath("~\Report\rptVisaSummary.rpt"), String)
+                        rptreportname = "Report - Visa Summary Details."
+                        'strReportTitle = " Visa Pending For Confirmation."
+                        BindParams()
+                        Exit Select
+                End Select
+                If strReportName = "" Then
+                    'Response.Redirect(CType(Session("BackPageName"), String), False)
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+                    Exit Sub
+                Else
+                    ViewState.Add("RepCalledFrom", 0)
+                    btnBack.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to close report?')==false)return false;")
+                    BindReport(strReportName, strSelectionFormula, strReportTitle)
+                End If
+            End If        
+        End If
+    End Sub
+
+    Private Sub BindParams()
+        Try
+            If Request.QueryString("fromdate") <> "" Then
+                fromdate = Trim(Request.QueryString("fromdate"))
+            End If
+            If Request.QueryString("todate") <> "" Then
+                todate = Trim(Request.QueryString("todate"))
+            End If
+
+            If Request.QueryString("supcode") <> "" Then
+                supcode = Trim(Request.QueryString("supcode"))
+            End If
+            If Request.QueryString("supcodeto") <> "" Then
+                supcodeto = Trim(Request.QueryString("supcodeto"))
+            End If
+
+            If Request.QueryString("plgrpcode") <> "" Then
+                plgrpcode = Trim(Request.QueryString("plgrpcode"))
+            End If
+
+            If Request.QueryString("plgrpcodeto") <> "" Then
+                plgrpcodeto = Trim(Request.QueryString("plgrpcodeto"))
+            End If
+
+            If Request.QueryString("agentcode") <> "" Then
+                agentcode = Trim(Request.QueryString("agentcode"))
+            End If
+            If Request.QueryString("agentcodeto") <> "" Then
+                agentcodeto = Trim(Request.QueryString("agentcodeto"))
+            End If
+            If Request.QueryString("groupby") <> "" Then
+                groupby = Trim(Request.QueryString("groupby"))
+            End If
+
+
+            If Request.QueryString("reptype") <> "" Then
+                reptype = Trim(Request.QueryString("reptype"))
+            End If
+
+            If Request.QueryString("filterby") <> "" Then
+                filterby = Trim(Request.QueryString("filterby"))
+            End If
+
+            If Request.QueryString("reportfor") <> "" Then
+                reportfor = Trim(Request.QueryString("reportfor"))
+            End If
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Sub
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+
+    End Sub
+    Private Sub BindReport(ByVal strReportName As String, ByVal strSelectionFormula As String, ByVal strReportTitle As String)
+        Try
+
+
+            Dim pnames As ParameterFieldDefinitions
+            Dim pname As ParameterFieldDefinition
+            Dim param As New ParameterValues
+            Dim paramvalue As New ParameterDiscreteValue
+
+            'If Session("Rep") Is Nothing Then
+            Dim ConnInfo As New ConnectionInfo
+            'With ConnInfo
+            '    .ServerName = ConfigurationManager.AppSettings("dbServerName")
+            '    .DatabaseName = ConfigurationManager.AppSettings("dbDatabaseName")
+            '    .UserID = ConfigurationManager.AppSettings("dbUserName")
+            '    .Password = ConfigurationManager.AppSettings("dbPassword")
+            'End With
+            With ConnInfo
+                .ServerName = Session("dbServerName")
+                .DatabaseName = Session("dbDatabaseName")
+                .UserID = Session("dbUserName")
+                .Password = Session("dbPassword")
+            End With
+
+            repDeocument.Load(strReportName)
+
+            Me.CRVReport.ReportSource = repDeocument
+            Dim RepTbls As Tables = repDeocument.Database.Tables
+
+            For Each RepTbl As Table In RepTbls
+                Dim RepTblLogonInfo As TableLogOnInfo = RepTbl.LogOnInfo
+                RepTblLogonInfo.ConnectionInfo = ConnInfo
+                RepTbl.ApplyLogOnInfo(RepTblLogonInfo)
+            Next
+
+
+            pnames = repDeocument.DataDefinition.ParameterFields
+
+            pname = pnames.Item("CompanyName")
+            paramvalue.Value = rptcompanyname
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            pname = pnames.Item("ReportName")
+            paramvalue.Value = rptreportname
+            param = pname.CurrentValues
+            param.Add(paramvalue)
+            pname.ApplyCurrentValues(param)
+
+            'pname = pnames.Item("repfilter")
+            'paramvalue.Value = strReportTitle
+            'param = pname.CurrentValues
+            'param.Add(paramvalue)
+            'pname.ApplyCurrentValues(param)
+
+            Dim reportfilter As String = ""
+
+            If CType(ViewState("Pageame"), String) = "VisaApplied" Then
+
+                reportfilter = "Date From: " + Format(CType(Request.QueryString("frmdt"), Date), "dd/MM/yyyy").ToString + "  To: " + Format(CType(Request.QueryString("todt"), Date), "dd/MM/yyyy").ToString
+                
+
+                If Request.QueryString("txtSrc") <> "" Then
+
+                    If Request.QueryString("seltyp") = 0 Then
+                        reportfilter += " By RequestID"
+                    ElseIf Request.QueryString("seltyp") = 1 Then
+                        reportfilter += " By Client Code"
+                    ElseIf Request.QueryString("seltyp") = 2 Then
+                        reportfilter += " By Guest Name"
+                    ElseIf Request.QueryString("seltyp") = 3 Then
+                        reportfilter += " By Arrival Date"
+                    ElseIf Request.QueryString("seltyp") = 4 Then
+                        reportfilter += " By Client Name"
+                    ElseIf Request.QueryString("seltyp") = 5 Then
+                        reportfilter += " By Passport No"
+                    End If
+                    reportfilter += " - " + Request.QueryString("txtSrc")
+
+                End If
+
+
+                If reportfor = 0 Then
+                    reportfilter += " Report for: All"
+                ElseIf reportfor = 1 Then
+                    reportfilter += " Report for: Applied"
+                ElseIf reportfor = 2 Then
+                    reportfilter += " Report for: Confirmed"
+                ElseIf reportfor = 3 Then
+                    reportfilter += " Report for: Rejected"
+                End If
+
+                If filterby = 0 Then
+                    reportfilter += " Filter By: Applied Date"
+                ElseIf filterby = 1 Then
+                    reportfilter += " Filter By: Arrival Date"
+                End If
+
+                repDeocument.SummaryInfo.ReportTitle = reportfilter
+
+
+                pname = pnames.Item("@visagroup")
+                paramvalue.Value = CType(Request.QueryString("visagrp"), String)
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@fromdate")
+                paramvalue.Value = Format(CType(Request.QueryString("frmdt"), Date), "yyyy/MM/dd")
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@todate")
+                paramvalue.Value = Format(CType(Request.QueryString("todt"), Date), "yyyy/MM/dd")
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@chkdate")
+                paramvalue.Value = Request.QueryString("chkdt")
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@cmbsearch")
+                paramvalue.Value = IIf(Request.QueryString("seltyp") <> "[Select]", Request.QueryString("seltyp"), "")
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@txtsearch")
+                paramvalue.Value = Request.QueryString("txtSrc")
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@txtsearch")
+                paramvalue.Value = Request.QueryString("txtSrc")
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@txtsearch")
+                paramvalue.Value = Request.QueryString("txtSrc")
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("reportfor")
+                paramvalue.Value = reportfor
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("filterby")
+                paramvalue.Value = filterby
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+            Else
+
+
+                reportfilter = "Date From: " + Format(CType(fromdate, Date), "dd/MM/yyyy").ToString + "  To: " + Format(CType(todate, Date), "dd/MM/yyyy").ToString
+                If plgrpcode <> "" Then
+                    reportfilter += " Market From:" + plgrpcode + " To:" + plgrpcodeto
+                End If
+                If agentcode <> "" Then
+                    reportfilter += " Customer From:" + agentcode + " To:" + agentcodeto
+                End If
+                If supcode <> "" Then
+                    reportfilter += " Supplier From:" + supcode + " To:" + supcodeto
+                End If
+
+                repDeocument.SummaryInfo.ReportTitle = reportfilter
+                pnames = repDeocument.DataDefinition.ParameterFields
+
+                pname = pnames.Item("@visagrp")
+                paramvalue.Value = CType(Request.QueryString("visagrp"), String)
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@fromdate")
+                paramvalue.Value = Trim(Format(CDate(fromdate), "yyyy/MM/dd"))
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@todate")
+                paramvalue.Value = Trim(Format(CDate(todate), "yyyy/MM/dd"))
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@frmplgrpcode")
+                paramvalue.Value = plgrpcode
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@toplgrpcode")
+                paramvalue.Value = Trim(plgrpcodeto)
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@fromagent")
+                paramvalue.Value = agentcode
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@toagent")
+                paramvalue.Value = agentcodeto
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@frmprov")
+                paramvalue.Value = supcode
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@provto")
+                paramvalue.Value = supcodeto
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                pname = pnames.Item("@groupby")
+                paramvalue.Value = groupby
+                param = pname.CurrentValues
+                param.Add(paramvalue)
+                pname.ApplyCurrentValues(param)
+
+                If CType(ViewState("Pageame"), String) = "Visa Charges" Then
+                    pname = pnames.Item("@datetype")
+                    paramvalue.Value = reptype
+                    param = pname.CurrentValues
+                    param.Add(paramvalue)
+                    pname.ApplyCurrentValues(param)
+                End If
+            End If
+
+
+                Me.CRVReport.ReportSource = repDeocument
+                If strSelectionFormula <> "" Then
+                    CRVReport.SelectionFormula = strSelectionFormula
+                End If
+                Session.Add("ReportSource", repDeocument)
+                Me.CRVReport.DataBind()
+                CRVReport.HasCrystalLogo = False
+        Catch ex As Exception
+
+        End Try
+
+
+    End Sub
+
+    Protected Sub btnBack_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnBack.Click
+        'If CType(Session("BackPageName"), String) = "" Then
+        '    Response.Redirect("MainPage.aspx", False)
+        '    Exit Sub
+        'Else
+        '    Session("ColReportParams") = Nothing
+        '    Response.Redirect(CType(Session("BackPageName"), String), False)
+        'End If
+
+        If CType(ViewState("BackPageName"), String) = "" Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+            Exit Sub
+        Else
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+        End If
+
+    End Sub
+
+    Protected Sub Page_Unload(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Unload
+        If ViewState("RepCalledFrom") <> 1 Then
+            repDeocument.Close()
+            repDeocument.Dispose()
+            ' Session("ColReportParams") = Nothing
+        End If
+    End Sub
+
+    'Protected Sub btnPrint_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnPrint.Click
+    '    Session.Add("ReportSource", repDeocument)
+    '    Dim strpop As String = ""
+    '    'strpop = "window.open('../PriceListModule/RptPrintPage.aspx','PopUpGuestDetails','width=1010,height=650 left=0,top=0 scrollbars=yes,status=yes');"
+    '    strpop = "<script language=""javascript"">var win=window.open('../PriceListModule/RptPrintPage.aspx','printdoc','toolbar=0,scrollbars=yes,resizable=yes,titlebar=0,menubar=0,locationbar=0,modal=1,statusbar=1');</script>"
+    '    'ScriptStr = "<script language=""javascript"">var win=window.open('PrintDoc.aspx','mywindow2','toolbar=0,width=250,height=150,top=100,left=200,scrollbars=yes,resizable=no,titlebar=0,menubar=0,locationbar=0,modal=1,statusbar=1');</script>"
+    '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, False)
+    'End Sub
+
+    Protected Sub btnPrint_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnPrint.Click        
+        ViewState.Add("RepCalledFrom", 1)
+        Dim strpop As String = ""
+        strpop = "window.open('RptPrintPage.aspx','PopUpGuestDetails','width=1010,height=650 left=0,top=0 scrollbars=yes,status=yes');"
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+    End Sub
+End Class
+

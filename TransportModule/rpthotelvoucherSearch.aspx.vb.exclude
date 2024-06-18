@@ -1,0 +1,762 @@
+Imports CrystalDecisions.CrystalReports.Engine
+Imports CrystalDecisions.CrystalReports
+Imports CrystalDecisions.Shared
+Imports CrystalDecisions.Web
+Imports CrystalDecisions.ReportSource
+
+#Region "Namespace"
+Imports System.Data
+Imports System.Data.SqlClient
+#End Region
+
+Partial Class rpthotelvoucherSearch
+    Inherits System.Web.UI.Page
+    Dim objectcl As New clsDateTime
+    Dim rep As New ReportDocument
+    Dim rptcompanyname As String
+    Dim rptreportname As String
+    Dim objutils As New clsUtils
+    Dim servicetype As String
+    Dim default_country As String
+    Dim strqry As String
+    Dim seasonfrom As String
+    Dim seasonto As String
+    Dim objUser As New clsUser
+
+    Protected Sub Page_Init(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Init
+
+        If Page.IsPostBack = False Then
+            Try
+                Dim Count As Integer
+
+
+                Dim lngCount As Int16
+               
+
+                Dim strTempUserFunctionalRight As String()
+               
+                Dim strRights As String
+              
+                Dim AppId As HiddenField = CType(Master.FindControl("hdnAppId"), HiddenField)
+                Dim AppName As HiddenField = CType(Master.FindControl("hdnAppName"), HiddenField)
+                Dim strappid As String = ""
+                Dim strappname As String = ""
+                If AppId Is Nothing = False Then
+                    strappid = AppId.Value
+                End If
+                If AppName Is Nothing = False Then
+                    strappname = AppName.Value
+                End If
+                If CType(Session("GlobalUserName"), String) = Nothing Or CType(Session("Userpwd"), String) = Nothing Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                Else
+                    objUser.CheckUserRight(Session("dbconnectionName"), CType(Session("GlobalUserName"), String), CType(Session("Userpwd"), String), _
+                                                       CType(strappname, String), "TransportModule\rpthotelvoucherSearch.aspx", btnadd, btnexport, btnLabel, gv_SearchResult)
+
+
+                End If
+
+                Dim groupid As String = objUser.GetGroupId(Session("dbconnectionName"), CType(Session("GlobalUserName"), String), CType(Session("Userpwd"), String))
+
+                Dim menuid As Integer = objUser.GetMenuId(Session("dbconnectionName"), "TransportModule\rpthotelvoucherSearch.aspx", strappid)
+                Dim functionalrights As String = objUser.GetUserFunctionalRight(Session("dbconnectionName"), groupid, strappid, menuid)
+
+                If functionalrights <> "" Then
+                    strTempUserFunctionalRight = functionalrights.Split(";")
+                    For lngCount = 0 To strTempUserFunctionalRight.Length - 1
+                        strRights = strTempUserFunctionalRight.GetValue(lngCount)
+
+                        If strRights = "06" Then
+                            Count = 1
+                        End If
+                    Next
+                    If Count = 1 Then
+                        BtnPrint.Visible = True
+                        btnLabel.Visible = True
+                    Else
+                        BtnPrint.Visible = False
+                        btnLabel.Visible = False
+                    End If
+                Else
+
+                    BtnPrint.Visible = False
+                    btnLabel.Visible = False
+
+                End If
+
+
+
+
+
+
+
+
+
+                txtconnection.Value = Session("dbconnectionName")
+
+                If txtfromdate.Text = "" Then
+                    txtfromdate.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+                End If
+
+
+                If txttodate.Text = "" Then
+                    txttodate.Text = DateAdd(DateInterval.Month, 1, objectcl.GetSystemDateOnly(Session("dbconnectionName")))
+                End If
+
+
+
+
+                'objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlsellcode, "partycode", "partyname", "select partycode,partyname from partymast where active=1 and sptypecode  not in (select option_selected from reservation_parameters where param_id=458)  order by partycode", True)
+                'objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlsellname, "partyname", "partycode", "select partycode,partyname from partymast where active=1 and sptypecode  not in (select option_selected from reservation_parameters where param_id=458) order by partyname", True)
+
+                'objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlairportcode, "airportbordercode", "airportbordername", "select airportbordercode,airportbordername from airportbordersmaster where active=1  order by airportbordercode", True)
+                'objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlairportname, "airportbordername", "airportbordercode", "select airportbordername,airportbordercode from airportbordersmaster where active=1  order by airportbordername", True)
+
+                'objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlsectorcode, "othtypcode", "othtypname", "select othtypcode,othtypname from othtypmast where active=1  and othgrpcode in (select option_selected from reservation_parameters where param_id ='1001')order by othtypcode", True)
+                'objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlsectorname, "othtypname", "othtypcode", "select othtypcode,othtypname from othtypmast where active=1  and othgrpcode in (select option_selected from reservation_parameters where param_id ='1001')order by othtypcode", True)
+
+
+
+
+                ' '''''''''''''''
+
+                'If Request.QueryString("catcode") <> "" Then
+                '    ddlsellname.Value = Request.QueryString("catcode")
+                '    ddlsellcode.Value = ddlsellname.Items(ddlsellname.SelectedIndex).Text
+                'End If
+
+
+
+                If Request.QueryString("fromdate") <> "" Then
+                    txtfromdate.Text = Format("U", CType(Request.QueryString("fromdate"), Date))
+                End If
+                If Request.QueryString("todate") <> "" Then
+                    txttodate.Text = Format("U", CType(Request.QueryString("todate"), Date))
+                End If
+
+
+                txtfromdate.Attributes.Add("onchange", "javascript:ChangeDate();")
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objutils.WritErrorLog("rptSupplierpoliciesSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+            End Try
+
+
+
+        End If
+
+        Dim typ As Type
+        typ = GetType(DropDownList)
+
+        If (Page.ClientScript.IsClientScriptIncludeRegistered(typ, "TADDScript.js")) = False Then
+            Page.ClientScript.RegisterClientScriptInclude(typ, "TADDScript.js", "TADDScript.js")
+
+
+            ddlFromsellcode.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            ddlFromSellName.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+
+
+
+
+        End If
+
+        ClientScript.GetPostBackEventReference(Me, String.Empty)
+        If (Me.IsPostBack And Me.Request("__EVENTTARGET") = "RepNewClientWindowPostBack") Then
+            BtnPrint_Click(sender, e)
+        End If
+
+
+    End Sub
+
+    '#Region "Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+
+
+        If Page.IsPostBack = False Then
+            ''sell type
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlFromsellcode, "trfsellcode", "trfsellname", "select trfsellcode,trfsellname from trfsellmast where active=1   order by trfsellcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlFromSellName, "trfsellname", "trfsellcode", "select trfsellcode,trfsellname from trfsellmast where active=1 order by trfsellname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlTosellcode, "trfsellcode", "trfsellname", "select trfsellcode,trfsellname from trfsellmast where active=1   order by trfsellcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlTosellname, "trfsellname", "trfsellcode", "select trfsellcode,trfsellname from trfsellmast where active=1   order by trfsellcode", True)
+
+            ''clients
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromclientcode, "agentcode", "agentname", "select agentcode,agentname from agentmast where active=1   order by agentcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromclientname, "agentname", "agentcode", "select agentcode,agentname from agentmast where active=1   order by agentname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoclientcode, "agentcode", "agentname", "select agentcode,agentname from agentmast where active=1   order by agentcode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoclientname, "agentname", "agentcode", "select agentcode,agentname from agentmast where active=1   order by agentname", True)
+
+
+            ''PARTY
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfrompartycode, "partycode", "partyname", "select partycode,partyname from partymast where active=1 and partymast.sptypecode='HOT'   order by partycode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfrompartyname, "partyname", "partycode", "select partycode,partyname from partymast where active=1 and partymast.sptypecode='HOT'  order by partyname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltopartycode, "partycode", "partyname", "select partycode,partyname from partymast where active=1 and partymast.sptypecode='HOT'  order by partycode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltopartyname, "partyname", "partycode", "select partycode,partyname from partymast where active=1 and partymast.sptypecode='HOT'  order by partyname", True)
+
+
+            ''AIRPORT
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromairportcode, "airportbordercode", "airportbordername", "select airportbordercode,airportbordername from airportbordersmaster where active=1   order by airportbordercode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromairportname, "airportbordername", "airportbordercode", "select airportbordercode,airportbordername from airportbordersmaster where active=1   order by airportbordername", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoairportcode, "airportbordercode", "airportbordername", "select airportbordercode,airportbordername from airportbordersmaster where active=1   order by airportbordercode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoairportname, "airportbordername", "airportbordercode", "select airportbordercode,airportbordername from airportbordersmaster where active=1   order by airportbordername", True)
+
+            ''AIRLINE
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromairlinecode, "partycode", "partyname", "select partycode,partyname from partymast where active=1  and partymast.sptypecode='AIR' order by partycode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromairlinename, "partyname", "partycode", "select partycode,partyname from partymast where active=1  and partymast.sptypecode='AIR' order by partyname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoairlinecode, "partycode", "partyname", "select partycode,partyname from partymast where active=1  and partymast.sptypecode='AIR' order by partycode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoairlinename, "partyname", "partycode", "select partycode,partyname from partymast where active=1  and partymast.sptypecode='AIR' order by partyname", True)
+
+            ''flight
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromflightcode, "flightcode", "partyname", "select flightcode,partyname from flightmast inner join partymast on flightmast.airlinecode =partymast.partycode  where flightmast.active=1  and partymast.sptypecode='AIR' order by partycode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromflightname, "partyname", "flightcode", "select flightcode,partyname from flightmast inner join partymast on flightmast.airlinecode =partymast.partycode  where flightmast.active=1  and partymast.sptypecode='AIR' order by partyname", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoflightcode, "flightcode", "partyname", "select flightcode,partyname from flightmast inner join partymast on flightmast.airlinecode =partymast.partycode  where flightmast.active=1  and partymast.sptypecode='AIR' order by partycode", True)
+            objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoflightname, "partyname", "flightcode", "select flightcode,partyname from flightmast inner join partymast on flightmast.airlinecode =partymast.partycode  where flightmast.active=1  and partymast.sptypecode='AIR' order by partyname", True)
+
+            disableallcontrol()
+            txtcontactno.Text = "+971526057490"
+        Else
+
+            If rbControlall.Checked = True Then
+                ddlFromsellcode.Value = "[Select]"
+                ddlFromSellName.Value = "[Select]"
+                ddlTosellcode.Value = "[Select]"
+                ddlTosellname.Value = "[Select]"
+                ddlFromsellcode.Disabled = True
+                ddlFromSellName.Disabled = True
+                ddlTosellcode.Disabled = True
+                ddlTosellname.Disabled = True
+            Else
+                ddlFromsellcode.Disabled = False
+                ddlFromSellName.Disabled = False
+                ddlTosellcode.Disabled = False
+                ddlTosellname.Disabled = False
+
+            End If
+
+            If Radio1.Checked = True Then
+                ddlfromclientcode.Value = "[Select]"
+                ddlfromclientname.Value = "[Select]"
+                ddltoclientcode.Value = "[Select]"
+                ddltoclientname.Value = "[Select]"
+                ddlfromclientcode.Disabled = True
+                ddlfromclientname.Disabled = True
+                ddltoclientcode.Disabled = True
+                ddltoclientname.Disabled = True
+            Else
+                ddlfromclientcode.Disabled = False
+                ddlfromclientname.Disabled = False
+                ddltoclientcode.Disabled = False
+                ddltoclientname.Disabled = False
+            End If
+
+            If Radio3.Checked = True Then
+                ddlfrompartycode.Value = "[Select]"
+                ddlfrompartyname.Value = "[Select]"
+                ddltopartycode.Value = "[Select]"
+                ddltopartyname.Value = "[Select]"
+                ddlfrompartycode.Disabled = True
+                ddlfrompartyname.Disabled = True
+                ddltopartycode.Disabled = True
+                ddltopartyname.Disabled = True
+            Else
+                ddlfrompartycode.Disabled = False
+                ddlfrompartyname.Disabled = False
+                ddltopartycode.Disabled = False
+                ddltopartyname.Disabled = False
+            End If
+
+            If Radio5.Checked = True Then
+                ddlfromairportcode.Value = "[Select]"
+                ddlfromairportname.Value = "[Select]"
+                ddltoairportcode.Value = "[Select]"
+                ddltoairportname.Value = "[Select]"
+                ddlfromairportcode.Disabled = True
+                ddlfromairportname.Disabled = True
+                ddltoairportcode.Disabled = True
+                ddltoairportname.Disabled = True
+            Else
+                ddlfromairportcode.Disabled = False
+                ddlfromairportname.Disabled = False
+                ddltoairportcode.Disabled = False
+                ddltoairportname.Disabled = False
+            End If
+            If Radio7.Checked = True Then
+                ddlfromairlinecode.Value = "[Select]"
+                ddlfromairlinename.Value = "[Select]"
+                ddltoairlinecode.Value = "[Select]"
+                ddltoairlinename.Value = "[Select]"
+                ddlfromairlinecode.Disabled = True
+                ddlfromairlinename.Disabled = True
+                ddltoairlinecode.Disabled = True
+                ddltoairlinename.Disabled = True
+            Else
+                ddlfromairlinecode.Disabled = False
+                ddlfromairlinename.Disabled = False
+                ddltoairlinecode.Disabled = False
+                ddltoairlinename.Disabled = False
+            End If
+            If Radio9.Checked = True Then
+                ddlfromflightcode.Value = "[Select]"
+                ddlfromflightname.Value = "[Select]"
+                ddltoflightcode.Value = "[Select]"
+                ddltoflightname.Value = "[Select]"
+                ddlfromflightcode.Disabled = True
+                ddlfromflightname.Disabled = True
+                ddltoflightcode.Disabled = True
+                ddltoflightname.Disabled = True
+            Else
+                ddlfromflightcode.Disabled = False
+                'ddlfromflightname.Disabled = False
+                ddltoflightcode.Disabled = False
+                'ddltoflightname.Disabled = False
+            End If
+
+            ''flight
+            If ddlfromairlinecode.Items(ddlfromairlinecode.SelectedIndex).Text <> "[Select]" Then
+                objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromflightcode, "flightcode", "flightcode", "select flightcode,flightcode from flightmast inner join partymast on flightmast.airlinecode =partymast.partycode  where flightmast.active=1  and partymast.sptypecode='AIR' and flightmast.airlinecode ='" & ddlfromairlinecode.Items(ddlfromairlinecode.SelectedIndex).Text & "' order by partycode", True)
+                objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromflightname, "partyname", "flightcode", "select flightcode,partyname from flightmast inner join partymast on flightmast.airlinecode =partymast.partycode  where flightmast.active=1  and partymast.sptypecode='AIR' and flightmast.airlinecode ='" & ddlfromairlinecode.Items(ddlfromairlinecode.SelectedIndex).Text & "' order by partyname", True)
+
+                objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoflightcode, "flightcode", "flightcode", "select flightcode,flightcode from flightmast inner join partymast on flightmast.airlinecode =partymast.partycode  where flightmast.active=1  and partymast.sptypecode='AIR' and flightmast.airlinecode ='" & ddltoairlinecode.Items(ddltoairlinecode.SelectedIndex).Text & "' order by partycode", True)
+                objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddltoflightname, "partyname", "flightcode", "select flightcode,partyname from flightmast inner join partymast on flightmast.airlinecode =partymast.partycode  where flightmast.active=1  and partymast.sptypecode='AIR' and flightmast.airlinecode ='" & ddltoairlinecode.Items(ddltoairlinecode.SelectedIndex).Text & "' order by partyname", True)
+            End If
+
+            If HdnFlightFrom.Value <> String.Empty Then
+                ddlfromflightcode.Value = HdnFlightFrom.Value
+            End If
+            If HdnFlightFromName.Value <> String.Empty Then
+                ddlfromflightname.Value = HdnFlightFromName.Value
+            End If
+            If HdnFlightTo.Value <> String.Empty Then
+                ddltoflightcode.Value = HdnFlightTo.Value
+            End If
+            If HdnFlightToName.Value <> String.Empty Then
+                ddltoflightname.Value = HdnFlightToName.Value
+            End If
+
+
+
+
+
+        End If
+
+        'objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlfromflightcode, "flightcode", "partyname", "select flightcode,partyname from flightmast inner join partymast on flightmast.airlinecode =partymast.partycode  where flightmast.active=1  and partymast.sptypecode='AIR' order by partycode", True)
+
+
+
+    End Sub
+
+    Protected Sub BtnClear_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles BtnClear.Click
+
+        ddlFromsellcode.Value = "[Select]"
+        ddlFromSellName.Value = "[Select]"
+        ddlTosellcode.Value = "[Select]"
+        ddlTosellname.Value = "[Select]"
+        ddlfromclientcode.Value = "[Select]"
+        ddlfromclientname.Value = "[Select]"
+        ddltoclientcode.Value = "[Select]"
+        ddltoclientname.Value = "[Select]"
+        ddlfrompartycode.Value = "[Select]"
+        ddlfrompartyname.Value = "[Select]"
+        ddltopartycode.Value = "[Select]"
+        ddltopartyname.Value = "[Select]"
+        ddlfromairportcode.Value = "[Select]"
+        ddlfromairportname.Value = "[Select]"
+        ddltoairportcode.Value = "[Select]"
+        ddltoairportname.Value = "[Select]"
+        ddlfromairlinecode.Value = "[Select]"
+        ddlfromairlinename.Value = "[Select]"
+        ddltoairlinecode.Value = "[Select]"
+        ddltoairlinename.Value = "[Select]"
+        ddlfromflightcode.Value = "[Select]"
+        ddlfromflightname.Value = "[Select]"
+        ddltoflightcode.Value = "[Select]"
+        ddltoflightname.Value = "[Select]"
+
+        txtfromdate.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+        txtfromdate.Text = DateAdd(DateInterval.Month, 1, objectcl.GetSystemDateOnly(Session("dbconnectionName")))
+        disableallcontrol()
+    End Sub
+
+#Region " Validate Page"
+    Public Function ValidatePage() As Boolean
+        'Dim frmdate, todate As Date
+
+        Dim objDateTime As New clsDateTime
+        Try
+
+            If txtFromDate.Text = "" Then
+
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('From date field can not be blank.');", True)
+
+                SetFocus(txtFromDate)
+                ValidatePage = False
+                Exit Function
+            End If
+            If txttodate.Text = "" Then
+
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('To date field can not be blank.');", True)
+
+                SetFocus(txttodate)
+                ValidatePage = False
+                Exit Function
+            End If
+
+
+
+
+
+            ValidatePage = True
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Function
+#End Region
+
+    Private Function disableallcontrol()
+        Radio1.Checked = True
+
+        Radio3.Checked = True
+        Radio5.Checked = True
+        Radio7.Checked = True
+        rbControlall.Checked = True
+        ddlFromsellcode.Disabled = True
+        ddlFromSellName.Disabled = True
+        ddlTosellcode.Disabled = True
+        ddlTosellname.Disabled = True
+        ddlfromclientcode.Disabled = True
+        ddlfromclientname.Disabled = True
+        ddltoclientcode.Disabled = True
+        ddltoclientname.Disabled = True
+        ddlfrompartycode.Disabled = True
+        ddlfrompartyname.Disabled = True
+        ddltopartycode.Disabled = True
+        ddltopartyname.Disabled = True
+        ddlfromairportcode.Disabled = True
+        ddlfromairportname.Disabled = True
+        ddltoairportcode.Disabled = True
+        ddltoairportname.Disabled = True
+        ddlfromairlinecode.Disabled = True
+        ddlfromairlinename.Disabled = True
+        ddltoairlinecode.Disabled = True
+        ddltoairlinename.Disabled = True
+        ddlfromflightcode.Disabled = True
+        ddlfromflightname.Disabled = True
+        ddltoflightcode.Disabled = True
+        ddltoflightname.Disabled = True
+    End Function
+
+    Protected Sub BtnPrint_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles BtnPrint.Click
+        Try
+            If ValidatePage() = True Then
+                'Session.Add("Pageame", "Newclient")
+                'Session.Add("BackPageName", "NewclientSearch.aspx")
+                'Session("ColReportParams") = Nothing
+
+                Dim strReportTitle As String = ""
+                Dim param1 As String = ""
+                Dim param2 As String = ""
+                Dim param3 As String = ""
+                Dim param4 As String = ""
+                Dim param5 As String = ""
+                Dim param6 As String = ""
+
+                Dim strfromdate As String = ""
+                Dim strtodate As String = ""
+
+
+                Dim strsellcodefrom As String = ""
+                Dim strsellcodeto As String = ""
+                Dim strclientfrom As String = ""
+                Dim strclientto As String = ""
+                Dim strpartyfrom As String = ""
+                Dim strpartyto As String = ""
+                Dim strairportfrom As String = ""
+                Dim strairportto As String = ""
+                Dim strairlinefrom As String = ""
+                Dim strairlineto As String = ""
+                Dim strflightfrom As String = ""
+                Dim strflightto As String = ""
+                Dim strgroupby As String = ""
+                Dim strrepfilter As String = ""
+                Dim strreportoption As String = ""
+                Dim strsectorcode As String = ""
+                Dim strarr(6) As String
+
+                Dim k As Integer
+                Dim P As Integer
+
+                'selling code 
+                strsellcodefrom = IIf(UCase(ddlFromsellcode.Items(ddlFromsellcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlFromsellcode.Items(ddlFromsellcode.SelectedIndex).Text, "")
+                strsellcodeto = IIf(UCase(ddlTosellcode.Items(ddlTosellcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlTosellcode.Items(ddlTosellcode.SelectedIndex).Text, "")
+
+                'client 
+                strclientfrom = IIf(UCase(ddlfromclientcode.Items(ddlfromclientcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromclientcode.Items(ddlfromclientcode.SelectedIndex).Text, "")
+                strclientto = IIf(UCase(ddltoclientcode.Items(ddltoclientcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltoclientcode.Items(ddltoclientcode.SelectedIndex).Text, "")
+
+                'party 
+                strpartyfrom = IIf(UCase(ddlfrompartycode.Items(ddlfrompartycode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfrompartycode.Items(ddlfrompartycode.SelectedIndex).Text, "")
+                strpartyto = IIf(UCase(ddltopartycode.Items(ddltopartycode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltopartycode.Items(ddltopartycode.SelectedIndex).Text, "")
+
+                ''airport 
+                'strairportfrom = IIf(UCase(ddlfromairportcode.Items(ddlfromairportcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromairportcode.Items(ddlfromairportcode.SelectedIndex).Text, "")
+                'strairportto = IIf(UCase(ddltoairportcode.Items(ddltoairportcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltoairportcode.Items(ddltoairportcode.SelectedIndex).Text, "")
+
+                ''airline
+                'strairlinefrom = IIf(UCase(ddlfromairlinecode.Items(ddlfromairlinecode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromairlinecode.Items(ddlfromairlinecode.SelectedIndex).Text, "")
+                'strairlineto = IIf(UCase(ddltoairlinecode.Items(ddltoairlinecode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltoairlinecode.Items(ddltoairlinecode.SelectedIndex).Text, "")
+
+                ''flight
+                'strflightfrom = IIf(UCase(ddlfromflightcode.Items(ddlfromflightcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromflightcode.Items(ddlfromflightcode.SelectedIndex).Text, "")
+                'strflightto = IIf(UCase(ddltoflightcode.Items(ddltoflightcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltoflightcode.Items(ddltoflightcode.SelectedIndex).Text, "")
+
+                strgroupby = mygroupresult()
+                strfromdate = Mid(Format(CType(txtfromdate.Text, Date), "u"), 1, 10)
+                strtodate = Mid(Format(CType(txttodate.Text, Date), "u"), 1, 10)
+
+
+                strReportTitle = " Hotel Voucher Report"
+
+
+                Dim strpop As String = ""
+
+                Dim RepMode As String = ddlCompLogo.SelectedValue
+
+                '    strpop = "window.open('rptTransfersDepartureReport.aspx?Pageame=HotelVoucher&BackPageName=rptHotelVoucherSearch.aspx " _
+                '& "&fromdate=" & strfromdate _
+                '& "&todate=" & strtodate _
+                '& "&sellcodefrom=" & strsellcodefrom & "&sellcodeto=" & strsellcodeto _
+                '& "&strclientfrom=" & strclientfrom & "&strclientto=" & strclientto _
+                '& "&strpartyfrom=" & strpartyfrom & "&strpartyto=" & strpartyto _
+                '& "&strgroupby=" & strgroupby _
+                '& "&RepMode=" & RepMode _
+                '& "&repfilter=" & strrepfilter & "&reportoption=" & strreportoption & "&reporttitle=" & strReportTitle & "','RepNewClient','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes' );"
+
+                strpop = "window.open('rptTransfersDepartureReport.aspx?Pageame=HotelVoucher&BackPageName=rptHotelVoucherSearch.aspx " _
+           & "&fromdate=" & strfromdate _
+           & "&todate=" & strtodate _
+           & "&sellcodefrom=" & strsellcodefrom & "&sellcodeto=" & strsellcodeto _
+           & "&strclientfrom=" & strclientfrom & "&strclientto=" & strclientto _
+           & "&strpartyfrom=" & strpartyfrom & "&strpartyto=" & strpartyto _
+           & "&strgroupby=" & strgroupby _
+           & "&RepMode=" & RepMode _
+           & "&repfilter=" & strrepfilter & "&reportoption=" & strreportoption & "&reporttitle=" & strReportTitle & "','RepNewClient');"
+
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objutils.WritErrorLog("rptTransfercostPricelistSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+        End Try
+    End Sub
+
+#Region "Private Sub FillGrid(ByVal strorderby As String, Optional ByVal strsortorder As String = 'ASC')"
+    Private Sub FillGrid()
+        Dim myDS As New DataSet
+        Dim MyCommand As SqlCommand
+        Dim SqlConn1 As SqlConnection
+        Dim myDataAdapter As SqlDataAdapter
+        Dim ObjDate As New clsDateTime
+        Dim strSqlQry As String
+
+        lblMsg.Visible = False
+
+
+        Try
+
+            'strSqlQry = "select othcatcode,othcatname from othcatmast where othgrpcode='TRFS' "
+
+
+            'SqlConn1 = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                            'Open connection
+            'myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn1)
+            'myDataAdapter.Fill(myDS)
+            'gv_SearchResult.DataSource = myDS
+
+            'If myDS.Tables(0).Rows.Count > 0 Then
+            '    gv_SearchResult.DataBind()
+            'Else
+            '    gv_SearchResult.PageIndex = 0
+            '    gv_SearchResult.DataBind()
+            '    lblMsg.Visible = True
+            '    lblMsg.Text = "Records not found, Please redefine search criteria."
+            'End If
+
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objutils.WritErrorLog("NewclientsSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            'clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            'clsDBConnect.dbConnectionClose(SqlConn)                          'Close connection
+        End Try
+
+    End Sub
+#End Region
+
+
+
+    Private Function mygroupresult()
+
+        Try
+            Select Case ddlgroupby.Items(ddlgroupby.SelectedIndex).Text
+                Case "Booking No"
+                    mygroupresult = "R"
+                Case "Hotel"
+                    mygroupresult = "P"
+                Case "Clients"
+                    mygroupresult = "C"
+
+                Case Else
+                    mygroupresult = "R"
+            End Select
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+
+
+    End Function
+
+
+
+
+#Region "Public Sub SortGridColoumn_click()"
+    Public Sub SortGridColoumn_click()
+        'Dim DataTable As DataTable
+        'Dim myDS As New DataSet
+
+
+        'myDS = gv_SearchResult.DataSource
+        'DataTable = myDS.Tables(0)
+        'If IsDBNull(DataTable) = False Then
+        '    Dim dataView As DataView = DataTable.DefaultView
+        '    Session.Add("strsortdirection", objutils.SwapSortDirection(Session("strsortdirection")))
+        '    dataView.Sort = Session("strsortexpression") & " " & objutils.ConvertSortDirectionToSql(Session("strsortdirection"))
+        '    gv_SearchResult.DataSource = dataView
+        '    gv_SearchResult.DataBind()
+        'End If
+    End Sub
+#End Region
+
+    Protected Sub btnhelp_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "window.open('../Help.aspx?hi=NewclientsSearch','_blank','status=1,scrollbars=1,top=135,left=760,width=250,height=500');", True)
+    End Sub
+
+
+
+
+    Protected Sub btnLabel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnLabel.Click
+        Try
+            If ValidatePage() = True Then
+                'Session.Add("Pageame", "Newclient")
+                'Session.Add("BackPageName", "NewclientSearch.aspx")
+                'Session("ColReportParams") = Nothing
+
+                Dim strReportTitle As String = ""
+                Dim param1 As String = ""
+                Dim param2 As String = ""
+                Dim param3 As String = ""
+                Dim param4 As String = ""
+                Dim param5 As String = ""
+                Dim param6 As String = ""
+
+                Dim strfromdate As String = ""
+                Dim strtodate As String = ""
+
+
+                Dim strsellcodefrom As String = ""
+                Dim strsellcodeto As String = ""
+                Dim strclientfrom As String = ""
+                Dim strclientto As String = ""
+                Dim strpartyfrom As String = ""
+                Dim strpartyto As String = ""
+                Dim strairportfrom As String = ""
+                Dim strairportto As String = ""
+                Dim strairlinefrom As String = ""
+                Dim strairlineto As String = ""
+                Dim strflightfrom As String = ""
+                Dim strflightto As String = ""
+                Dim strgroupby As String = ""
+                Dim strrepfilter As String = ""
+                Dim strreportoption As String = ""
+                Dim strsectorcode As String = ""
+                Dim strarr(6) As String
+                Dim k As Integer
+                Dim P As Integer
+
+                'selling code 
+                strsellcodefrom = IIf(UCase(ddlFromsellcode.Items(ddlFromsellcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlFromsellcode.Items(ddlFromsellcode.SelectedIndex).Text, "")
+                strsellcodeto = IIf(UCase(ddlTosellcode.Items(ddlTosellcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlTosellcode.Items(ddlTosellcode.SelectedIndex).Text, "")
+
+                'client 
+                strclientfrom = IIf(UCase(ddlfromclientcode.Items(ddlfromclientcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromclientcode.Items(ddlfromclientcode.SelectedIndex).Text, "")
+                strclientto = IIf(UCase(ddltoclientcode.Items(ddltoclientcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltoclientcode.Items(ddltoclientcode.SelectedIndex).Text, "")
+
+                'party 
+                strpartyfrom = IIf(UCase(ddlfrompartycode.Items(ddlfrompartycode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfrompartycode.Items(ddlfrompartycode.SelectedIndex).Text, "")
+                strpartyto = IIf(UCase(ddltopartycode.Items(ddltopartycode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltopartycode.Items(ddltopartycode.SelectedIndex).Text, "")
+
+                ''airport 
+                'strairportfrom = IIf(UCase(ddlfromairportcode.Items(ddlfromairportcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromairportcode.Items(ddlfromairportcode.SelectedIndex).Text, "")
+                'strairportto = IIf(UCase(ddltoairportcode.Items(ddltoairportcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltoairportcode.Items(ddltoairportcode.SelectedIndex).Text, "")
+
+                ''airline
+                'strairlinefrom = IIf(UCase(ddlfromairlinecode.Items(ddlfromairlinecode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromairlinecode.Items(ddlfromairlinecode.SelectedIndex).Text, "")
+                'strairlineto = IIf(UCase(ddltoairlinecode.Items(ddltoairlinecode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltoairlinecode.Items(ddltoairlinecode.SelectedIndex).Text, "")
+
+                ''flight
+                'strflightfrom = IIf(UCase(ddlfromflightcode.Items(ddlfromflightcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlfromflightcode.Items(ddlfromflightcode.SelectedIndex).Text, "")
+                'strflightto = IIf(UCase(ddltoflightcode.Items(ddltoflightcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddltoflightcode.Items(ddltoflightcode.SelectedIndex).Text, "")
+
+                strgroupby = mygroupresult()
+                strfromdate = Mid(Format(CType(txtfromdate.Text, Date), "u"), 1, 10)
+                strtodate = Mid(Format(CType(txttodate.Text, Date), "u"), 1, 10)
+
+
+                strReportTitle = " Hotel Label Report"
+
+
+                Dim strpop As String = ""
+                '    strpop = "window.open('rptTransfersDepartureReport.aspx?Pageame=HotelLabel&BackPageName=rptHotelVoucherSearch.aspx " _
+                '& "&fromdate=" & strfromdate _
+                '& "&todate=" & strtodate _
+                '& "&sellcodefrom=" & strsellcodefrom & "&sellcodeto=" & strsellcodeto _
+                '& "&strclientfrom=" & strclientfrom & "&strclientto=" & strclientto _
+                '& "&strpartyfrom=" & strpartyfrom & "&strpartyto=" & strpartyto _
+                '   & "&strlanguage=" & ddllanguage.SelectedIndex & "&contactname=" & ddlcontact.Items(ddlcontact.SelectedIndex).Text & "&contactno=" & txtcontactno.Text _
+                '       & "&strgroupby=" & strgroupby _
+                '& "&repfilter=" & strrepfilter & "&reportoption=" & strreportoption & "&reporttitle=" & strReportTitle & "','RepNewClient','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes' );"
+
+                strpop = "window.open('rptTransfersDepartureReport.aspx?Pageame=HotelLabel&BackPageName=rptHotelVoucherSearch.aspx " _
+            & "&fromdate=" & strfromdate _
+            & "&todate=" & strtodate _
+            & "&sellcodefrom=" & strsellcodefrom & "&sellcodeto=" & strsellcodeto _
+            & "&strclientfrom=" & strclientfrom & "&strclientto=" & strclientto _
+            & "&strpartyfrom=" & strpartyfrom & "&strpartyto=" & strpartyto _
+               & "&strlanguage=" & ddllanguage.SelectedIndex & "&contactname=" & ddlcontact.Items(ddlcontact.SelectedIndex).Text & "&contactno=" & txtcontactno.Text _
+                   & "&strgroupby=" & strgroupby _
+            & "&repfilter=" & strrepfilter & "&reportoption=" & strreportoption & "&reporttitle=" & strReportTitle & "','RepNewClient');"
+
+
+
+
+
+
+
+
+
+
+
+
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objutils.WritErrorLog("rptTransfercostPricelistSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+        End Try
+    End Sub
+
+
+End Class

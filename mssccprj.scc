@@ -1,0 +1,13 @@
+SCC = This is a Source Code Control file
+
+[ColumbusRPTS.sln]
+SCC_Aux_Path = "\\remotesrv\REMOTESRVVSS\"
+SCC_Project_Name = "$/ColumbusRPTS", ASYIAAAA
+
+[ColumbusRPTS_New.sln]
+SCC_Aux_Path = "\\Mahcedc02\remotesrvvss\"
+SCC_Project_Name = "$/ColumbusWebQNex", VIMBAAAA
+
+[AccountsModule_NewVS2010.sln]
+SCC_Aux_Path = "\\mahcedc02\REMOTESRVVSS\"
+SCC_Project_Name = "$/ElevateAccountsModule", UKNDAAAA

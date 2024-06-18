@@ -1,0 +1,172 @@
+﻿<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40"
+ xmlns:msxsl="urn:schemas-microsoft-com:xslt" xmlns:user="urn:my-scripts"
+ xmlns:fo="http://www.w3.org/1999/XSL/Format">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Version>16.00</Version>
+ </DocumentProperties>
+ <OfficeDocumentSettings xmlns="urn:schemas-microsoft-com:office:office">
+  <AllowPNG/>
+ </OfficeDocumentSettings>
+ <ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">
+  <SupBook>
+   <Path>bookings</Path>
+   <SheetName>bookings</SheetName>
+  </SupBook>
+  <WindowHeight>12225</WindowHeight>
+  <WindowWidth>28800</WindowWidth>
+  <WindowTopX>32767</WindowTopX>
+  <WindowTopY>32767</WindowTopY>
+  <ProtectStructure>False</ProtectStructure>
+  <ProtectWindows>False</ProtectWindows>
+ </ExcelWorkbook>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Top"/>
+   <Font ss:FontName="Arial" x:Family="Swiss" ss:Size="8"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="s66">
+   <Alignment ss:Vertical="Top" ss:ShrinkToFit="1"/>
+   <Font ss:FontName="Arial" x:Family="Swiss" ss:Color="#000000"/>
+   <Interior ss:Color="#D7E4BC" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s68">
+   <NumberFormat ss:Format="dd\-mm\-yyyy\ hh:mm:ss"/>
+  </Style>
+  <Style ss:ID="s69">
+   <NumberFormat ss:Format="Short Date"/>
+  </Style>
+  <Style ss:ID="s70">
+   <Alignment ss:Horizontal="Right" ss:Vertical="Top"/>
+   <Borders/>
+   <Font ss:FontName="Arial"/>
+   <Interior/>
+   <NumberFormat ss:Format="Fixed"/>
+   <Protection/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Product bookings">
+  <Names>
+   <NamedRange ss:Name="Print_Titles" ss:RefersTo="=Product bookings!R1:R2"/>
+  </Names>
+  <Table ss:ExpandedColumnCount="24" ss:ExpandedRowCount="3" x:FullColumns="1"
+   x:FullRows="1" ss:DefaultColumnWidth="42" ss:DefaultRowHeight="11.25">
+   <Column ss:AutoFitWidth="0" ss:Width="60" ss:Span="2"/>
+   <Column ss:Index="4" ss:AutoFitWidth="0" ss:Width="80.25" ss:Span="1"/>
+   <Column ss:Index="6" ss:AutoFitWidth="0" ss:Width="60" ss:Span="5"/>
+   <Column ss:Index="12" ss:AutoFitWidth="0" ss:Width="39.75"/>
+   <Column ss:AutoFitWidth="0" ss:Width="60" ss:Span="2"/>
+   <Column ss:Index="16" ss:AutoFitWidth="0" ss:Width="39.75"/>
+   <Column ss:AutoFitWidth="0" ss:Width="60" ss:Span="3"/>
+   <Column ss:Index="21" ss:AutoFitWidth="0" ss:Width="80.25"/>
+   <Column ss:AutoFitWidth="0" ss:Width="60" ss:Span="1"/>
+   <Column ss:Index="24" ss:AutoFitWidth="0" ss:Width="120"/>
+   <Row ss:Height="12.75">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Booking code</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Booking element ID</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Main passenger name</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Date</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Line booking date</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Start date</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">End date</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Supplier name</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Supplier ID</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Description</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Direct Payment</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Sales Price</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Sales currency</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Product group</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Product Type</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Cost price</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Cost currency</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Payment Type</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Customer's Payment Type </Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Agency</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Agency booking reference</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Pax number</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Client ID</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">First Invoice's Date</Data></Cell>
+   </Row>
+   <Row ss:Height="12.75">
+    <Cell><Data ss:Type="String">K5CKXL</Data></Cell>
+    <Cell><Data ss:Type="String">160286</Data></Cell>
+    <Cell><Data ss:Type="String">Davit Arakelyan</Data></Cell>
+    <Cell ss:StyleID="s68"><Data ss:Type="DateTime">2022-11-09T18:34:07.000</Data></Cell>
+    <Cell ss:StyleID="s68"><Data ss:Type="DateTime">2022-11-09T18:34:07.000</Data></Cell>
+    <Cell ss:StyleID="s69"><Data ss:Type="DateTime">2022-12-29T00:00:00.000</Data></Cell>
+    <Cell ss:StyleID="s69"><Data ss:Type="DateTime">2023-01-06T00:00:00.000</Data></Cell>
+    <Cell><Data ss:Type="String">Towers Rotana Hotel</Data></Cell>
+    <Cell><Data ss:Type="String">265</Data></Cell>
+    <Cell><Data ss:Type="String">Towers Rotana Hotel</Data></Cell>
+    <Cell><Data ss:Type="String">False</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">0</Data></Cell>
+    <Cell><Data ss:Type="String">USD</Data></Cell>
+    <Cell><Data ss:Type="String">Accommodation</Data></Cell>
+    <Cell><Data ss:Type="String">Accomodation</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">0</Data></Cell>
+    <Cell><Data ss:Type="String">AED</Data></Cell>
+    <Cell><Data ss:Type="String">Pre-payment</Data></Cell>
+    <Cell><Data ss:Type="String">Pre-payment</Data></Cell>
+    <Cell><Data ss:Type="String">KANDA Travel Club - AED</Data></Cell>
+    <Cell><Data ss:Type="String"></Data></Cell>
+    <Cell><Data ss:Type="String">ADT: 2, CHD: 2</Data></Cell>
+    <Cell><Data ss:Type="String">755</Data></Cell>
+    <Cell><Data ss:Type="String"></Data></Cell>
+   </Row>
+   <Row ss:Height="12.75">
+    <Cell><Data ss:Type="String">K5CKXL</Data></Cell>
+    <Cell><Data ss:Type="String">160287</Data></Cell>
+    <Cell><Data ss:Type="String">Davit Arakelyan</Data></Cell>
+    <Cell ss:StyleID="s68"><Data ss:Type="DateTime">2022-11-09T18:34:07.000</Data></Cell>
+    <Cell ss:StyleID="s68"><Data ss:Type="DateTime">2022-11-09T18:35:08.000</Data></Cell>
+    <Cell ss:StyleID="s69"><Data ss:Type="DateTime">2022-12-29T00:00:00.000</Data></Cell>
+    <Cell ss:StyleID="s69"><Data ss:Type="DateTime">2023-01-06T00:00:00.000</Data></Cell>
+    <Cell><Data ss:Type="String">Towers Rotana Hotel</Data></Cell>
+    <Cell><Data ss:Type="String">265</Data></Cell>
+    <Cell><Data ss:Type="String">Towers Rotana Hotel</Data></Cell>
+    <Cell><Data ss:Type="String">False</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">0</Data></Cell>
+    <Cell><Data ss:Type="String">USD</Data></Cell>
+    <Cell><Data ss:Type="String">Accommodation</Data></Cell>
+    <Cell><Data ss:Type="String">Accomodation</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">0</Data></Cell>
+    <Cell><Data ss:Type="String">AED</Data></Cell>
+    <Cell><Data ss:Type="String">Pre-payment</Data></Cell>
+    <Cell><Data ss:Type="String">Pre-payment</Data></Cell>
+    <Cell><Data ss:Type="String">KANDA Travel Club - AED</Data></Cell>
+    <Cell><Data ss:Type="String"></Data></Cell>
+    <Cell><Data ss:Type="String">ADT: 2, CHD: 2</Data></Cell>
+    <Cell><Data ss:Type="String">755</Data></Cell>
+    <Cell><Data ss:Type="String"></Data></Cell>
+   </Row>
+  </Table>
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+   <PageSetup>
+    <Layout x:Orientation="Landscape"/>
+    <PageMargins x:Bottom="0.25" x:Left="0.25" x:Right="0.25" x:Top="0.25"/>
+   </PageSetup>
+   <Print>
+    <ValidPrinterInfo/>
+    <VerticalResolution>0</VerticalResolution>
+   </Print>
+   <Selected/>
+   <Panes>
+    <Pane>
+     <Number>3</Number>
+     <ActiveRow>5</ActiveRow>
+     <ActiveCol>7</ActiveCol>
+    </Pane>
+   </Panes>
+   <ProtectObjects>False</ProtectObjects>
+   <ProtectScenarios>False</ProtectScenarios>
+  </WorksheetOptions>
+ </Worksheet>
+</Workbook>

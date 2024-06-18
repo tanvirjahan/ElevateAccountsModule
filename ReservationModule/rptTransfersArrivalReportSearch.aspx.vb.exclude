@@ -1,0 +1,609 @@
+﻿Imports System.IO
+Imports System.Data
+Imports System.Data.SqlClient
+Imports ClosedXML.Excel
+Imports System.Collections.Generic
+Imports System.Net
+
+Partial Class rptTransfersArrivalReportSearch
+    Inherits System.Web.UI.Page
+
+#Region "Global Declaration"
+    Dim objUser As New clsUser
+    Dim objUtils As New clsUtils
+    Dim mySqlConn As SqlConnection
+    Dim mySqlCmd As SqlCommand
+    Dim myDataAdapter As SqlDataAdapter
+    Dim mySqlReader As SqlDataReader
+    Dim strSqlQry As String
+    Dim document As New XLWorkbook
+    Dim myds As New DataSet
+#End Region
+
+    <System.Web.Script.Services.ScriptMethod()> _
+<System.Web.Services.WebMethod()> _
+    Public Shared Function GetCountrys(ByVal prefixText As String) As List(Of String)
+        Dim strSqlQry As String = ""
+
+        Dim myDS As New DataSet
+        Dim countrynames As New List(Of String)
+        Try
+
+
+            strSqlQry = "select ctryname,ctrycode from ctrymast  where  active=1 and  ctryname like  '" & Trim(prefixText) & "%'"
+
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            ' SqlConn = clsDBConnect.dbConnectionnew(objclsConnectionName.ConnectionName)
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    countrynames.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("ctryname").ToString(), myDS.Tables(0).Rows(i)("ctrycode").ToString()))
+
+                Next
+            End If
+            Return countrynames
+        Catch ex As Exception
+            Return countrynames
+        End Try
+    End Function
+    <System.Web.Script.Services.ScriptMethod()> _
+<System.Web.Services.WebMethod()> _
+    Public Shared Function GetHotelcitys(ByVal prefixText As String) As List(Of String)
+        Dim strSqlQry As String = ""
+
+        Dim myDS As New DataSet
+        Dim citynames As New List(Of String)
+        Try
+            strSqlQry = "select cityname,citycode from citymast  where  active=1 and  cityname like  '" & Trim(prefixText) & "%'"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            ' SqlConn = clsDBConnect.dbConnectionnew(objclsConnectionName.ConnectionName)
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    citynames.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("cityname").ToString(), myDS.Tables(0).Rows(i)("citycode").ToString()))
+                Next
+            End If
+            Return citynames
+        Catch ex As Exception
+            Return citynames
+        End Try
+    End Function
+    <System.Web.Script.Services.ScriptMethod()> _
+<System.Web.Services.WebMethod()> _
+    Public Shared Function GetFlightDetails(ByVal prefixText As String) As List(Of String)
+        Dim strSqlQry As String = ""
+
+        Dim myDS As New DataSet
+        Dim flightnames As New List(Of String)
+        Try
+            strSqlQry = "select flightcode,flightcode from flightmast  where  active=1 and  flightcode like  '" & Trim(prefixText) & "%'"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            ' SqlConn = clsDBConnect.dbConnectionnew(objclsConnectionName.ConnectionName)
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    flightnames.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("flightcode").ToString(), myDS.Tables(0).Rows(i)("flightcode").ToString()))
+                Next
+            End If
+            Return flightnames
+        Catch ex As Exception
+            Return flightnames
+        End Try
+    End Function
+    <System.Web.Script.Services.ScriptMethod()> _
+<System.Web.Services.WebMethod()> _
+    Public Shared Function GetAgents(ByVal prefixText As String) As List(Of String)
+        Dim strSqlQry As String = ""
+
+        Dim myDS As New DataSet
+        Dim agentnames As New List(Of String)
+        Try
+            strSqlQry = "select agentname,agentcode from agentmast  where  active=1 and  agentname like  '" & Trim(prefixText) & "%'"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            ' SqlConn = clsDBConnect.dbConnectionnew(objclsConnectionName.ConnectionName)
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    agentnames.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("agentname").ToString(), myDS.Tables(0).Rows(i)("agentcode").ToString()))
+                Next
+            End If
+            Return agentnames
+        Catch ex As Exception
+            Return agentnames
+        End Try
+    End Function
+
+    <System.Web.Script.Services.ScriptMethod()> _
+<System.Web.Services.WebMethod()> _
+    Public Shared Function GetHotels(ByVal prefixText As String) As List(Of String)
+        Dim strSqlQry As String = ""
+
+        Dim myDS As New DataSet
+        Dim hotelnames As New List(Of String)
+        Try
+            strSqlQry = "select partyname,partycode from partymast  where  active=1 and  partyname like  '" & Trim(prefixText) & "%' and sptypecode = (select option_selected  from reservation_parameters where param_id=458)"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            ' SqlConn = clsDBConnect.dbConnectionnew(objclsConnectionName.ConnectionName)
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    hotelnames.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("partyname").ToString(), myDS.Tables(0).Rows(i)("partycode").ToString()))
+                Next
+            End If
+            Return hotelnames
+        Catch ex As Exception
+            Return hotelnames
+        End Try
+    End Function
+    <System.Web.Script.Services.ScriptMethod()> _
+ <System.Web.Services.WebMethod()> _
+    Public Shared Function GetCountryGroups(ByVal prefixText As String) As List(Of String)
+        Dim strSqlQry As String = ""
+
+        Dim myDS As New DataSet
+        Dim countrygroupnames As New List(Of String)
+        Try
+
+
+            strSqlQry = "select countrygroupname,countrygroupcode from countrygroup  where  active=1 and  countrygroupname like  '" & Trim(prefixText) & "%'"
+
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            ' SqlConn = clsDBConnect.dbConnectionnew(objclsConnectionName.ConnectionName)
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    countrygroupnames.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("countrygroupname").ToString(), myDS.Tables(0).Rows(i)("countrygroupcode").ToString()))
+
+                Next
+
+
+
+
+            End If
+            Return countrygroupnames
+        Catch ex As Exception
+            Return countrygroupnames
+        End Try
+    End Function
+
+#Region "Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        If IsPostBack = False Then
+            Try
+                txtFromDate.Text = Date.Now
+                If CType(Session("GlobalUserName"), String) = "" Or CType(Session("Userpwd"), String) = Nothing Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+                Dim strappid As String = ""
+                Dim strappname As String = ""
+
+                Dim AppName As HiddenField = CType(Master.FindControl("hdnAppName"), HiddenField)
+                Dim AppId As HiddenField = CType(Master.FindControl("hdnAppId"), HiddenField)
+
+                If AppId.Value Is Nothing = False Then
+                    strappid = AppId.Value
+                End If
+                strappname = objUser.GetAppName(Session("dbconnectionName"), strappid)
+
+
+                objUser.CheckUserRight(Session("dbconnectionName"), CType(Session("GlobalUserName"), String), CType(Session("Userpwd"), String), _
+                               CType(strappname, String), "ReservationModule\rptTransfersArrivalReportSearch.aspx", btnAddNew, btnExportToExcel, _
+                               btnprint, gvSearch:=gvSearchResult)
+
+                objUtils.FillDropDownListWithValuenew(Session("dbconnectionName"), ddldivisions, "division_master_des", "division_master_code", "select division_master_code,division_master_des from division_master  order by division_master_code", True)
+                Dim showgroup As String = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select option_selected  from reservation_parameters(nolock) where param_id=3001")
+                ddldivisions.Items.RemoveAt(ddldivisions.Items.Count - 1)
+                ddldivisions.Items.Add(New ListItem("All", "-1"))
+                ddldivisions.SelectedIndex = ddldivisions.Items.Count - 1
+                ' chkflightonly.Checked = True
+                '     chkshiftingonly.Checked = True
+
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("rptTransfersArrivalReportSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnLoadReport_Click(sender As Object, e As System.EventArgs) Handles btnLoadReport.Click"
+    Protected Sub btnLoadReport_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnLoadReport.Click
+        mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+        mySqlCmd = New SqlCommand("sp_rep_arrival_summary", mySqlConn)
+        mySqlCmd.CommandType = CommandType.StoredProcedure
+        mySqlCmd.Parameters.Add(New SqlParameter("@dateofarrival", SqlDbType.VarChar, 20)).Value = Convert.ToDateTime(txtFromDate.Text).ToString("yyyy/MM/dd")
+        mySqlCmd.Parameters.Add(New SqlParameter("@agent", SqlDbType.VarChar, 100)).Value = CType(IIf(TxtAgentCode.Text.Trim <> "", TxtAgentCode.Text.Trim, ""), String)
+        mySqlCmd.Parameters.Add(New SqlParameter("@countrygroup", SqlDbType.VarChar, 20)).Value = CType(IIf(TxtSectorCode.Text.Trim <> "", TxtSectorCode.Text.Trim, ""), String)
+        mySqlCmd.Parameters.Add(New SqlParameter("@country", SqlDbType.VarChar, 100)).Value = CType(IIf(TxtCtryCode.Text.Trim <> "", TxtCtryCode.Text.Trim, ""), String)
+        mySqlCmd.Parameters.Add(New SqlParameter("@city", SqlDbType.VarChar, 20)).Value = CType(IIf(TxtCityCode.Text.Trim <> "", TxtCityCode.Text.Trim, ""), String)
+        mySqlCmd.Parameters.Add(New SqlParameter("@party", SqlDbType.VarChar, 100)).Value = CType(IIf(TxtHotelCode.Text.Trim <> "", TxtHotelCode.Text.Trim, ""), String)
+        mySqlCmd.Parameters.Add(New SqlParameter("@flightcode", SqlDbType.VarChar, 20)).Value = CType(IIf(TxtFlightCode.Text.Trim <> "", TxtFlightCode.Text.Trim, ""), String)
+        mySqlCmd.Parameters.Add(New SqlParameter("@groupby", SqlDbType.VarChar, 100)).Value = CType(GroupBy.SelectedValue, Integer)
+        mySqlCmd.Parameters.Add(New SqlParameter("@flightonly", SqlDbType.VarChar, 20)).Value = IIf((chkflightonly.Checked), "1", "0")
+        mySqlCmd.Parameters.Add(New SqlParameter("@shiftonly", SqlDbType.VarChar, 100)).Value = IIf((chkshiftingonly.Checked), "1", "0")
+        mySqlCmd.Parameters.Add(New SqlParameter("@divcode", SqlDbType.VarChar, 20)).Value = CType(IIf(ddldivisions.SelectedValue = -1, "", ddldivisions.SelectedValue), String)
+        myDataAdapter = New SqlDataAdapter(mySqlCmd)
+        myDataAdapter.Fill(myds)
+        Dim trow As Integer = 3
+        Dim wb As New XLWorkbook
+
+        Dim FolderPath As String = "..\ExcelTemplates\"
+        Dim FileName As String = "Arrival.xlsx"
+        Dim FilePath As String = Server.MapPath(FolderPath + FileName)
+        Dim RandomCls As New Random()
+        Dim RandomNo As String = RandomCls.Next(100000, 9999999).ToString
+
+        Dim FileNameNew As String = "Arrivals_" & Now.Year & Now.Month & Now.Day & Now.Hour & Now.Minute & Now.Second & Now.Millisecond & ".xlsx"
+        document = New XLWorkbook
+        Dim ws As IXLWorksheet = wb.Worksheets.Add("ArrivalSheet")
+        ws.Style.Font.FontName = "Calibri"
+
+
+
+        Dim header As IXLRange
+        header = ws.Range("A2:T2")
+        header.Style.Font.SetBold()
+        header.Style.Fill.SetBackgroundColor(XLColor.FromHtml("#e2efda"))
+        header.Style.Border.SetBottomBorder(XLBorderStyleValues.Thin)
+        header.Style.Border.SetTopBorder(XLBorderStyleValues.Thin)
+        header.Merge()
+        header.Style.Font.FontSize = 16
+        Dim headertext As Object
+        headertext = ws.Ranges("e2:h2")
+        headertext.Style.Font.SetBold()
+        headertext.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+        headertext.Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center)
+        headertext.Style.Font.SetBold()
+        headertext.Style.Font.FontSize = 16
+        headertext.Style.Border.SetBottomBorder(XLBorderStyleValues.Thin)
+        headertext.Style.Border.SetTopBorder(XLBorderStyleValues.Thin)
+        Dim range1 As IXLRange
+        range1 = ws.Range("e2:T2")
+        range1.Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center)
+        range1.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+        range1.Merge()
+        If ddldivisions.SelectedValue = "-1" Then
+            range1.Value = "Elevate Tourism" 'CType(Session("CompanyName"), String)
+        Else
+            range1.Value = ddldivisions.SelectedItem.Text
+        End If
+
+        range1.Style.Border.SetBottomBorder(XLBorderStyleValues.Thin)
+        range1.Style.Border.SetTopBorder(XLBorderStyleValues.Thin)
+
+
+
+
+        Dim header2 As IXLRange
+        header2 = ws.Range("A3:T3")
+        header2.Style.Font.SetBold()
+        header2.Style.Fill.SetBackgroundColor(XLColor.FromHtml("#FFE5CC"))
+        header2.Merge()
+        header2.Style.Font.FontSize = 14
+        Dim headertext2 As Object
+        headertext2 = ws.Ranges("e3:h3")
+        headertext2.Style.Font.SetBold()
+        headertext2.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+        headertext2.Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center)
+        Dim range2 As IXLRange
+        range2 = ws.Range("e3:h3")
+        Dim multiline As Object
+        multiline = String.Concat("Arrival" + " List for Date:    " + txtFromDate.Text)
+        range2.Cell(1, 1).Value = multiline
+        range2.Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center)
+        range2.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+        range2.Merge()
+
+        ws.Range(3, 1, 3, 20).Style.Border.SetBottomBorder(XLBorderStyleValues.Thin)
+        ws.Range(3, 1, 3, 20).Style.Border.SetTopBorder(XLBorderStyleValues.Thin)
+        Dim repfilter As New StringBuilder
+
+        ws.Cell(4, 1).Value = repfilter
+        If TxtSectorName.Text <> "" Then
+            ws.Cell(4, 1).Value = repfilter.Append("Country Group: " & TxtSectorName.Text & "")
+        End If
+        If TxtCtryName.Text <> "" Then
+            ws.Cell(4, 1).Value = repfilter.Append("  Airport : " & TxtCtryName.Text & "")
+        End If
+        If TxtAgentName.Text <> "" Then
+
+            ws.Cell(4, 1).Value = repfilter.Append("  Agent : " & TxtAgentName.Text & "")
+        End If
+        If TxtHotelName.Text <> "" Then
+
+            ws.Cell(4, 1).Value = repfilter.Append("  Hotel : " & TxtHotelName.Text & "")
+        End If
+        If TxtCityName.Text <> "" Then
+
+            ws.Cell(4, 1).Value = repfilter.Append("  Hotel City: " & TxtCityName.Text & "")
+        End If
+        If TxtFlightName.Text <> "" Then
+            ws.Cell(4, 1).Value = repfilter.Append(" Flight :  " & TxtFlightName.Text & "")
+        End If
+        ws.Cell(4, 1).Value = repfilter.Append(" , Group By:  " & GroupBy.SelectedItem.Text & "  , Division:  " & ddldivisions.SelectedItem.Text & "")
+        ws.Range(4, 1, 4, 19).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Left)
+
+        trow = 5
+
+
+        ws.Column("C").Width = 20
+        ws.Column("D").Width = 30
+        ws.Column("E").Width = 15
+        ws.Column("F").Width = 25
+        ws.Column("G").Width = 25
+        ws.Column("H").Width = 15
+        ws.Column("I").Width = 7
+        ws.Column("J").Width = 10
+        ws.Column("K").Width = 10
+        ws.Column("L").Width = 15
+        ws.Column("M").Width = 10
+        ws.Column("N").Width = 11
+        ws.Column("O").Width = 11
+        ws.Column("P").Width = 15
+        ws.Column("Q").Width = 25
+        ws.Column("R").Width = 15
+        ws.Column("S").Width = 15
+        ws.Column("t").Width = 30
+
+
+        Dim title = ws.Range(trow, 1, trow, 20)
+
+        Dim bookingtitle = ws.Range(trow, 1, trow, 20).Style.Font.SetBold()
+        ws.Range(trow, 1, trow, 19).Style.Border.SetBottomBorder(XLBorderStyleValues.Thin)
+        ws.Range(trow, 1, trow, 19).Style.Border.SetTopBorder(XLBorderStyleValues.Thin)
+        bookingtitle.Alignment.WrapText = True
+        'ws.Cell(trow, 1).Value = "Flight No."
+        'ws.Cell(trow, 2).Value = "Flight Time"
+        'ws.Cell(trow, 3).Value = "Pick Up From"
+        'ws.Cell(trow, 4).Value = "Drop Off To"
+        'ws.Cell(trow, 5).Value = "Guest Name"
+        'ws.Cell(trow, 6).Value = "Adults"
+        'ws.Cell(trow, 7).Value = "Children"
+        'ws.Cell(trow, 8).Value = "Child Ages"
+        'ws.Cell(trow, 9).Value = "Total"
+        'ws.Cell(trow, 10).Value = "Booked Vehicle"
+        'ws.Cell(trow, 11).Value = "Driver/Supplier"
+        'ws.Cell(trow, 12).Value = "Contact No."
+        'ws.Cell(trow, 13).Value = "Assigned Vehicle"
+        'ws.Cell(trow, 14).Value = "Request ID"
+        'ws.Cell(trow, 15).Value = "Transfer Date"
+        'ws.Cell(trow, 16).Value = "Agent Name"
+        'ws.Cell(trow, 17).Value = "Agency Ref."
+        'ws.Cell(trow, 18).Value = "Nights"
+        'ws.Cell(trow, 19).Value = "Conf. No."
+        'ws.Cell(trow, 20).Value = "Remarks"
+        'ws.Cell(trow, 21).Value = "Room Details"
+
+        Dim iColH As Integer = 1
+        ws.Cell(trow, iColH).Value = "Flight No."
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Flight Time"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Pick Up From"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Drop Off To"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Request ID"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Agent Name"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Guest Name"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Room Details"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Total Pax"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Departure Date"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Hotel Check-In Date"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Hotel Check-Out Date"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "No of Nights"
+        iColH = iColH + 1
+        '   ws.Cell(trow, 11).Value = "Agency Ref."
+        ws.Cell(trow, iColH).Value = "Booked Vehicle"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Assigned Vehicle"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Driver/Supplier"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Meet & Assist"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Operation Status"
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Booking Status"
+
+        iColH = iColH + 1
+        ws.Cell(trow, iColH).Value = "Remarks"
+
+        'ws.Cell(trow, 6).Value = "Adults"
+        'ws.Cell(trow, 7).Value = "Children"
+        'ws.Cell(trow, 8).Value = "Child Ages"
+        'ws.Cell(trow, 15).Value = "Transfer Date"
+        'ws.Cell(trow, 12).Value = "Contact No."
+        'ws.Cell(trow, 16).Value = "Agent Name"
+        'ws.Cell(trow, 19).Value = "Conf. No."
+
+
+
+
+        ws.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Left)
+        ws.Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center)
+        ws.Range(trow, 1, trow, iColH).Style.Border.SetLeftBorder(XLBorderStyleValues.Thin)
+        ws.Range(trow, 1, trow, iColH).Style.Border.SetRightBorder(XLBorderStyleValues.Thin)
+        ws.Range(trow, 1, trow, iColH).Style.Border.SetBottomBorder(XLBorderStyleValues.Thin)
+
+
+
+        trow = trow + 1
+        If myds.Tables(0).Rows.Count >= 0 Then
+            For Each bookingdetail In myds.Tables(0).Rows
+                title = ws.Range(++trow, 1, trow, 18)
+                title.Style.Alignment.WrapText = True
+
+                Dim iColR As Integer = 1
+                ws.Cell(trow, iColR).Value = bookingdetail("flightcode")
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("flighttime")
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("pickupname")
+
+
+                If IsDBNull(bookingdetail("confno")) Then
+                    bookingdetail("confno") = ""
+                End If
+                iColR = iColR + 1
+                If bookingdetail("confno") = "" Then
+                    ws.Cell(trow, iColR).Value = bookingdetail("dropoffname")
+                Else
+                    ws.Cell(trow, iColR).Value = bookingdetail("dropoffname") & "- Conf No:" & bookingdetail("confno")
+                End If
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("requestid")
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("agentname")
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("guestname")
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("roomdetails")
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("adults") + bookingdetail("child")
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = (bookingdetail("DepartureDate"))
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = (bookingdetail("Checkin1"))
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = (bookingdetail("Checkout1"))
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("nights")
+                iColR = iColR + 1
+                '   ws.Cell(trow, 11).Value = bookingdetail("agentref")
+                ws.Cell(trow, iColR).Value = bookingdetail("bookedvehicle")
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("assignedvehicle")
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("driversupplier")
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("airportmeet")
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("assign_status")
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("BookingStatus")
+
+                iColR = iColR + 1
+                ws.Cell(trow, iColR).Value = bookingdetail("remarks")
+                ws.Cell(trow, iColR).Style.Alignment.WrapText = True
+
+                ' ws.Column("U").Width = 30
+
+                'ws.Cell(trow, 6).Value = bookingdetail("adults")
+                'ws.Cell(trow, 7).Value = bookingdetail("child")
+                'ws.Cell(trow, 15).Value = (CType(bookingdetail("transferdate"), Date))
+                'ws.Cell(trow, 8).Value = bookingdetail("childages")
+                'ws.Cell(trow, 12).Value = bookingdetail("drivertel")
+                'ws.Cell(trow, 16).Value = bookingdetail("agentname")
+                'ws.Cell(trow, 19).Value = bookingdetail("confno")
+
+
+
+                'ws.Cell(trow, 1).Value = bookingdetail("flightcode")
+                'ws.Cell(trow, 2).Value = bookingdetail("flighttime")
+                'ws.Cell(trow, 3).Value = bookingdetail("pickupname")
+                'ws.Cell(trow, 4).Value = bookingdetail("dropoffname")
+                'ws.Cell(trow, 5).Value = bookingdetail("guestname")
+                'ws.Cell(trow, 6).Value = bookingdetail("adults")
+                'ws.Cell(trow, 7).Value = bookingdetail("child")
+                'ws.Cell(trow, 8).Value = bookingdetail("childages")
+                'ws.Cell(trow, 9).Value = bookingdetail("adults") + bookingdetail("child")
+                'ws.Cell(trow, 10).Value = bookingdetail("bookedvehicle")
+                'ws.Cell(trow, 11).Value = bookingdetail("driversupplier")
+                'ws.Cell(trow, 12).Value = bookingdetail("drivertel")
+                'ws.Cell(trow, 13).Value = bookingdetail("assignedvehicle")
+                'ws.Cell(trow, 14).Value = bookingdetail("requestid")
+                'ws.Cell(trow, 15).Value = (CType(bookingdetail("transferdate"), Date))
+                'ws.Cell(trow, 16).Value = bookingdetail("agentname")
+                'ws.Cell(trow, 17).Value = bookingdetail("agentref")
+                'ws.Cell(trow, 18).Value = bookingdetail("nights")
+                'ws.Cell(trow, 19).Value = bookingdetail("confno")
+                'ws.Cell(trow, 20).Value = bookingdetail("remarks")
+                'ws.Column("U").Width = 30
+                'ws.Cell(trow, 21).Value = bookingdetail("roomdetails")
+                ws.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Left)
+                ws.Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center)
+                ws.Range(trow, 1, trow, iColR).Style.Border.SetLeftBorder(XLBorderStyleValues.Thin)
+                ws.Range(trow, 1, trow, iColR).Style.Border.SetRightBorder(XLBorderStyleValues.Thin)
+                ws.Range(trow, 1, trow, iColR).Style.Border.SetBottomBorder(XLBorderStyleValues.Thin)
+
+                trow = trow + 1
+            Next
+
+        End If
+        Try
+            Using MyMemoryStream As New MemoryStream()
+                wb.SaveAs(MyMemoryStream)
+                wb.Dispose()
+                Response.Clear()
+                Response.Buffer = True
+                Response.AddHeader("content-disposition", "attachment;filename=" + FileNameNew)
+                Response.AddHeader("Content-Length", MyMemoryStream.Length.ToString())
+                Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+                MyMemoryStream.WriteTo(Response.OutputStream)
+                Response.Cookies.Add(New HttpCookie("Downloaded", "True"))
+                Response.Flush()
+                HttpContext.Current.ApplicationInstance.CompleteRequest()
+
+            End Using
+        Catch ex As Exception
+
+        End Try
+
+
+
+
+
+
+
+
+    End Sub
+#End Region
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+ 
+
+End Class

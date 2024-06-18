@@ -1,0 +1,1124 @@
+﻿<%@ Page Title="" Language="VB" MasterPageFile="~/SubPageMaster.master" AutoEventWireup="false" CodeFile="VisaOnlyBooking.aspx.vb" Inherits="VisaOnlyBooking" %>
+
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<%@ OutputCache Location="none" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" Runat="Server">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../Content/vendor/jquery-1.11.0.js" type="text/javascript"></script>    
+<script src="../Content/vendor/jquery-ui.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+    function AutoCompleteAgent_OnClientPopulating(sender, args) {
+        sender.set_contextKey(document.getElementById('<%=ddlDivision.ClientID%>').value);
+    }  
+    function AgentAutoCompleteSelected(source, eventArgs) {
+        if (eventArgs != null) {
+            document.getElementById('<%=txtAgentCode.ClientID%>').value = eventArgs.get_value();
+            GetCurrList(eventArgs.get_value());            
+            GetCountryDetails(eventArgs.get_value());            
+        }
+        else {
+            document.getElementById('<%=txtAgentCode.ClientID%>').value = '';
+        }
+        clearCalculation();
+    }
+    
+    function GetCountryDetails(AgentCode) {
+        $.ajax({
+            type: "POST",
+            url: "VisaOnlyBooking.aspx/GetCountryDetails",
+            data: '{AgentCode:  "' + AgentCode + '"}',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: OnSuccess,
+            failure: function (response) {
+                alert('failure');
+                alert(response.d);
+            },
+            error: function (response) {
+                alert('error');
+                alert(response.d);
+            }
+        });
+    }
+
+    function OnSuccess(response) {
+        var xmlDoc = $.parseXML(response.d);
+        var xml = $(xmlDoc);
+        var Countries = xml.find("Countries");
+        var rowCount = Countries.length;
+
+        if (rowCount == 1) {
+            $.each(Countries, function () {
+                document.getElementById('<%=txtCtryName.ClientID%>').value = ''
+                document.getElementById('<%=txtCtryCode.ClientID%>').value = '';
+                document.getElementById('<%=txtCtryName.ClientID%>').value = $(this).find("ctryname").text();
+                document.getElementById('<%=txtCtryCode.ClientID%>').value = $(this).find("ctrycode").text();
+                document.getElementById('<%=txtCtryName.ClientID%>').setAttribute("readonly", true);
+                $find('txtCtryName_AutoCompleteExtender').setAttribute("Enabled", false);
+            });
+        }
+        else {
+            document.getElementById('<%=txtCtryName.ClientID%>').value = ''
+            document.getElementById('<%=txtCtryCode.ClientID%>').value = '';
+            document.getElementById('<%=txtCtryName.ClientID%>').removeAttribute("readonly");
+            $find('txtCtryName_AutoCompleteExtender').setAttribute("Enabled", true);
+        }
+    };
+
+    function GetCurrList(AgentCode) {
+        $.ajax({
+            type: "POST",
+            url: "VisaOnlyBooking.aspx/GetCurrList",
+            data: '{AgentCode:  "' + AgentCode + '"}',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: OnSuccessCurrency,
+            failure: function (response) {
+                alert('failure');
+                alert(response.d);
+            },
+            error: function (response) {
+                alert('error');
+                alert(response.d);
+            }
+        });
+    }
+
+    function OnSuccessCurrency(response) {
+        var xmlDoc = $.parseXML(response.d);
+        var xml = $(xmlDoc);
+        var Currency = xml.find("Currency");
+        var rowCount = Currency.length;
+        if (rowCount == 1) {
+            $.each(Currency, function () {
+                document.getElementById('<%=txtCurrcode.ClientID%>').value = ''
+                document.getElementById('<%=txtCurrName.ClientID%>').value = '';
+                document.getElementById('<%=txtInvConvRate.ClientID%>').value = '';
+                document.getElementById('<%=txtCurrcode.ClientID%>').value = $(this).find("currcode").text();
+                document.getElementById('<%=txtCurrName.ClientID%>').value = $(this).find("currname").text();
+                document.getElementById('<%=txtInvConvRate.ClientID%>').value = $(this).find("invconvrate").text();                
+            });
+        }
+        else {
+            document.getElementById('<%=txtCurrcode.ClientID%>').value = ''
+            document.getElementById('<%=txtCurrName.ClientID%>').value = '';
+            document.getElementById('<%=txtInvConvRate.ClientID%>').value = '';
+        }
+    };
+    function CountryAutoCompleteSelected(source, eventArgs) {
+        if (eventArgs != null) {
+            document.getElementById('<%=txtCtryCode.ClientID%>').value = eventArgs.get_value();
+        }
+        else {
+            document.getElementById('<%=txtCtryCode.ClientID%>').value = '';
+        }
+        clearCalculation();
+    }
+    function AutoCompleteCountry_OnClientPopulating(sender, args) {
+        sender.set_contextKey(document.getElementById('<%=txtAgentCode.ClientID%>').value);
+    }
+    function VisaAutoCompleteSelected(source, eventArgs) {
+        if (eventArgs != null) {
+            var visaVal = eventArgs.get_value().split("|")
+            document.getElementById('<%=txtVisaCode.ClientID%>').value = visaVal[0];
+            document.getElementById('<%=txtVisaNonTax.ClientID%>').value = visaVal[1];            
+        }
+        else {
+            document.getElementById('<%=txtVisaCode.ClientID%>').value = '';
+            document.getElementById('<%=txtVisaNonTax.ClientID%>').value = '';
+        }
+        clearCalculation();
+    }
+        
+    function NationAutoCompleteSelected(source, eventArgs) {
+        var hiddenfieldID = source.get_id().replace("AutoCompleteNation", "txtNationCode");
+        $get(hiddenfieldID).value = eventArgs.get_value();        
+    }
+
+    function TitleAutoCompleteSelected(source, eventArgs) {
+        var hiddenfieldID = source.get_id().replace("AutoCompleteTitle", "txtTitleCode");
+        $get(hiddenfieldID).value = eventArgs.get_value();
+    }
+
+    function SexAutoCompleteSelected(source, eventArgs) {
+        var hiddenfieldID = source.get_id().replace("AutoCompleteSex", "txtSexCode");
+        $get(hiddenfieldID).value = eventArgs.get_value();
+    }
+
+    function clearCalculation() {   
+        document.getElementById('<%=txtNoOfVisas.ClientID%>').value = '';
+        document.getElementById('<%=txtSellPrice.ClientID%>').value = '';
+        document.getElementById('<%=txtSellValue.ClientID%>').value = '';
+        document.getElementById('<%=txtSellTax.ClientID%>').value = '';
+        document.getElementById('<%=txtSellNonTax.ClientID%>').value = '';
+        document.getElementById('<%=txtSellVat.ClientID%>').value = '';
+        document.getElementById('<%=txtCostPrice.ClientID%>').value = '';
+        document.getElementById('<%=txtCostValue.ClientID%>').value = '';
+        document.getElementById('<%=txtCostTax.ClientID%>').value = '';
+        document.getElementById('<%=txtCostNonTax.ClientID%>').value = '';
+        document.getElementById('<%=txtCostVat.ClientID%>').value = '';
+    }
+    function confirmDelete() {
+
+        if (confirm("Do you want to delete this guest")) {
+            return true;
+            }
+        else
+        {
+            return false;
+        }
+    }
+
+    function CompleteValidation(state) {
+
+        if (state == 'New' || state == 'Edit') {
+
+            var txtRequestDt = document.getElementById("<%=txtRequestDt.ClientID%>");
+            if (txtRequestDt.value == null || txtRequestDt.value == "") {
+                txtRequestDt.focus();
+                alert("Please select request date.");
+                return false;
+            }
+
+            var txtArrivalDt = document.getElementById("<%=txtArrivalDt.ClientID%>");
+            if (txtArrivalDt.value == null || txtArrivalDt.value == "") {
+                txtArrivalDt.focus();
+                alert("Please select arrival date.");
+                return false;
+            }
+
+            var dp = txtRequestDt.value.split("/");
+            var newReqDt = new Date(dp[2] + "/" + dp[1] + "/" + dp[0]);
+
+            var dp1 = txtArrivalDt.value.split("/");
+            var newArrivalDt = new Date(dp1[2] + "/" + dp1[1] + "/" + dp1[0]);
+
+            newReqDt = getFormatedDate(newReqDt);
+            newArrivalDt = getFormatedDate(newArrivalDt);
+
+            newReqDt = new Date(newReqDt);
+            newArrivalDt = new Date(newArrivalDt);
+
+            if (newArrivalDt < newReqDt) {
+                txtArrivalDt.focus();
+                alert("Arrival date should be greater than request date");
+                return false;
+            }
+            var txtAgent = document.getElementById("<%=txtAgent.ClientID%>");
+            var txtAgentCode = document.getElementById("<%=txtAgentCode.ClientID%>");
+            if (txtAgent.value == null || $.trim(txtAgent.value) == "" || txtAgentCode.value == null || $.trim(txtAgentCode.value) == "") {
+                txtAgent.focus();
+                alert("Select Agent Name");
+                return false;
+            }
+            var txtCtryName = document.getElementById("<%=txtCtryName.ClientID%>");
+            var txtCtryCode = document.getElementById("<%=txtCtryCode.ClientID%>");
+            if (txtCtryName.value == null || $.trim(txtCtryName.value) == "" || txtCtryCode.value == null || $.trim(txtCtryCode.value) == "") {
+                txtCtryName.focus();
+                alert("Select Country Name");
+                return false;
+            }
+            var txtVisaType = document.getElementById("<%=txtVisaType.ClientID%>");
+            var txtVisaCode = document.getElementById("<%=txtVisaCode.ClientID%>");
+            if (txtVisaType.value == null || $.trim(txtVisaType.value) == "" || txtVisaCode.value == null || $.trim(txtVisaCode.value) == "") {
+                txtVisaType.focus();
+                alert("Select Visa Type");
+                return false;
+            }
+            var noOfVisas = document.getElementById("<%=txtNoOfVisas.ClientID%>")
+            if ($.trim(noOfVisas.value) == "") {
+                noOfVisas.focus();
+                alert("No of visa can not be empty");
+                return false;
+            }
+            var sellPrice = document.getElementById("<%=txtSellPrice.ClientID%>")
+            if ($.trim(sellPrice.value) == "") {
+                sellPrice.focus();
+                alert("Sell price can not be empty");
+                return false;
+            }
+            var sellValue = document.getElementById("<%=txtSellValue.ClientID%>")
+            if ($.trim(sellValue.value) == "") {
+                sellValue.focus();
+                alert("Sell value can not be empty");
+                return false;
+            }
+            var sellTax = document.getElementById("<%=txtSellTax.ClientID%>")
+            var sellNonTax = document.getElementById("<%=txtSellNonTax.ClientID%>")
+            var sellVat = document.getElementById("<%=txtSellVat.ClientID%>")
+
+            if ($.trim(sellTax.value) == "" || sellTax.value == null || $.isNumeric(sellTax.value) == false ||
+            $.trim(sellNonTax.value) == "" || sellNonTax.value == null || $.isNumeric(sellNonTax.value) == false ||
+            $.trim(sellVat.value) == "" || sellVat.value == null || $.isNumeric(sellVat.value) == false) {
+                sellValue.focus();
+                alert("Verify Selling value tax calculation");
+                return false;
+            }
+            var totalRows = $("#<%=gvGuestList.ClientID %> tr").length;
+            if (totalRows < 2) {
+                alert("Guest List can not be empty");
+                return false;
+            }
+        }
+        else if (state == 'Delete') {
+            if (confirm('Are you sure!!! Do you want to delete this booking?') == false) return false; 
+        }
+
+    }
+
+        function getFormatedDate(chkdate) {
+            var dd = chkdate.getDate();
+            var mm = chkdate.getMonth() + 1; //January is 0!
+            var yyyy = chkdate.getFullYear();
+            if (dd < 10) { dd = '0' + dd };
+            if (mm < 10) { mm = '0' + mm };
+            chkdate = mm + '/' + dd + '/' + yyyy;
+            return chkdate;
+        }
+
+        function validateDigitOnly(evt) {
+            var theEvent = evt || window.event;
+            var key = theEvent.keyCode || theEvent.which;
+            key = String.fromCharCode(key);
+            var regex = /[0-9]/;
+            if (!regex.test(key)) {
+                theEvent.returnValue = false;
+                if (theEvent.preventDefault) theEvent.preventDefault();
+            }
+        }
+
+        function validateDecimalOnly(evt, txt) {
+        
+            var theEvent = evt || window.event;
+            var key = theEvent.keyCode || theEvent.which;
+            if (key == 13) {
+
+            }
+            else {
+                key = String.fromCharCode(key);
+
+                var regex = /[0-9]/;
+                if (!regex.test(key)) {
+                    theEvent.returnValue = false;
+                    if (theEvent.preventDefault) theEvent.preventDefault();
+                }
+
+                var charCode = (evt.which) ? evt.which : event.keyCode
+                if (charCode == 46) {
+                    var inputValue = txt.value
+                    if (inputValue.indexOf('.') < 1) {
+                        txt.value = txt.value + '.';
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+
+            }
+
+        }
+
+        function validateAlphaNumeric(evt, txt) {
+            var theEvent = evt || window.event;
+            var key = theEvent.keyCode || theEvent.which;
+            key = String.fromCharCode(key);
+            var regex = /[A-Z0-9]/;
+            if (!regex.test(key)) {
+                theEvent.returnValue = false;
+                if (theEvent.preventDefault) theEvent.preventDefault();
+            }
+
+            var charCode = (evt.which) ? evt.which : event.keyCode
+            if (charCode >= 97 && charCode <= 122) {
+                var inputValue = txt.value
+                txt.value = txt.value + String.fromCharCode(charCode).toUpperCase();
+                return true;
+            }
+        }
+
+        function ChangeCalculation() {
+            var txtAgent = document.getElementById("<%=txtAgent.ClientID%>");
+            var txtAgentCode = document.getElementById("<%=txtAgentCode.ClientID%>");
+            var noOfVisas = document.getElementById("<%=txtNoOfVisas.ClientID%>");
+            var txtCtryName = document.getElementById("<%=txtCtryName.ClientID%>");
+            var txtCtryCode = document.getElementById("<%=txtCtryCode.ClientID%>");
+            var txtVisaType = document.getElementById("<%=txtVisaType.ClientID%>");
+            var txtVisaCode = document.getElementById("<%=txtVisaCode.ClientID%>");
+            if ($.trim(txtAgent.value) != "" && $.trim(txtAgentCode.value) != "" && $.trim(txtCtryName.value) != "" && $.trim(txtCtryCode.value) != ""
+            && $.trim(txtVisaType.value) != "" && $.trim(txtVisaCode.value) != "" && $.trim(noOfVisas.value) != "") {
+                $("[id*=btnVatChange]").click(); 
+            }
+        }
+
+        function GetPriceValue() {
+            var noOfVisas = document.getElementById("<%=txtNoOfVisas.ClientID%>")            
+            if ($.trim(noOfVisas.value) != "") {
+
+                var txtInvConvRate = document.getElementById("<%=txtInvConvRate.ClientID%>");
+                if (txtInvConvRate.value == null || $.trim(txtInvConvRate.value) == "") {
+                    noOfVisas.value = "";
+                    alert("Conversion rate is null or empty. Check currency inverse conversion rate");
+                    return false;
+                }
+                var txtArrivalDt = document.getElementById("<%=txtArrivalDt.ClientID%>");
+                if (txtArrivalDt.value == null || txtArrivalDt.value == "") {
+                    noOfVisas.value = "";
+                    txtArrivalDt.focus();
+                    alert("Please select arrival date.");                   
+                    return false;
+                }
+                var txtAgent = document.getElementById("<%=txtAgent.ClientID%>");
+                var txtAgentCode = document.getElementById("<%=txtAgentCode.ClientID%>");
+                if (txtAgent.value == null || $.trim(txtAgent.value) == "" || txtAgentCode.value == null || $.trim(txtAgentCode.value) == "") {
+                    noOfVisas.value = "";
+                    txtAgent.focus();
+                    alert("Select Agent Name");
+                    return false;
+                }
+                var txtCtryName = document.getElementById("<%=txtCtryName.ClientID%>");
+                var txtCtryCode = document.getElementById("<%=txtCtryCode.ClientID%>");
+                if (txtCtryName.value == null || $.trim(txtCtryName.value) == "" || txtCtryCode.value == null || $.trim(txtCtryCode.value) == "") {
+                    noOfVisas.value = "";
+                    txtCtryName.focus();
+                    alert("Select Country Name");
+                    return false;
+                }
+                var txtVisaType = document.getElementById("<%=txtVisaType.ClientID%>");
+                var txtVisaCode = document.getElementById("<%=txtVisaCode.ClientID%>");
+                if (txtVisaType.value == null || $.trim(txtVisaType.value) == "" || txtVisaCode.value == null || $.trim(txtVisaCode.value) == "") {
+                    noOfVisas.value = "";
+                    txtVisaType.focus();
+                    alert("Select Visa Type");
+                    return false;
+                }
+                $("[id*=btnGetPrice]").click();                
+            }
+        }
+                
+        function CalculateTax() {
+            var VatPerc = document.getElementById("<%=txtVatPerc.ClientID%>").value;
+            if ($.trim(VatPerc) == "") {
+                alert("Vat Percentage can not be empty");
+                VatPerc.focus();
+                return false;
+            }
+            var noOfVisas = document.getElementById("<%=txtNoOfVisas.ClientID%>")                         
+            var txtSell = document.getElementById("<%=txtSellPrice.ClientID%>");
+            if ($.trim(noOfVisas.value) == "") {
+                noOfVisas.focus();
+                return false;
+            }
+            if ($.trim(txtSell.value) == "") {
+                txtSell.focus();
+                return false;
+            }
+
+            $("[id*=btnCalculateTax]").click();
+            return true;
+        }
+
+        function CalculateCostTax() {
+            var VatPerc = document.getElementById("<%=txtVatPerc.ClientID%>").value;
+            if ($.trim(VatPerc) == "") {
+                alert("Vat Percentage can not be empty");
+                VatPerc.focus();
+                return false;
+            }
+            var noOfVisas = document.getElementById("<%=txtNoOfVisas.ClientID%>")
+            var txtCost = document.getElementById("<%=txtCostPrice.ClientID%>");
+            if ($.trim(noOfVisas.value) == "") {
+                noOfVisas.focus();
+                return false;
+            }
+            if ($.trim(txtCost.value) == "") {
+                txtCost.focus();
+                return false;
+            }
+
+            $("[id*=btnCalculateCostTax]").click();
+            return true;
+        } 
+
+</script>
+
+ <script type="text/javascript">
+     var prm = Sys.WebForms.PageRequestManager.getInstance();
+     prm.add_initializeRequest(InitializeRequestUserControl);
+     prm.add_endRequest(EndRequestUserControl);
+
+     function InitializeRequestUserControl(sender, args) {
+
+     }
+     function EndRequestUserControl(sender, args) {
+         AutoCompleteExtender_Agent_KeyUp();
+         AutoCompleteExtender_Country_KeyUp();
+         AutoCompleteExtender_Visa_KeyUp();         
+     }
+     function RefreshContent() {
+         Sys.WebForms.PageRequestManager.getInstance().add_beginRequest(BeginRequestHandlerForProgressBar);
+         Sys.WebForms.PageRequestManager.getInstance().add_endRequest(EndRequestHandlerForProgressBar);
+     }
+          
+</script>
+<script language="javascript" type="text/javascript">
+
+    $(document).ready(function () {
+        AutoCompleteExtender_Agent_KeyUp();
+        AutoCompleteExtender_Country_KeyUp();
+        AutoCompleteExtender_Visa_KeyUp();        
+    });
+
+    function AutoCompleteExtender_Agent_KeyUp() {
+            $("#<%= txtAgent.ClientID %>").bind("change", function () {
+                var agent = document.getElementById('<%=txtAgent.ClientID%>');
+                if (agent.value == '') {
+                    document.getElementById('<%=txtAgentCode.ClientID%>').value = '';
+                    document.getElementById('<%=txtCtryName.ClientID%>').value = '';
+                    document.getElementById('<%=txtCtryCode.ClientID%>').value = '';
+                    document.getElementById('<%=txtCurrcode.ClientID%>').value = ''
+                    document.getElementById('<%=txtCurrName.ClientID%>').value = '';
+                    document.getElementById('<%=txtInvConvRate.ClientID%>').value = '';
+                }
+            });
+
+            $("#<%= txtAgent.ClientID %>").keyup("change", function () {
+                var agent = document.getElementById('<%=txtAgent.ClientID%>');                
+                if (agent.value == '') {
+                    document.getElementById('<%=txtAgentCode.ClientID%>').value = '';
+                    document.getElementById('<%=txtCtryName.ClientID%>').value = '';
+                    document.getElementById('<%=txtCtryCode.ClientID%>').value = '';
+                    document.getElementById('<%=txtCurrcode.ClientID%>').value = ''
+                    document.getElementById('<%=txtCurrName.ClientID%>').value = '';
+                    document.getElementById('<%=txtInvConvRate.ClientID%>').value = '';
+                }
+            });        
+    }
+
+    function AutoCompleteExtender_Country_KeyUp() {
+        $("#<%= txtCtryName.ClientID %>").bind("change", function () {
+            var ctryName = document.getElementById('<%=txtCtryName.ClientID%>');            
+            if (ctryName.value == '') {
+                document.getElementById('<%=txtCtryCode.ClientID%>').value = '';
+                
+            }
+        });
+
+        $("#<%= txtCtryName.ClientID %>").keyup("change", function () {
+            var ctryName = document.getElementById('<%=txtCtryName.ClientID%>');            
+            if (ctryName.value == '') {
+                document.getElementById('<%=txtCtryCode.ClientID%>').value = '';
+               
+            }
+        });
+    }
+
+    function AutoCompleteExtender_Visa_KeyUp() {
+        $("#<%= txtVisaType.ClientID %>").bind("change", function () {
+            var visaType = document.getElementById('<%=txtVisaType.ClientID%>');
+            if ($.trim(visaType.value) == '') {
+                document.getElementById('<%=txtVisaCode.ClientID%>').value = '';
+                document.getElementById('<%=txtVisaNonTax.ClientID%>').value = '';
+                
+            }
+        });
+
+        $("#<%= txtVisaType.ClientID %>").keyup("change", function () {
+            var visaType = document.getElementById('<%=txtVisaType.ClientID%>');
+            if ($.trim(visaType.value) == '') {
+                document.getElementById('<%=txtVisaCode.ClientID%>').value = '';
+                document.getElementById('<%=txtVisaNonTax.ClientID%>').value = '';
+                
+            }
+        });
+    }
+        
+</script>
+
+<asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <table style="border-right: gray 2px solid; border-top: gray 2px solid; border-left: gray 2px solid;
+                border-bottom: gray 2px solid; width: 100%;">
+                <tr>
+                    <td class="td_cell" align="center" style="width: 100%;">
+                        <asp:Label ID="lblHeading" runat="server" Text="New Visa Only Booking" Style="vertical-align: middle;"
+                            CssClass="field_heading" Width="100%" Height="16px">
+                        </asp:Label>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 100%">
+                        <table cellpadding="8px" style="width: 100%">
+                            <tr>
+                                <td style="width: 15%">
+                                    <label class="field_caption">
+                                        Request ID</label><span style="color: red" class="td_cell">&nbsp;*</span>
+                                </td>
+                                <td style="width: 35%">
+                                    <asp:TextBox ID="txtRequestId" CssClass="field_input" runat="server" TabIndex="1"
+                                        MaxLength="20" Width="90%" Enabled="false"></asp:TextBox>
+                                </td>
+                                <td colspan="2" style="width: 50%">
+                                    <table style="width: 100%">
+                                        <tr>
+                                            <td style="width: 20%">
+                                                <label class="field_caption">
+                                                    Request Date</label><span style="color: red" class="td_cell">&nbsp;*</span>
+                                            </td>
+                                            <td style="width: 20%">
+                                                <asp:TextBox ID="txtRequestDt" CssClass="field_input" runat="server" TabIndex="2"
+                                                    MaxLength="300" Width="75px"></asp:TextBox>
+                                                <asp:CalendarExtender ID="txtRequestDt_CalendarExtender" runat="server" Format="dd/MM/yyyy"
+                                                    PopupButtonID="ImgBtnReqDt" PopupPosition="Right" TargetControlID="txtRequestDt">
+                                                </asp:CalendarExtender>
+                                                <asp:MaskedEditExtender ID="txtReqDt_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                                    MaskType="Date" TargetControlID="txtRequestDt">
+                                                </asp:MaskedEditExtender>
+                                                <asp:ImageButton ID="ImgBtnReqDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                                                     /><br />
+                                                <asp:MaskedEditValidator ID="MevReqDt" runat="server" ControlExtender="txtReqDt_MaskedEditExtender"
+                                                    ControlToValidate="txtRequestDt" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                                    EmptyValueMessage="Date is required" ErrorMessage="txtReqDt_MaskedEditExtender"
+                                                    InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                                    TooltipMessage="Input a Date in Date/Month/Year">
+                                                </asp:MaskedEditValidator>
+                                            </td>
+                                            <td style="width: 20%">
+                                                <label class="field_caption">
+                                                    Arrival Date</label><span style="color: red" class="td_cell">&nbsp;*</span>
+                                                     <asp:TextBox ID="txtArrivalDt" CssClass="field_input" runat="server" TabIndex="3"
+                                                    MaxLength="300" Width="75px"></asp:TextBox>
+                                                <asp:CalendarExtender ID="txtArrivalDt_CalendarExtender" runat="server" Format="dd/MM/yyyy"
+                                                    PopupButtonID="ImgBtnArrivalDt" PopupPosition="Right" TargetControlID="txtArrivalDt">
+                                                </asp:CalendarExtender>
+                                                <asp:MaskedEditExtender ID="txtArrivalDt_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                                    MaskType="Date" TargetControlID="txtArrivalDt">
+                                                </asp:MaskedEditExtender>
+                                                <asp:ImageButton ID="imgBtnArrivalDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                                                    TabIndex="-1" /><br />
+                                                <asp:MaskedEditValidator ID="MevArrivalDt" runat="server" ControlExtender="txtArrivalDt_MaskedEditExtender"
+                                                    ControlToValidate="txtArrivalDt" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                                    EmptyValueMessage="Date is required" ErrorMessage="txtArrivalDt_MaskedEditExtender"
+                                                    InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                                    TooltipMessage="Input a Date in Date/Month/Year">
+                                                </asp:MaskedEditValidator>
+                                            </td>
+                                            <td style="width: 30%"> <label class="field_caption">
+                                                Departure Date</label><span style="color: red" class="td_cell">&nbsp;*</span>
+                                                     <asp:TextBox ID="txtDepartureDt" CssClass="field_input" runat="server" TabIndex="3"
+                                                    MaxLength="300" Width="75px"></asp:TextBox>
+                                                <asp:CalendarExtender ID="txtDepartureDt_CalendarExtender" runat="server" Format="dd/MM/yyyy"
+                                                    PopupButtonID="ImgBtnDepartureDt" PopupPosition="Right" TargetControlID="txtDepartureDt">
+                                                </asp:CalendarExtender>
+                                                <asp:MaskedEditExtender ID="txtDepartureDt_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                                    MaskType="Date" TargetControlID="txtDepartureDt">
+                                                </asp:MaskedEditExtender>
+                                                <asp:ImageButton ID="ImgBtnDepartureDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                                                    TabIndex="-1" /><br />
+                                                <asp:MaskedEditValidator ID="MevDepartureDt" runat="server" ControlExtender="txtDepartureDt_MaskedEditExtender"
+                                                    ControlToValidate="txtDepartureDt" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                                    EmptyValueMessage="Date is required" ErrorMessage="txtDepartureDt_MaskedEditExtender"
+                                                    InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                                    TooltipMessage="Input a Date in Date/Month/Year">
+                                                </asp:MaskedEditValidator>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>                           
+                            <tr>
+                                <td>
+                                    <label class="field_caption">
+                                        Division</label><span style="color: red" class="td_cell">&nbsp;*</span>
+                                </td>
+                                <td>
+                                    <asp:DropDownList ID="ddlDivision" CssClass="field_input" runat="server" Width="90%" TabIndex="4" AutoPostBack="true">
+                                    </asp:DropDownList>
+                                </td>
+                                <td colspan="2">
+                                    <table style="width: 100%">
+                                        <tr>
+                                            <td style="width: 27%"> <label class="field_caption">Currency Name</label><span style="color: red" class="td_cell">&nbsp;*</span> 
+                                            </td>
+                                            <td style="width: 30%">
+                                                <asp:TextBox ID="txtCurrName" runat="server" CssClass="field_input" Enabled="false" TabIndex="5"
+                                                    Width="98%"></asp:TextBox>
+                                                <asp:TextBox ID="txtCurrcode" runat="server" Style="display: none" Width="90%"></asp:TextBox>
+                                                <asp:TextBox ID="txtInvConvRate" runat="server" Style="display: none" Width="90%"></asp:TextBox>                                                
+                                            </td>
+                                            <td style="width: 20%">
+                                                <label class="field_caption">
+                                                    VAT Percentage</label><span style="color: red" class="td_cell">&nbsp;*</span>
+                                            </td>
+                                            <td style="width: 30%">
+                                                <asp:TextBox ID="txtVatPerc" CssClass="field_input" runat="server" Width="78%" TabIndex="6"></asp:TextBox>
+                                                <asp:Button ID="btnVatChange" runat="server" style="display:none" />
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>                                                                                           
+                            </tr>
+                            <tr>
+                            <td style="width: 15%">
+                                    <label class="field_caption">Agent Name</label><span style="color: red" class="td_cell">&nbsp;*</span>
+                                </td>
+                                <td style="width: 35%">
+                                    <asp:TextBox ID="txtAgent" CssClass="field_input" runat="server" MaxLength="300"
+                                        Width="90%" TabIndex="7"></asp:TextBox>
+                                     <asp:TextBox ID="txtAgentCode" runat="server" Style="display: none"></asp:TextBox>
+                                    <asp:AutoCompleteExtender ID="txtAgent_AutoCompleteExtender" runat="server" CompletionInterval="10"
+                                        CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                        CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                        EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                                        ServiceMethod="GetAgentsList" TargetControlID="txtAgent" UseContextKey="true" OnClientPopulating="AutoCompleteAgent_OnClientPopulating" OnClientItemSelected="AgentAutoCompleteSelected">
+                                    </asp:AutoCompleteExtender>
+                                </td>    
+                            <td style="width:13%">
+                                    <label class="field_caption">Source Country Name</label><span style="color: red" class="td_cell">&nbsp;*</span>
+                                </td>
+                                <td style="width: 35%">
+                                    <asp:TextBox ID="txtCtryName" CssClass="field_input" runat="server" TabIndex="8" MaxLength="300"
+                                        Width="90%"></asp:TextBox>
+                                     <asp:TextBox ID="txtCtryCode" runat="server" Style="display: none"></asp:TextBox>                                    
+                                    <asp:AutoCompleteExtender ID="txtCtryName_AutoCompleteExtender" runat="server" CompletionInterval="10"
+                                        CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                        CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                        EnableCaching="false" Enabled="True" FirstRowSelected="true" MinimumPrefixLength="-1"
+                                        ServiceMethod="GetCountriesList" TargetControlID="txtCtryName" UseContextKey="true" OnClientPopulating="AutoCompleteCountry_OnClientPopulating" OnClientItemSelected="CountryAutoCompleteSelected">
+                                    </asp:AutoCompleteExtender>                                     
+                                </td>                            
+                            </tr>
+                            <tr>
+                            <td><label class="field_caption">Type of Visa</label><span style="color: red" class="td_cell">&nbsp;*</span></td>
+                            <td><asp:TextBox ID="txtVisaType" CssClass="field_input" runat="server" MaxLength="300"
+                                        Width="90%" TabIndex="9"></asp:TextBox>
+                                     <asp:TextBox ID="txtVisaCode" runat="server" Style="display: none"></asp:TextBox>
+                                     <asp:TextBox ID="txtVisaNonTax" runat="server" Style="display: none"></asp:TextBox>
+                                    <asp:AutoCompleteExtender ID="txtVisaType_AutoCompleteExtender" runat="server" CompletionInterval="10"
+                                        CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                        CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                        EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="-1"
+                                        ServiceMethod="GetVisaList" TargetControlID="txtVisaType" OnClientItemSelected="VisaAutoCompleteSelected">
+                                    </asp:AutoCompleteExtender></td>                            
+                            <td style="width: 13%"><label class="field_caption">No. of Visas</label><span style="color: red" class="td_cell">&nbsp;*</span></td>
+                            <td>
+                               <label class="field_caption">Adult</label> 
+                            <asp:TextBox ID="txtNoOfVisas" CssClass="field_input" runat="server" Width="20%" TabIndex="10"></asp:TextBox>
+                                  <label class="field_caption">Child</label> 
+                            <asp:TextBox ID="txtnoOfChild" CssClass="field_input" runat="server" Width="20%" TabIndex="10"></asp:TextBox>
+                            <asp:Button ID="btnGetPrice" runat="server" style="display:none" />
+                            </td>                            
+                            </tr>
+                            <tr>
+                            <td><label class="field_caption" style="vertical-align:top">Selling Price</label><span style="color: red" class="td_cell">&nbsp;*</span></td>
+                            <td><label class="field_caption">Adult Price</label>
+                            <asp:TextBox ID="txtSellPrice" CssClass="field_input" runat="server" 
+                                        Width="20%" TabIndex="11"></asp:TextBox>
+                                   <label class="field_caption"> Child Price</label>       <asp:TextBox ID="txtChildSellingPrice" CssClass="field_input" runat="server" 
+                                        Width="20%" TabIndex="11"></asp:TextBox>
+                                <asp:HiddenField runat="server" ID="hdOpListCode" />
+                                <asp:Button ID="btnCalculateTax" runat="server" style="display:none" />
+                            </td>
+                            <td style="width: 13%"><label class="field_caption" style="vertical-align:top">Selling Value</label><span style="color: red" class="td_cell">&nbsp;*</span></td>
+                            <td>
+                                <asp:TextBox ID="txtSellValue" CssClass="field_input" runat="server" 
+                                        Width="90%" TabIndex="12" Enabled="false" ></asp:TextBox>
+                                <div style="padding-top:2px;">
+                                <asp:TextBox ID="txtSellTax" CssClass="field_input" runat="server" 
+                                        Width="29%" Enabled="false" ToolTip="Taxable value" ></asp:TextBox>
+                                <asp:TextBox ID="txtSellNonTax" CssClass="field_input" runat="server" 
+                                        Width="29%" Enabled="false" ToolTip="Nontaxable value"></asp:TextBox>
+                                <asp:TextBox ID="txtSellVAT" CssClass="field_input" runat="server" 
+                                        Width="29%" Enabled="false" ToolTip="VAT value"></asp:TextBox></div>
+                            </tr>
+                            <tr>
+                            <td><label class="field_caption" style="vertical-align:top">Cost Price</label><span style="color: red" class="td_cell">&nbsp;*</span></td>
+                            <td>
+                               <label class="field_caption"> Adult Price</label>   
+                            <asp:TextBox ID="txtCostPrice" CssClass="field_input" runat="server" 
+                                        Width="20%" TabIndex="14"></asp:TextBox>
+
+                                            <label class="field_caption"> Child Price</label>   
+                            <asp:TextBox ID="txtChildCostPrice" CssClass="field_input" runat="server" 
+                                        Width="20%" TabIndex="14"></asp:TextBox>
+
+                            <asp:HiddenField runat="server" ID="hdOcpListCode" />
+                             <asp:Button ID="btnCalculateCostTax" runat="server" style="display:none" />
+                            </td>
+                            <td style="width: 13%"><label class="field_caption" style="vertical-align:top">Cost Value</label><span style="color: red" class="td_cell">&nbsp;*</span></td>
+                            <td>
+                            <asp:TextBox ID="txtCostValue" CssClass="field_input" runat="server" 
+                                        Width="90%" TabIndex="15" Enabled="false" ></asp:TextBox>
+                                <div style="padding-top:2px;">
+                                <asp:TextBox ID="txtCostTax" CssClass="field_input" runat="server" 
+                                        Width="29%" Enabled="false" ToolTip="Taxable value"></asp:TextBox>
+                                <asp:TextBox ID="txtCostNonTax" CssClass="field_input" runat="server" 
+                                        Width="29%" Enabled="false" ToolTip="Nontaxable value"></asp:TextBox>
+                                <asp:TextBox ID="txtCostVat" CssClass="field_input" runat="server" 
+                                        Width="29%" Enabled="false" ToolTip="VAT value"></asp:TextBox></div>
+                            </td>
+                            </tr>
+                            <tr>
+                            <td><label class="field_caption">Agency Ref.</label></td>
+                            <td><asp:TextBox ID="txtAgencyRef" CssClass="field_input" runat="server" Width="90%" TabIndex="17"></asp:TextBox></td>                            
+                            <td style="width: 13%"><label class="field_caption" style="vertical-align:top">Supplier / Sponsor</label><span style="color: red" class="td_cell">&nbsp;*</span></td>
+                            <td><asp:DropDownList ID="ddlSponsor" runat="server" CssClass="field_input" Width="90%" TabIndex="18" >
+                                </asp:DropDownList> </td>                            
+                            </tr>                        
+                            <tr>
+                            <td><label  id="lblFileUpload" runat="server" class="field_caption" style="vertical-align:top">Select Upload Excel<span style="color: red" class="td_cell">&nbsp;*</span></label></td>
+                            <td><asp:FileUpload ID="FileUploadExcel" runat="server" ViewStateMode="Enabled" TabIndex="19"/>  <asp:Button ID="btnUploadFile" runat="server" CssClass="field_button" Text="Upload Excel" TabIndex="20" /></td>
+                            <td style="width: 13%"></td>
+                            <td>  
+                                <asp:Label ID="RowSelectcos" runat="server" CssClass="field_caption" Text="Rows Selected "></asp:Label>
+                                <asp:DropDownList ID="RowsPerPageCUS" runat="server" AutoPostBack="true">
+                                    <asp:ListItem Value="10">10</asp:ListItem>
+                                    <asp:ListItem Value="20">20</asp:ListItem>
+                                    <asp:ListItem Value="30">30</asp:ListItem>
+                                    <asp:ListItem Value="40">40</asp:ListItem>
+                                    <asp:ListItem Value="50">50</asp:ListItem>
+                                    <asp:ListItem Value="75">75</asp:ListItem>
+                                    <asp:ListItem Value="100">100</asp:ListItem>
+                                     <asp:ListItem Value="500">500</asp:ListItem>
+                                </asp:DropDownList>                                
+                            </td>                            
+                            </tr>    
+                            <tr>
+                            <td colspan="4" style="width:100%">                                                        
+                            <div id="div1" runat="server" style="padding-top: 7px; max-width: 95vw; overflow-x:scroll;" >
+                                <label class="field_caption" style="vertical-align:bottom; text-decoration:underline; font-weight:bold">List of Guest</label>
+                                <asp:GridView ID="gvGuestList" runat="server" CssClass="grdstyle" 
+                                    AutoGenerateColumns="False" CellPadding="3" Font-Bold="True" Font-Size="12px" 
+                                ShowHeaderWhenEmpty="True" GridLines="Vertical" Width="100%" 
+                                    AllowPaging="True" TabIndex="21">                                
+                                <Columns>
+                                <asp:TemplateField  HeaderText="Title" HeaderStyle-Width="7%" >
+                                <ItemTemplate>
+                                    <asp:HiddenField ID="hdUniqueId" runat="server" Value='<%# Bind("UniqueId") %>' />                                     
+                                    <asp:Label ID="lblTitle" runat="server" Text='<%# Bind("Title") %>'> </asp:Label>
+                                </ItemTemplate>
+                                <EditItemTemplate>
+                                    <asp:HiddenField ID="hdUniqueId" runat="server" Value='<%# Bind("UniqueId") %>' />  
+                                    <asp:TextBox ID="txtTitle" CssClass="field_input" runat="server" Text='<%# Bind("Title") %>' Width="99%" TabIndex="24"></asp:TextBox>
+                                    <asp:TextBox ID="txtTitleCode" runat="server" Text='<%# Bind("Title") %>'  Style="display: none"></asp:TextBox>
+                                    <asp:AutoCompleteExtender ID="AutoCompleteTitle" runat="server" CompletionInterval="10"
+                                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                                    ServiceMethod="GetTitle" TargetControlID="txtTitle" OnClientItemSelected="TitleAutoCompleteSelected"></asp:AutoCompleteExtender>
+                                </EditItemTemplate>
+                                <FooterTemplate>
+                                    <asp:TextBox ID="txtTitle" CssClass="field_input" runat="server" Width="99%" TabIndex="34"></asp:TextBox>
+                                    <asp:TextBox ID="txtTitleCode" runat="server" Text='<%# Bind("Title") %>'  Style="display: none"></asp:TextBox>
+                                    <asp:AutoCompleteExtender ID="AutoCompleteTitle" runat="server" CompletionInterval="10"
+                                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                                    ServiceMethod="GetTitle" TargetControlID="txtTitle" OnClientItemSelected="TitleAutoCompleteSelected"></asp:AutoCompleteExtender>
+                                </FooterTemplate>                                         
+                                    <HeaderStyle Width="7%" />
+                                </asp:TemplateField>
+                                <asp:TemplateField  HeaderText="Family Name" HeaderStyle-Width="16%" >
+                                <ItemTemplate>
+                                    <asp:label ID="lblLastName" CssClass="field_input" runat="server" Text='<%# Bind("FamilyName") %>' style="text-transform:uppercase"></asp:label>
+                                </ItemTemplate>                                
+                                <EditItemTemplate>
+                                    <asp:TextBox ID="txtLastName" CssClass="field_input" runat="server" Text='<%# Bind("FamilyName") %>' Width="99%" TabIndex="25" style="text-transform:uppercase"></asp:TextBox>
+                                </EditItemTemplate>
+                                <FooterTemplate>
+                                    <asp:TextBox ID="txtLastName" CssClass="field_input" runat="server" Width="99%" TabIndex="35" style="text-transform:uppercase"></asp:TextBox>
+                                </FooterTemplate>                                
+                                    <HeaderStyle Width="16%" />
+                                </asp:TemplateField>                                
+                                <asp:TemplateField  HeaderText="First Name" HeaderStyle-Width="14%">
+                                <ItemTemplate>
+                                    <asp:label ID="lblFirstName" CssClass="field_input" runat="server" Text='<%# Bind("FirstName") %>' style="text-transform:uppercase"></asp:label>
+                                </ItemTemplate> 
+                                <EditItemTemplate>
+                                    <asp:TextBox ID="txtFirstName" CssClass="field_input" runat="server" Text='<%# Bind("FirstName") %>' Width="99%" TabIndex="26" style="text-transform:uppercase"></asp:TextBox>
+                                </EditItemTemplate>     
+                                <FooterTemplate>
+                                    <asp:TextBox ID="txtFirstName" CssClass="field_input" runat="server" Width="99%" TabIndex="36" style="text-transform:uppercase"></asp:TextBox>
+                                </FooterTemplate>                          
+                                    <HeaderStyle Width="14%" />
+                                </asp:TemplateField>
+                                <asp:TemplateField  HeaderText="Middle Name" HeaderStyle-Width="11%">
+                                <ItemTemplate>
+                                    <asp:label ID="lblMiddleName" CssClass="field_input" runat="server" Text='<%# Bind("MiddleName") %>' style="text-transform:uppercase"></asp:label>
+                                </ItemTemplate> 
+                                <EditItemTemplate>
+                                    <asp:TextBox ID="txtMiddleName" CssClass="field_input" runat="server" Text='<%# Bind("MiddleName") %>' Width="99%" TabIndex="27" style="text-transform:uppercase"></asp:TextBox>
+                                </EditItemTemplate>  
+                                <FooterTemplate>
+                                    <asp:TextBox ID="txtMiddleName" CssClass="field_input" runat="server" Width="99%" TabIndex="37" style="text-transform:uppercase"></asp:TextBox>
+                                </FooterTemplate>                             
+                                    <HeaderStyle Width="11%" />
+                                </asp:TemplateField>     
+                                <asp:TemplateField  HeaderText="Sex" HeaderStyle-Width="3%" >
+                                <ItemTemplate>
+                                    <asp:Label ID="lblSex" runat="server" Text='<%# Bind("Sex") %>'> </asp:Label>                                    
+                                </ItemTemplate> 
+                                <EditItemTemplate>
+                                    <asp:TextBox ID="txtSex" CssClass="field_input" runat="server" Text='<%# Bind("Sex") %>' Width="99%" TabIndex="28"></asp:TextBox>
+                                    <asp:TextBox ID="txtSexCode" runat="server" Text='<%# Bind("Sex") %>'  Style="display: none"></asp:TextBox>
+                                    <asp:AutoCompleteExtender ID="AutoCompleteSex" runat="server" CompletionInterval="10"
+                                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                                    ServiceMethod="GetSex" TargetControlID="txtSex" OnClientItemSelected="SexAutoCompleteSelected"></asp:AutoCompleteExtender>                                
+                                </EditItemTemplate>                               
+                                <FooterTemplate>
+                                    <asp:TextBox ID="txtSex" CssClass="field_input" runat="server" Width="99%" TabIndex="38"></asp:TextBox>
+                                    <asp:TextBox ID="txtSexCode" runat="server" Style="display: none"></asp:TextBox>
+                                    <asp:AutoCompleteExtender ID="AutoCompleteSex" runat="server" CompletionInterval="10"
+                                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                                    ServiceMethod="GetSex" TargetControlID="txtSex" OnClientItemSelected="SexAutoCompleteSelected"></asp:AutoCompleteExtender>                                                                
+                                </FooterTemplate>
+                                    <HeaderStyle Width="3%" />
+                                </asp:TemplateField>                                                             
+                                <asp:TemplateField  HeaderText="Age" HeaderStyle-Width="4%">
+                                <ItemTemplate>
+                                    <asp:Label ID="lblAge" CssClass="field_input" runat="server" Text='<%# Bind("Age") %>'></asp:Label>
+                                </ItemTemplate> 
+                                <EditItemTemplate>
+                                    <asp:TextBox ID="txtAge" CssClass="field_input" runat="server" Text='<%# Bind("Age") %>' Width="99%" TabIndex="29"></asp:TextBox>
+                                </EditItemTemplate>
+                                <FooterTemplate>
+                                    <asp:TextBox ID="txtAge" CssClass="field_input" runat="server" Width="99%" TabIndex="39"></asp:TextBox>
+                                </FooterTemplate>                               
+                                    <HeaderStyle Width="4%" />
+                                </asp:TemplateField>
+                                <asp:TemplateField  HeaderText="Passport No" HeaderStyle-Width="7%" >
+                                <ItemTemplate>
+                                    <asp:Label ID="lblPassportNo" CssClass="field_input" runat="server" Text='<%# Bind("PassportNo") %>' Width="99%" style="text-transform:uppercase"></asp:Label>
+                                </ItemTemplate>
+                                <EditItemTemplate>
+                                    <asp:TextBox ID="txtPassportNo" CssClass="field_input" runat="server" Text='<%# Bind("PassportNo") %>' Width="99%" TabIndex="30" style="text-transform:uppercase" ></asp:TextBox>
+                                </EditItemTemplate>
+                                <FooterTemplate>
+                                    <asp:TextBox ID="txtPassportNo" CssClass="field_input" runat="server" Width="99%" TabIndex="40" style="text-transform:uppercase"></asp:TextBox>
+                                </FooterTemplate>                                
+                                    <HeaderStyle Width="7%" />
+                                </asp:TemplateField>  
+                                <asp:TemplateField  HeaderText="Nationality" HeaderStyle-Width="15%">
+                                <ItemTemplate>
+                                    <asp:Label ID="lblNation" CssClass="field_input" runat="server" Text='<%# Bind("Nationality") %>'></asp:Label>
+                                    <asp:Label ID="lblNationCode" runat="server" Text='<%# Bind("NationCode") %>' Style="display: none"></asp:Label>
+                                </ItemTemplate> 
+                                <EditItemTemplate>
+                                    <asp:TextBox ID="txtNation" CssClass="field_input" runat="server" Text='<%# Bind("Nationality") %>' Width="99%" TabIndex="31"></asp:TextBox>
+                                    <asp:TextBox ID="txtNationCode" runat="server" Text='<%# Bind("NationCode") %>'  Style="display: none"></asp:TextBox>
+                                    <asp:AutoCompleteExtender ID="AutoCompleteNation" runat="server" CompletionInterval="10"
+                                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                                    ServiceMethod="GetNationality" TargetControlID="txtNation" OnClientItemSelected="NationAutoCompleteSelected"></asp:AutoCompleteExtender>
+                                </EditItemTemplate>
+                                <FooterTemplate>
+                                    <asp:TextBox ID="txtNation" CssClass="field_input" runat="server" Width="99%" TabIndex="41"></asp:TextBox>
+                                    <asp:TextBox ID="txtNationCode" runat="server" Text='<%# Bind("NationCode") %>'  Style="display: none"></asp:TextBox>
+                                    <asp:AutoCompleteExtender ID="AutoCompleteNation" runat="server" CompletionInterval="10"
+                                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                                    ServiceMethod="GetNationality" TargetControlID="txtNation" OnClientItemSelected="NationAutoCompleteSelected"></asp:AutoCompleteExtender>
+                                </FooterTemplate>                               
+                                    <HeaderStyle Width="15%" />
+                                </asp:TemplateField>
+                                <asp:TemplateField  HeaderText="Arrival Date" HeaderStyle-Width="7%">
+                                <ItemTemplate>
+                                    <asp:Label ID="lblArrivalDt" CssClass="field_input" runat="server" Text='<%# Bind("ArrivalDate","{0:dd/MM/yyyy}") %>' Width="75"></asp:Label>
+                                </ItemTemplate>  
+                                <EditItemTemplate>
+                                    <asp:TextBox ID="txtArrivalDt" CssClass="field_input" runat="server" Text='<%# Bind("ArrivalDate","{0:dd/MM/yyyy}") %>' Width="75" TabIndex="32"></asp:TextBox>
+                                    <asp:MaskedEditExtender ID="txtArrivalDt_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                        MaskType="Date" TargetControlID="txtArrivalDt">
+                                    </asp:MaskedEditExtender>                                        
+                                    <asp:MaskedEditValidator ID="MevArrivalDt" runat="server" ControlExtender="txtArrivalDt_MaskedEditExtender"
+                                        ControlToValidate="txtArrivalDt" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                        EmptyValueMessage="Date is required" ErrorMessage="txtArrivalDt_MaskedEditExtender"
+                                        InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                        TooltipMessage="Date/Month/Year">
+                                    </asp:MaskedEditValidator>
+                                </EditItemTemplate>
+                                <FooterTemplate>
+                                    <asp:TextBox ID="txtArrivalDt" CssClass="field_input" runat="server" Width="75" TabIndex="42"></asp:TextBox>
+                                    <asp:MaskedEditExtender ID="txtArrivalDt_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                        MaskType="Date" TargetControlID="txtArrivalDt">
+                                    </asp:MaskedEditExtender>                                        
+                                    <asp:MaskedEditValidator ID="MevArrivalDt" runat="server" ControlExtender="txtArrivalDt_MaskedEditExtender"
+                                        ControlToValidate="txtArrivalDt" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                        EmptyValueMessage="Date is required" ErrorMessage="txtArrivalDt_MaskedEditExtender"
+                                        InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                        TooltipMessage="Date/Month/Year">
+                                    </asp:MaskedEditValidator>
+                                </FooterTemplate>                              
+                                    <HeaderStyle Width="7%" />
+                                </asp:TemplateField>  
+                                <asp:TemplateField  HeaderText="Departure Date" HeaderStyle-Width="7%">
+                                <ItemTemplate>
+                                    <asp:Label ID="lblDepartureDt" CssClass="field_input" runat="server" Text='<%# Bind("DepartureDate","{0:dd/MM/yyyy}") %>' Width="75"></asp:Label>
+                                </ItemTemplate>
+                                <EditItemTemplate> 
+                                    <asp:TextBox ID="txtDepartureDt" CssClass="field_input" runat="server" Text='<%# Bind("DepartureDate","{0:dd/MM/yyyy}") %>' Width="75" TabIndex="33"></asp:TextBox>
+                                    <asp:MaskedEditExtender ID="departure_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                        MaskType="Date" TargetControlID="txtDepartureDt">
+                                    </asp:MaskedEditExtender>                                        
+                                    <asp:MaskedEditValidator ID="MevDepartureDt" runat="server" ControlExtender="departure_MaskedEditExtender"
+                                        ControlToValidate="txtDepartureDt" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                        EmptyValueMessage="Date is required" ErrorMessage="departure_MaskedEditExtender"
+                                        InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                        TooltipMessage="Date/Month/Year">
+                                    </asp:MaskedEditValidator>
+                                </EditItemTemplate>
+                                <FooterTemplate>
+                                    <asp:TextBox ID="txtDepartureDt" CssClass="field_input" runat="server" Width="75" TabIndex="43"></asp:TextBox>
+                                    <asp:MaskedEditExtender ID="departure_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                        MaskType="Date" TargetControlID="txtDepartureDt">
+                                    </asp:MaskedEditExtender>                                        
+                                    <asp:MaskedEditValidator ID="MevDepartureDt" runat="server" ControlExtender="departure_MaskedEditExtender"
+                                        ControlToValidate="txtDepartureDt" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                        EmptyValueMessage="Date is required" ErrorMessage="departure_MaskedEditExtender"
+                                        InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                        TooltipMessage="Date/Month/Year">
+                                    </asp:MaskedEditValidator>
+                                </FooterTemplate>
+                                    <HeaderStyle Width="7%" />
+                                </asp:TemplateField>
+                                    <asp:TemplateField HeaderStyle-Width="7%">
+                                        <ItemTemplate>
+                                            <asp:ImageButton ID="IBtnEdit" runat="server" 
+                                                CommandArgument="<%# Container.DisplayIndex %>" CommandName="Edit" 
+                                                ImageUrl="~/Images/Edit.png" ToolTip="Edit" />
+                                            &nbsp;
+                                            <asp:ImageButton ID="IBtnDelete" runat="server" CommandName="Delete" 
+                                                ImageUrl="~/Images/DeleteRed.png" OnClientClick="return confirmDelete();" 
+                                                ToolTip="Delete" />
+                                        </ItemTemplate>
+                                        <EditItemTemplate>
+                                        
+
+                                                 <asp:ImageButton ID="IBtnEdit" runat="server" CommandName="Update" 
+                                                     ImageUrl="~/Images/Update.png" TabIndex="34" ToolTip="Update" />
+                                                 &nbsp;
+                                                 <asp:ImageButton ID="IBtnCancelEdit" runat="server" 
+                                                     ImageUrl="~/Images/Cancel.png" OnClick="IBtnCancelEdit_Click" TabIndex="35" 
+                                                     ToolTip="Cancel" />
+
+                                        </EditItemTemplate>
+
+                                          <FooterTemplate>
+                                 
+                                                 <asp:ImageButton ID="IBtnAddGuest" runat="server" 
+                                                     ImageUrl="~/Images/PlusGreen.ico" OnClick="AddNewGuest" TabIndex="44" 
+                                                     ToolTip="Add Guest" />
+                                                 &nbsp;
+                                                 <asp:ImageButton ID="IBtnCancelInsert" runat="server" 
+                                                     ImageUrl="~/Images/Cancel.png" OnClick="IBtnCancelInsert_Click" TabIndex="45" 
+                                                     ToolTip="Cancel" />
+
+                                </FooterTemplate>
+                                        <HeaderTemplate>
+                                            <asp:ImageButton ID="IBtnNewGuest" runat="server" 
+                                                ImageUrl="~/Images/PlusOrange.png" OnClick="btnAddRow_Click" 
+                                                ToolTip="New Guest" />
+                                        </HeaderTemplate>
+                                        <FooterStyle HorizontalAlign="Center" VerticalAlign="Middle" />
+                                 <HeaderStyle Width="5%" />
+                                        <ItemStyle HorizontalAlign="Center" VerticalAlign="Middle" />
+                                    </asp:TemplateField>                                       
+                                </Columns>
+                                <EmptyDataTemplate>                                                             
+                                <tr>
+                                    <td><asp:TextBox ID="txtTitle" CssClass="field_input" runat="server" Text='<%# Bind("Title") %>' Width="99%" TabIndex="34"></asp:TextBox>
+                                    <asp:TextBox ID="txtTitleCode" runat="server" Text='<%# Bind("Title") %>'  Style="display: none"></asp:TextBox>
+                                    <asp:AutoCompleteExtender ID="AutoCompleteTitle" runat="server" CompletionInterval="10"
+                                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                                    ServiceMethod="GetTitle" TargetControlID="txtTitle" OnClientItemSelected="TitleAutoCompleteSelected"></asp:AutoCompleteExtender></td>
+                                    <td><asp:TextBox ID="txtLastName" CssClass="field_input" runat="server" TabIndex="35" Width="99%" style="text-transform:uppercase"></asp:TextBox></td>
+                                    <td><asp:TextBox ID="txtFirstName" CssClass="field_input" runat="server" TabIndex="36" Width="99%" style="text-transform:uppercase"></asp:TextBox></td>
+                                    <td><asp:TextBox ID="txtMiddleName" CssClass="field_input" runat="server" TabIndex="37" Width="99%" style="text-transform:uppercase"></asp:TextBox></td>
+                                    <td><asp:TextBox ID="txtSex" CssClass="field_input" runat="server" Width="99%" TabIndex="38"></asp:TextBox>
+                                    <asp:TextBox ID="txtSexCode" runat="server" Style="display: none"></asp:TextBox>
+                                    <asp:AutoCompleteExtender ID="AutoCompleteSex" runat="server" CompletionInterval="10"
+                                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                                    ServiceMethod="GetSex" TargetControlID="txtSex" OnClientItemSelected="SexAutoCompleteSelected"></asp:AutoCompleteExtender></td>
+                                    <td><asp:TextBox ID="txtAge" CssClass="field_input" runat="server" Width="99%" TabIndex="39"></asp:TextBox></td>
+                                    <td><asp:TextBox ID="txtPassportNo" CssClass="field_input" runat="server" Width="99%" TabIndex="40" style="text-transform:uppercase"></asp:TextBox></td>
+                                    <td><asp:TextBox ID="txtNation" CssClass="field_input" runat="server" Width="98%" TabIndex="41"></asp:TextBox>
+                                    <asp:TextBox ID="txtNationCode" runat="server" Text='<%# Bind("NationCode") %>'  Style="display: none"></asp:TextBox>
+                                    <asp:AutoCompleteExtender ID="AutoCompleteNation" runat="server" CompletionInterval="10"
+                                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                                    ServiceMethod="GetNationality" TargetControlID="txtNation" OnClientItemSelected="NationAutoCompleteSelected"></asp:AutoCompleteExtender>
+                                    </td>
+                                    <td><asp:TextBox ID="txtArrivalDt" CssClass="field_input" runat="server" Width="75" TabIndex="42"></asp:TextBox>                                                                                
+                                        <asp:MaskedEditExtender ID="txtArrivalDt_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                            MaskType="Date" TargetControlID="txtArrivalDt">
+                                        </asp:MaskedEditExtender>                                        
+                                        <asp:MaskedEditValidator ID="MevArrivalDt" runat="server" ControlExtender="txtArrivalDt_MaskedEditExtender"
+                                            ControlToValidate="txtArrivalDt" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                            EmptyValueMessage="Date is required" ErrorMessage="txtArrivalDt_MaskedEditExtender"
+                                            InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                            TooltipMessage="Date/Month/Year">
+                                        </asp:MaskedEditValidator>
+                                    </td>
+                                    <td><asp:TextBox ID="txtDepartureDt" CssClass="field_input" runat="server" Width="75" TabIndex="43"></asp:TextBox>                                    
+                                        <asp:MaskedEditExtender ID="departure_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                            MaskType="Date" TargetControlID="txtDepartureDt">
+                                        </asp:MaskedEditExtender>                                        
+                                        <asp:MaskedEditValidator ID="MevDepartureDt" runat="server" ControlExtender="departure_MaskedEditExtender"
+                                            ControlToValidate="txtDepartureDt" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                            EmptyValueMessage="Date is required" ErrorMessage="departure_MaskedEditExtender"
+                                            InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                            TooltipMessage="Date/Month/Year">
+                                        </asp:MaskedEditValidator></td>
+
+                             
+                                    <td align="center"><asp:ImageButton ImageUrl="~/Images/PlusGreen.ico" runat="server" ID="IBtnAddGuest" ToolTip="Add Guest" TabIndex="44" OnClick="AddNewGuest" />&nbsp;
+                                    <asp:ImageButton ImageUrl="~/Images/Cancel.png" runat="server" ID="IBtnCancelInsert" ToolTip="Cancel" OnClick="IBtnCancelInsert_Click" TabIndex="45" /> </td>                                    
+                                    </tr>
+                                </EmptyDataTemplate>
+                                <HeaderStyle CssClass="grdheader" HorizontalAlign="Center" VerticalAlign="Middle" />
+                                <FooterStyle CssClass="grdfooter" />
+                                <RowStyle CssClass="grdRowstyle" Wrap="true" />
+                                <AlternatingRowStyle CssClass="grdAternaterow" Wrap="true" />
+                                <SelectedRowStyle CssClass="grdselectrowstyle" />
+                                <PagerStyle CssClass="grdpagerstyle" HorizontalAlign="Center"></PagerStyle>                                                                
+                                </asp:GridView>
+                            </div>
+                            </td>
+                            </tr>  
+                            <tr>
+                            <td><label class="field_caption" style="font-weight:bold">Total No of Guests : </label></td><td><asp:Label ID="lblTotalGuests" CssClass="field_input" style="font-weight:bold" runat="server" Width="50%" ></asp:Label> </td>
+                            <td colspan="2">                                
+                            </td>
+                            </tr>                        
+                            <tr>
+                                <td colspan="4" align="center">
+                                    <asp:Button ID="btnSave" runat="server" CssClass="btn" TabIndex="40" Text="Save" />&nbsp;&nbsp;
+                                    <asp:Button ID="btnExportToExcel" runat="server" CssClass="btn" Text="Export To Excel" TabIndex="41" />&nbsp;&nbsp;
+                                    <asp:Button ID="btnReset" runat="server" CssClass="btn" TabIndex="42" Text="Clear" />&nbsp;&nbsp;                                   
+                                    <asp:Button ID="btnCancel" runat="server" CssClass="btn" TabIndex="43" Text="Return To Search" />                                   
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </ContentTemplate>
+        <Triggers>
+            <asp:PostBackTrigger ControlID="btnUploadFile" />
+            <asp:PostBackTrigger ControlID="btnExportToExcel" />
+        </Triggers>
+    </asp:UpdatePanel>
+    
+</asp:Content>
+

@@ -1,0 +1,1269 @@
+﻿#Region "Namespace"
+Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Collections.Generic
+Imports MyClasses
+#End Region
+
+Partial Class TransportModule_TransfersRequestSubEntry
+    Inherits System.Web.UI.Page
+
+#Region "Global Declarations"
+    Dim objUtils As New clsUtils
+    Dim objUser As New clsUser
+    Dim strSqlQry As String
+    Dim strWhereCond As String
+    Dim SqlConn As SqlConnection
+    Dim SqlCmd As SqlCommand
+    Dim myDataAdapter As SqlDataAdapter
+    Dim mySqlReader As SqlDataReader
+    Dim mySqlConn As SqlConnection
+    Dim ObjDate As New clsDateTime
+    Dim sqlTrans As SqlTransaction
+    Dim chkSel As CheckBox
+    Dim otypecode1, otypecode2, hotel As String
+
+    Dim gvRow As GridViewRow
+    Dim lblLineNo As Label
+    Dim txtTicketDate As TextBox
+    Dim chkDel As CheckBox
+    Dim dtTransfersDetails As New DataTable
+    Dim NewRLineNo As Integer = 0
+
+#End Region
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+
+        Dim default_group As String
+        If Page.IsPostBack = False Then
+            Try
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+
+                txtconnection.Value = Session("dbconnectionName")
+                txtPickUp.Text = Format(CType(ObjDate.GetSystemDateOnly(Session("dbconnectionName")), Date), "dd/MM/yyy")
+                txtflightdate.Text = Format(CType(ObjDate.GetSystemDateOnly(Session("dbconnectionName")), Date), "dd/MM/yyy")
+
+                txtVehicle.Text = 1
+                ViewState.Add("TransfersState", Request.QueryString("State"))
+                ViewState.Add("TransfersRefCode", Request.QueryString("RefCode"))
+                Session.Add("TransfersRequestSubEntryLineNo", Request.QueryString("LineNo"))
+                Session.Add("TransfersRequestSellingCode", Request.QueryString("Sellingcode"))
+                hdnsellingcode.Value = Request.QueryString("Sellingcode")
+                'vij
+                txtConversionRate.Value = Session("convrate")
+                'vij
+                default_group = objUtils.GetDBFieldFromStringnew(Session("dbconnectionName"), "reservation_parameters", "option_selected", "param_id", CType("1001", String))
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlHotelName, "partyname", "partycode", "select partyname,partycode from partymast where active=1  order by partyname", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlShiftHotelName, "partynamevalue", "partycodevalue", "select  rtrim(ltrim(partyname)) as partynamevalue,rtrim(ltrim(partycode)) as partycodevalue from partymast where active=1  order by partyname", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlStartingCode, "airportbordercode", "airportbordername", "select airportbordercode,airportbordername from view_airportsectormast  order by airportbordercode", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlStartingName, "airportbordername", "airportbordercode", "select airportbordercode,airportbordername from view_airportsectormast  order by airportbordername", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlEndingCode, "airportbordercodevalue", "airportbordernamevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue from view_airportsectormast  order by airportbordercode", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlEndingName, "airportbordernamevalue", "airportbordercodevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast  order by airportbordername", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSupplierCar, "othcatcode", "othcatname", "select othcatcode,othcatname from othcatmast where othgrpcode='" & default_group & "'   order by othcatcode", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSupplierCarName, "othcatname", "othcatcode", "select othcatname,othcatcode from othcatmast where othgrpcode='" & default_group & "' order by othcatname", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSupplierCar, "othcatcode", "othcatname", "select othcatcode,othcatname from othcatmast where othgrpcode='" & default_group & "' and active=1  order by othcatcode", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlSupplierCarName, "othcatname", "othcatcode", "select othcatname,othcatcode from othcatmast where othgrpcode='" & default_group & "' and active=1  order by othcatname", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlCarTypeCode, "othcatcodevalue", "othcatnamevalue", "select rtrim(ltrim(othcatcode))as othcatcodevalue ,rtrim(ltrim(othcatname)) as othcatnamevalue  from othcatmast where othgrpcode='" & default_group & "' and active=1 order by othcatcode", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlCarTypeName, "othcatnamevalue", "othcatcodevalue", "select   rtrim(ltrim(othcatname)) as othcatnamevalue ,rtrim(ltrim(othcatcode)) as othcatcodevalue  from othcatmast where othgrpcode='" & default_group & "' and active=1 order by othcatname", True)
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlFlightCode, "flightcode", "flight_tranid", "select flightcode,flight_tranid from flightmast order by flightcode", True)
+
+
+                If ViewState("TransfersState") = "AddRow" Then
+                    lblHeading.Text = "Add New Transfers Request"
+                    Page.Title = Page.Title + " " + "New Transfers Request"
+                    fillorderby()
+                    'fillDategrd(grdCancellationPeriod, False, 1)
+                    'FillGrdCancellationDetail(1)
+
+                    'vij
+                    If Request.QueryString("LineNo") <> "" Then
+                        ShowRecordFromDt(Request.QueryString("RefCode"), CType(Request.QueryString("LineNo"), Integer))
+                    End If
+
+                    btnSave.Text = "Save"
+                    btnSave.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to save')==false)return false;")
+                ElseIf ViewState("TransfersState") = "EditRow" Then
+                    SetFocus(ddlHotelName)
+                    lblHeading.Text = "Edit Transfers Request"
+                    Page.Title = Page.Title + " " + "Edit Transfers Request"
+
+                    If Request.QueryString("Refcode") <> "" And Request.QueryString("LineNo") <> "" Then
+                        btnSave.Text = "Update"
+                    End If
+
+                    fillorderby()
+                    'ShowRecord(Request.QueryString("RefCode"), Request.QueryString("LineNo"))
+                    ddlTransferDate.Text = Today
+                    If Request.QueryString("LineNo") <> "" Then
+                        ShowRecordFromDt(Request.QueryString("RefCode"), Request.QueryString("LineNo"))
+                    End If
+
+                    'If Request.QueryString("LineNo") <> "" Then ShowRecord(Request.QueryString("RefCode"), Request.QueryString("LineNo"))
+                    btnSave.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to update')==false)return false;")
+                ElseIf ViewState("TransfersState") = "ViewRow" Then
+                    Dim RefCode As String
+                    Dim LineNo As Integer
+                    lblHeading.Text = "View Transfers Request"
+                    Page.Title = Page.Title + " " + "View Transfers Request"
+                    LineNo = CType(Session("TransfersRequestSubEntryLineNo"), Integer)
+                    RefCode = CType(Session("TransfersRequestSubEntryRefCode"), String)
+                    fillorderby()
+                    If Request.QueryString("LineNo") <> "" Then ShowRecord(Request.QueryString("RefCode"), Request.QueryString("LineNo"))
+                    DisableControl()
+                    ShowRecordFromDt(RefCode, LineNo)
+                ElseIf ViewState("TransfersState") = "Delete" Then
+                    SetFocus(btnSave)
+                    lblHeading.Text = "Delete Transfers Request"
+                    Page.Title = Page.Title + " " + "Delete Transfers Request"
+                    btnSave.Text = "Delete"
+                    DisableControl()
+                    If Request.QueryString("LineNo") <> "" Then ShowRecord(Request.QueryString("RefCode"), Request.QueryString("LineNo"))
+                    ShowRecord(Request.QueryString("RefCode"), Request.QueryString("LineNo"))
+                    btnSave.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to delete')==false)return false;")
+                End If
+
+
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("TransfersRequest.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+
+
+        Else
+            Dim strqry As String = ""
+            strqry = ""
+
+            If ddlTransferType.SelectedIndex = 0 Then
+                If ddlHotelName.Items(ddlHotelName.SelectedIndex).Value <> "[Select]" Then
+                    objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlEndingCode, "airportbordercodevalue", "airportbordernamevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast  where airportbordercode =(select sectorgroupcode from sectormaster where sectorcode= (select  sectorcode from partymast where partycode='" & ddlHotelName.Items(ddlHotelName.SelectedIndex).Value & "')) order by airportbordercode ", True, ddlEndingCode.Value)
+                    'objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlEndingName, "airportbordernamevalue", "airportbordercodevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast  where airportbordercode =(select sectorgroupcode from sectormaster where sectorcode= (select  sectorcode from partymast where partycode='" & ddlHotelName.Items(ddlHotelName.SelectedIndex).Value & "')) order by airportbordername", True, ddlEndingName.Value)
+                    objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlEndingName, "airportbordernamevalue", "airportbordercodevalue", "select rtrim(ltrim(airportbordername)) as airportbordernamevalue, rtrim(ltrim(airportbordercode)) as airportbordercodevalue  from view_airportsectormast  where airportbordercode =(select sectorgroupcode from sectormaster where sectorcode= (select  sectorcode from partymast where partycode='" & ddlHotelName.Items(ddlHotelName.SelectedIndex).Value & "')) order by airportbordername", True, ddlEndingName.Value)
+
+
+                    If hdnstartingcode.Value <> "[Select]" And hdnstartingcode.Value <> "" Then
+                        objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlStartingCode, "airportbordercodevalue", "airportbordernamevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast where shifting=0 order by airportbordercode", True)
+                        'objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlStartingName, "airportbordernamevalue", "airportbordercodevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast  where shifting=0 order by airportbordername", True)
+                        objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlStartingName, "airportbordernamevalue", "airportbordercodevalue", "select rtrim(ltrim(airportbordername)) as airportbordernamevalue, rtrim(ltrim(airportbordercode)) as  airportbordercodevalue  from view_airportsectormast  where shifting=0 order by airportbordername", True)
+                        ddlStartingName.Value = hdnstartingcode.Value
+                        ddlStartingCode.Value = ddlStartingName.Items(ddlStartingName.SelectedIndex).Text
+                        If hdnendingcode.Value <> "[Select]" And hdnendingcode.Value <> "" Then
+                            ddlEndingName.Value = hdnendingcode.Value
+                            ddlEndingCode.Value = ddlEndingName.Items(ddlEndingName.SelectedIndex).Text
+                        End If
+                        'objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlFlightCode, "flightcode", "flight_tranid", " select  flightcode,flight_tranid from flightmast where type=0 and airportbordercode='" & ddlStartingCode.Items(ddlStartingCode.SelectedIndex).Text & "' and flight_tranid in(select flight_tranid from flightmast_dates where convert(varchar(10),'" & Format(CType(txtflightdate.Text, Date), "yyyy/MM/dd") & "',111) between frmdatec and todatec) order by flightmast.flightcode ", True)
+
+                    End If
+
+
+                End If
+            End If
+
+            If ddlTransferType.SelectedIndex = 1 Then
+                If ddlHotelName.Items(ddlTransferType.SelectedIndex).Value <> "[Select]" Then
+                    objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlStartingCode, "airportbordercodevalue", "airportbordernamevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast  where airportbordercode =(select sectorgroupcode from sectormaster where sectorcode= (select  sectorcode from partymast where partycode='" & ddlHotelName.Items(ddlHotelName.SelectedIndex).Value & "')) order by airportbordercode ", True, ddlStartingCode.Value)
+                    objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlStartingName, "airportbordernamevalue", "airportbordercodevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast  where airportbordercode =(select sectorgroupcode from sectormaster where sectorcode= (select  sectorcode from partymast where partycode='" & ddlHotelName.Items(ddlHotelName.SelectedIndex).Value & "')) order by airportbordername", True, ddlStartingName.Value)
+
+                    If hdnendingcode.Value <> "[Select]" And hdnendingcode.Value <> "" Then
+                        objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlEndingCode, "airportbordercodevalue", "airportbordernamevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast where shifting=0 order by airportbordercode", True)
+                        objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlEndingName, "airportbordernamevalue", "airportbordercodevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast  where shifting=0 order by airportbordername", True)
+
+                        ddlEndingName.Value = hdnendingcode.Value
+                        ddlEndingCode.Value = ddlEndingName.Items(ddlEndingName.SelectedIndex).Text
+                        If hdnstartingcode.Value <> "[Select]" And hdnstartingcode.Value <> "" Then
+                            ddlStartingName.Value = hdnstartingcode.Value
+                            ddlStartingCode.Value = ddlStartingName.Items(ddlStartingName.SelectedIndex).Text
+
+                        End If
+
+                        objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlFlightCode, "flightcode", "flight_tranid", " select  flightcode,flight_tranid from flightmast where type=1 and airportbordercode=' " & ddlEndingCode.Items(ddlEndingCode.SelectedIndex).Text & "' and flight_tranid in(select flight_tranid from flightmast_dates where convert(varchar(10),'" & Format(CType(txtflightdate.Text, Date), "yyyy/MM/dd") & "',111) between frmdatec and todatec) order by flightmast.flightcode ", True)
+
+                    End If
+                End If
+            End If
+
+            If ddlTransferType.SelectedIndex = 2 Then
+                If ddlHotelName.Items(ddlTransferType.SelectedIndex).Value <> "[Select]" Then
+
+                    objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlStartingCode, "airportbordercodevalue", "airportbordernamevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast  where airportbordercode =(select sectorgroupcode from sectormaster where sectorcode= (select  sectorcode from partymast where partycode='" & ddlHotelName.Items(ddlHotelName.SelectedIndex).Value & "')) order by airportbordercode ", True, ddlStartingCode.Value)
+                    objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlStartingName, "airportbordernamevalue", "airportbordercodevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast  where airportbordercode =(select sectorgroupcode from sectormaster where sectorcode= (select  sectorcode from partymast where partycode='" & ddlHotelName.Items(ddlHotelName.SelectedIndex).Value & "')) order by airportbordername", True, ddlStartingName.Value)
+                    objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlEndingCode, "airportbordercodevalue", "airportbordernamevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast  where airportbordercode =(select sectorgroupcode from sectormaster where sectorcode= (select  sectorcode from partymast where partycode='" & ddlShiftHotelName.Items(ddlShiftHotelName.SelectedIndex).Value & "')) order by airportbordercode ", True, ddlEndingCode.Value)
+                    objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlEndingName, "airportbordernamevalue", "airportbordercodevalue", "select rtrim(ltrim(airportbordercode)) as airportbordercodevalue, rtrim(ltrim(airportbordername)) as airportbordernamevalue  from view_airportsectormast  where airportbordercode =(select sectorgroupcode from sectormaster where sectorcode= (select  sectorcode from partymast where partycode='" & ddlShiftHotelName.Items(ddlShiftHotelName.SelectedIndex).Value & "')) order by airportbordername", True, ddlEndingName.Value)
+                    btnGetGlight.Enabled = False
+
+                    If hdnstartingcode.Value <> "[Select]" And hdnstartingcode.Value <> "" Then
+                        ddlStartingName.Value = hdnstartingcode.Value
+                        ddlStartingCode.Value = ddlStartingName.Items(ddlStartingName.SelectedIndex).Text
+                    End If
+                    If hdnendingcode.Value <> "[Select]" And hdnendingcode.Value <> "" Then
+                        ddlEndingName.Value = hdnendingcode.Value
+                        ddlEndingCode.Value = ddlEndingName.Items(ddlEndingName.SelectedIndex).Text
+                    End If
+                End If
+            End If
+            strqry = ""
+
+            '26072014
+            hdnFlightcode.Value = ddlFlightCode.Value
+            objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlFlightCode, "flightcode", "flight_tranid", "select flightcode,flight_tranid from flightmast order by flightcode", True)
+            'flightlist()
+
+
+            'ddlFlightCode.Value = hdnFlightcode.Value
+            '26072014
+            'If ddlTransferType.SelectedIndex = 0 Then
+            If hdnFlightcode.Value <> "[Select]" And hdnFlightcode.Value <> "" Then
+                ddlFlightCode.Value = hdnFlightcode.Value
+            End If
+            'End If
+            If hdncartype.Value <> "[Select]" And hdncartype.Value <> "" Then
+                ddlCarTypeName.Value = hdncartype.Value
+                ddlCarTypeCode.Value = ddlCarTypeName.Items(ddlCarTypeName.SelectedIndex).Value
+            End If
+
+            If hdnsupcartype.Value <> "[Select]" And hdnsupcartype.Value <> "" Then
+                ddlSupplierCarName.Value = hdnsupcartype.Value
+                ddlSupplierCar.Value = ddlSupplierCarName.Items(ddlSupplierCarName.SelectedIndex).Value
+            End If
+
+            If hdnhotelcode.Value <> "[Select]" And hdnhotelcode.Value <> "" Then
+                ddlHotelName.Value = hdnhotelcode.Value
+
+            End If
+
+            'objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlShiftHotelName, "partynamevalue", "partycodevalue", "select  rtrim(ltrim(partyname)) as partynamevalue,rtrim(ltrim(partycode)) as partycodevalue from partymast where active=1  order by partyname", True)
+            If hdnshifthotelcode.Value <> "[Select]" And hdnshifthotelcode.Value <> "" Then
+                ddlShiftHotelName.Value = hdnshifthotelcode.Value
+
+            End If
+
+
+            If hdnsaleprice.Value <> "" Then
+                txtSalesPrice.Text = hdnsaleprice.Value
+            End If
+            If hdnsale.Value <> "" Then
+                txtSale.Text = hdnsale.Value
+
+            End If
+
+            If hdnsalevalue.Value <> "" Then
+                txtSaleValue.Text = hdnsalevalue.Value
+            End If
+
+            If hdnhandling.Value <> "" Then
+                txtHandlingValue.Text = hdnhandling.Value
+            End If
+
+
+            If hdnhandlingvalue.Value <> "" Then
+                txtHandlingValue.Text = hdnhandlingvalue.Value
+            End If
+
+            If hdntotal.Value <> "" Then
+                txtTotal.Text = hdntotal.Value
+
+            End If
+            If hdntotalvalue.Value <> "" Then
+
+                txtTotalValue.Text = hdntotalvalue.Value
+            End If
+        End If
+        Dim typ As Type
+        typ = GetType(DropDownList)
+
+        If (Page.ClientScript.IsClientScriptIncludeRegistered(typ, "TADDScript.js")) = False Then
+            Page.ClientScript.RegisterClientScriptInclude(typ, "TADDScript.js", "TADDScript.js")
+
+            'ddlHotelName.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            ddlStartingCode.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            'ddlStartingName.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            ddlEndingCode.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            ddlEndingName.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            ddlCarTypeName.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            ddlCarTypeCode.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            ddlSupplierCar.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            ddlSupplierCarName.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+
+        End If
+
+    End Sub
+
+    Private Sub fillorderby()
+        ddlTransferType.Items.Clear()
+        ddlTransferType.Items.Add("Arrival")
+        ddlTransferType.Items.Add("Departure")
+        ddlTransferType.Items.Add("Shifting")
+        If Session("Excid") Is Nothing Then
+            ddlTransferType.SelectedIndex = 0
+        Else
+            ddlTransferType.SelectedIndex = 2
+        End If
+
+    End Sub
+
+#Region "Numbers"
+    Public Sub Numbers(ByVal txtbox As HtmlInputText)
+        txtbox.Attributes.Add("onkeypress", "return OnlyNumber(event)")
+    End Sub
+#End Region
+
+#Region "NumbersForTextbox"
+    Public Sub NumbersForTextbox(ByVal txtbox As TextBox)
+        txtbox.Attributes.Add("onkeypress", "return OnlyNumber(event)")
+    End Sub
+#End Region
+
+    Protected Sub btnSave_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSave.Click
+
+        Try
+            If Page.IsValid = True Then
+
+                Dim sealdate As String = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select sealdate from  sealing_master(nolock)")
+
+                If ddlTransferDate.Text <> "" Then
+                    If Convert.ToDateTime(ddlTransferDate.Text) < Convert.ToDateTime(sealdate) Then
+
+                        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This Month Already Sealed');", True)
+                        Exit Sub
+                    End If
+                End If
+
+                If formvalidation() = False Then
+                    'vij
+                    Exit Sub
+                End If
+
+                If CType(Session("TransfersRequestSubEntryState"), String) = "AddRow" Then
+
+                    Dim TlineNo As Integer = 0
+                    If Session("TransfersRequestSubEntryLineNo") = "" Then
+                        TlineNo = 0
+                    Else
+                        TlineNo = CType(Session("TransfersRequestSubEntryLineNo"), Integer)
+                    End If
+
+
+                    AddRows(TlineNo)
+
+                    'Dim lstExcursionHeader As New List(Of clsExcursionHedaer)
+                    'lstExcursionHeader = Session("lstExcursionHeader")
+                    Session.Add("Savecompleated", "showprintbtn")
+
+                End If
+
+
+                If CType(Session("TransfersRequestSubEntryState"), String) = "EditRow" Then
+
+                    If CType(Session("TransfersRequestSubEntryLineNo"), String) = "" Then
+
+                        AddRowsEdit()
+                    Else
+                        EditRows(CType(Session("TransfersRequestSubEntryLineNo"), Integer))
+
+                    End If
+
+                End If
+                Session.Add("Savecompleated", "showprintbtn")
+            End If
+
+        Catch ex As Exception
+            If mySqlConn.State = ConnectionState.Open Then
+                sqlTrans.Rollback()
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+            objUtils.WritErrorLog("ManageTicketsReceived.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+
+    Private Sub AddRows(ByVal TlineNo As Integer)
+
+        Try
+
+            dtTransfersDetails = Session("DtTransfersSubEntry")
+
+            If dtTransfersDetails.Rows.Count > 0 Then
+                dtTransfersDetails.Rows(dtTransfersDetails.Rows.Count - 1).Delete()
+            End If
+
+            NewRLineNo = Session("NewRLineNo") + 1
+            Session("NewRLineNo") = NewRLineNo
+            If dtTransfersDetails.Rows.Count > 0 Then
+
+                Dim i As Integer = 0
+                Dim RowCount As Integer = 0
+
+
+
+                For i = 1 To dtTransfersDetails.Rows.Count - 1
+                    If dtTransfersDetails.Rows(i).Item("tlineNo") = TlineNo Then
+                        RowCount = i
+                        Exit For
+                    End If
+                Next
+                If TlineNo <> 0 Then
+                    dtTransfersDetails.Rows.RemoveAt(RowCount)
+                End If
+
+            End If
+
+            '****************** Adding to Datatable **************************
+            addDtable()
+
+            '*******************************************************
+
+            Session("DtTransfersSubEntry") = dtTransfersDetails
+
+
+            Dim strscript As String = ""
+            strscript = "window.opener.__doPostBack('TransfersRequestEntryWindowPostBack', '');window.opener.focus();window.close();"
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+        End Try
+
+    End Sub
+
+    Private Sub addDtable()
+
+        Dim dr As DataRow
+        dr = dtTransfersDetails.NewRow()
+
+        dr("requestid") = IIf(Request.QueryString("RefCode") = "", 1, Request.QueryString("RefCode"))
+        dr("tlineno") = IIf(Request.QueryString("LineNo") = "", CType(NewRLineNo, Integer), Request.QueryString("LineNo")) 'CType(NewRLineNo, Integer)
+        dr("transferdate") = CType(ddlTransferDate.Text, DateTime)
+        dr("transfertype") = CType(ddlTransferType.SelectedIndex, Integer)
+        dr("startingpoint") = CType(ddlStartingName.Value, String)
+        dr("endingpoint") = CType(ddlEndingName.Value, String)
+        
+        dr("pickupdate") = CType(txtPickUp.Text, DateTime)
+        dr("flightdate") = CType(txtflightdate.Text, DateTime)
+
+        dr("pickuptime") = CType(txtPickUpTime.Text, String)
+
+        dr("cartype") = CType(ddlCarTypeName.Value, String)
+        dr("units") = CType(txtVehicle.Text, String)
+
+        'dr("price") = IIf(Trim(txtCostPrice.Text) = "", 0.0, CType(txtCostPrice.Text, Decimal))
+        'dr("salecurrency") = IIf(Trim(txtSalesPrice.Text) = "", 0.0, CType(txtSalesPrice.Text, Decimal))
+
+        'dr("salevalue") = IIf(Trim(txtSaleValue.Text) = "", 0.0, CType(txtSaleValue.Text, Decimal))
+
+        dr("price") = IIf(Trim(txtSalesPrice.Text) = "", 0.0, CType(txtSalesPrice.Text, Decimal))
+        dr("salecurrency") = IIf(Trim(txtSale.Text) = "", 0.0, CType(txtSale.Text, Decimal))
+
+        dr("salevalue") = IIf(Trim(txtSaleValue.Text) = "", 0.0, CType(txtSaleValue.Text, Decimal))
+
+
+        dr("hotelcode") = CType(txtHotelValue.Value, String)
+        dr("shifthotelcode") = ddlShiftHotelName.Value 'CType(txtShiftHotel.Value, String)
+        dr("roomno") = CType(txtRoomNum.Text, String)
+        dr("adults") = CType(txtAdult.Text, Integer)
+        dr("child") = CType(Val(txtChild.Text), Integer)
+        dr("guestname") = CType(txtGuestName.Text, String)
+        dr("flightcode") = CType(ddlFlightCode.Items(ddlFlightCode.SelectedIndex).Text, String) 'CType(ddlFlightCode.Value, String)
+        dr("flighttime") = CType(txtFlightTime.Text, String)
+        dr("complementcust") = IIf(CType(chC.Checked, Integer) = True, 1, 0)
+        dr("invno") = DBNull.Value
+        dr("creditnoteno") = DBNull.Value
+        dr("remarks") = CType(txtRemarks.Text, String)
+        dr("handling_currency") = IIf(Trim(txtHandling.Text) = "", 0.0, CType(txtHandling.Text, Decimal))
+        dr("handling_value") = IIf(Trim(txtHandlingValue.Text) = "", 0.0, CType(txtHandlingValue.Text, Decimal))
+        dr("tran_state") = DBNull.Value
+        dr("excursionid") = DBNull.Value
+        dr("excrlineno") = 0
+        dr("resrequestid") = DBNull.Value
+        dr("resrlineno") = 0
+        dr("supcartype") = CType(ddlSupplierCar.Value, String)
+        dr("costprice") = IIf(Trim(txtCostPrice.Text) = "", 0.0, CType(txtCostPrice.Text, Decimal))
+        dr("pagingboard") = IIf(CType(chp.Checked, Integer) = True, 1, 0)
+        dr("supplierref") = CType(txtSupplierRef.Text, String)
+        dr("compfromsup") = IIf(CType(chkcompfrmsup.Checked, Integer) = True, 1, 0)
+        dtTransfersDetails.Rows.Add(dr)
+
+    End Sub
+
+    Private Sub AddRowsEdit()
+
+        Try
+            Dim TlineNo As Integer = 0
+            TlineNo = CType(objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select max(td.tlineno)+1 tlineno from transfers_booking_detailnew td,transfer_booking_subdetail ts where td.requestid='" & Request.QueryString("RefCode") & "'"), Integer)
+
+            dtTransfersDetails = Session("DtTransfersSubEntry")
+            If dtTransfersDetails.Rows.Count > 0 Then
+                dtTransfersDetails.Rows(dtTransfersDetails.Rows.Count - 1).Delete()
+            End If
+
+            '****************** Adding to Datatable **************************
+            addDtable()
+
+            '*******************************************************
+
+            Session("DtTransfersSubEntry") = dtTransfersDetails
+
+            Dim strscript As String = ""
+            strscript = "window.opener.__doPostBack('TransfersRequestEntryWindowPostBack', '');window.opener.focus();window.close();"
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+        End Try
+
+    End Sub
+
+    Private Sub EditRows(ByVal LineNo As Integer)
+
+        Try
+
+            dtTransfersDetails = Session("DtTransfersSubEntry")
+            If dtTransfersDetails.Rows.Count > 0 Then
+                dtTransfersDetails.Rows(dtTransfersDetails.Rows.Count - 1).Delete()
+            End If
+
+            Dim i As Integer = 0
+            Dim RowCount As Integer = 0
+
+
+            For i = 0 To dtTransfersDetails.Rows.Count - 1
+                If dtTransfersDetails.Rows(i).Item("tlineNo") = LineNo Then
+                    RowCount = i
+                    Exit For
+                End If
+            Next
+
+            dtTransfersDetails.Rows.RemoveAt(RowCount)
+
+            '****************** Adding to Datatable **************************
+            addDtable()
+
+            '*******************************************************
+
+
+            Session("DtTransfersSubEntry") = dtTransfersDetails
+
+            Dim strscript As String = ""
+            strscript = "window.opener.__doPostBack('TransfersRequestEntryWindowPostBack', '');window.opener.focus();window.close();"
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+        End Try
+
+    End Sub
+
+
+    Private Sub ShowRecord(ByVal RefCode As String, ByVal LineNo As Integer)
+
+        Try
+            'strSqlQry = "select *,othgrpmast.othmaingrpcode from excursions_detail inner join othgrpmast on excursions_detail.othgrpcode = othgrpmast.othgrpcode where excursions_detail.excid='" & RefCode & "' and TlineNo=" & LineNo
+            strSqlQry = "select td.requestid requestid,td.tlineno tlineno,td.transferdate transferdate,td.transfertype transfertype,td.startingpoint startingpoint, " & _
+                        "td.endingpoint endingpoint,td.cartype cartype,td.units units,td.price price,td.salecurrency salecurrency,td.salevalue salevalue,td.hotelcode hotelcode, " & _
+                        "p.partyname partyname,td.shifthotelcode shifthotelcode,td.roomno roomno,td.adults adults,td.child child,td.guestname guestname,td.flightcode flightcode, " & _
+                        "td.flighttime flighttime,td.complementcust complementcust,td.invno invno,td.creditnoteno creditnoteno,td.remarks remarks,td.handling_currency handling_currency, " & _
+                        "td.handling_value handling_value,td.tran_state tran_state,td.excursionid excursionid,td.excrlineno excrlineno,td.resrequestid resrequestid,td.resrlineno resrlineno, " & _
+                        "td.supcartype supcartype from transfers_booking_detailnew td,partymast p where td.hotelcode=p.partycode and td.requestid='" & RefCode & "' and tlineno=" & LineNo
+
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+            SqlCmd = New SqlCommand(strSqlQry, SqlConn)
+            mySqlReader = SqlCmd.ExecuteReader
+            Dim sqlstr As String = ""
+            If mySqlReader.Read = True Then
+
+                If IsDBNull(mySqlReader("hotelcode")) = False Then
+                    ddlHotelName.Value = mySqlReader("hotelcode")
+                End If
+
+                If IsDBNull(mySqlReader("flighttime")) = False Then
+                    txtFlightTime.Text = mySqlReader("flighttime")
+                End If
+
+                If IsDBNull(mySqlReader("flightcode")) = False Then
+                    ddlFlightCode.Value = mySqlReader("flightcode")
+                    hdnFlightcode.Value = ddlFlightCode.Value
+                End If
+
+
+                If IsDBNull(mySqlReader("hotelcode")) = False Then
+                    txtHotelValue.Value = mySqlReader("hotelcode")
+                    txthotelName.Value = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "Select partyname From Partymast Where PartyCode='" & mySqlReader("hotelcode") & "'")
+                End If
+
+                If IsDBNull(mySqlReader("startingpoint")) = False Then
+                    ddlStartingCode.Items(ddlStartingCode.SelectedIndex).Text = mySqlReader("startingpoint")
+                    ddlStartingName.Value = ddlStartingCode.Items(ddlStartingCode.SelectedIndex).Value
+                    'vij
+                    hdnstartingcode.Value = mySqlReader("startingpoint")
+
+                End If
+
+                If IsDBNull(mySqlReader("endingpoint")) = False Then
+                    ddlEndingCode.Items(ddlEndingCode.SelectedIndex).Text = mySqlReader("endingpoint")
+                    ddlEndingName.Value = ddlEndingCode.Items(ddlEndingCode.SelectedIndex).Value
+
+                    'vij
+                    hdnendingcode.Value = mySqlReader("endingpoint")
+                End If
+
+                If IsDBNull(mySqlReader("supcartype")) = False Then
+                    ddlSupplierCar.Items(ddlSupplierCar.SelectedIndex).Text = mySqlReader("supcartype")
+                    ddlSupplierCarName.Value = ddlSupplierCar.Items(ddlSupplierCar.SelectedIndex).Value
+                End If
+
+                If IsDBNull(mySqlReader("shifthotelcode")) = False Then
+                    txtShiftHotel.Value = mySqlReader("shifthotelcode")
+                    ddlShiftHotelName.Value = mySqlReader("shifthotelcode")
+                End If
+
+                If IsDBNull(mySqlReader("guestname")) = False Then
+                    txtGuestName.Text = mySqlReader("guestname")
+                End If
+
+                If IsDBNull(mySqlReader("roomno")) = False Then
+                    txtRoomNum.Text = mySqlReader("roomno")
+
+                End If
+
+                If IsDBNull(mySqlReader("adults")) = False Then
+                    txtAdult.Text = mySqlReader("adults")
+                End If
+
+                If IsDBNull(mySqlReader("child")) = False Then
+                    txtChild.Text = mySqlReader("child")
+                End If
+
+                If IsDBNull(mySqlReader("supcartype")) = False Then
+                    ddlCarTypeCode.Items(ddlCarTypeCode.SelectedIndex).Text = mySqlReader("supcartype")
+                    ddlCarTypeName.Value = ddlCarTypeCode.Items(ddlCarTypeCode.SelectedIndex).Value
+                End If
+
+                If IsDBNull(mySqlReader("units")) = False Then
+                    txtVehicle.Text = mySqlReader("units")
+                End If
+
+                If IsDBNull(mySqlReader("transferdate")) = False Then
+                    ddlTransferDate.Text = mySqlReader("transferdate")
+                End If
+
+                If IsDBNull(mySqlReader("shifthotelcode")) = False Then
+                    txtShiftHotel.Value = mySqlReader("shifthotelcode")
+                End If
+
+                If IsDBNull(mySqlReader("price")) = False Then
+                    txtCostPrice.Text = mySqlReader("price")
+                End If
+
+                If IsDBNull(mySqlReader("remarks")) = False Then
+                    txtRemarks.Text = mySqlReader("remarks")
+                End If
+
+                'vij
+                ddlTransferType.SelectedIndex = mySqlReader("transfertype")
+
+                'If IsDBNull(mySqlReader("incominginvno")) = False Then
+                '    txtIncomeInvoiceNo.Text = mySqlReader("incominginvno")
+                'End If
+
+                'If IsDBNull(mySqlReader("debitnoteno")) = False Then
+                '    txtDebitNoteNo.Text = mySqlReader("debitnoteno")
+                'End If
+
+
+
+                'If IsDBNull(mySqlReader("airport")) = False Then
+                '    txtAirport.Text = mySqlReader("airport")
+                'End If
+
+                'If IsDBNull(mySqlReader("arrdate")) = False Then
+                '    txtArrivalDate.Text = Format(CType(mySqlReader("arrdate"), Date), "dd/MM/yyyy")
+                'End If
+
+                'If IsDBNull(mySqlReader("depdate")) = False Then
+                '    txtDepartureDate.Text = Format(CType(mySqlReader("depdate"), Date), "dd/MM/yyyy")
+                'End If
+
+                If IsDBNull(mySqlReader("flighttime")) = False Then
+                    txtFlightTime.Text = mySqlReader("flighttime")
+                End If
+
+                If IsDBNull(mySqlReader("salevalue")) = False Then
+                    'txtSale.Text = mySqlReader("salevalue")
+                    txtSaleValue.Text = mySqlReader("salevalue")
+                    hdnsalevalue.Value = mySqlReader("salevalue")
+                End If
+
+                If IsDBNull(mySqlReader("salecurrency")) = False Then
+                    txtSalesPrice.Text = mySqlReader("salecurrency")
+                    hdnsaleprice.Value = mySqlReader("salecurrency")
+                End If
+
+                If (txtRemarks.Text).Contains(lblPaging.Text) Then
+                    chp.Checked = True
+
+                Else
+
+                    chp.Checked = False
+
+
+
+                End If
+
+
+            End If
+
+        Catch ex As Exception
+            If SqlConn.State = ConnectionState.Open Then SqlConn.Close()
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+            objUtils.WritErrorLog("ExcursionStopSales.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbCommandClose(SqlCmd)
+            clsDBConnect.dbReaderClose(mySqlReader)
+            clsDBConnect.dbConnectionClose(SqlConn)
+
+        End Try
+
+    End Sub
+
+
+    Private Sub DisableControl()
+
+        If ViewState("TransfersState") = "NewRow" Then
+
+            'dpDate.Enabled = True
+        ElseIf ViewState("TransfersState") = "EditRow" Then
+            'txtTransferId.Enabled = False
+            'dpDate.Enabled = False
+
+        ElseIf ViewState("TransfersState") = "ViewRow" Or ViewState("TransfersState") = "Delete" Then
+
+            ddlTransferDate.Enabled = False
+            ddlTransferType.Enabled = False
+            txtGuestName.Enabled = False
+            txtPickUp.Enabled = False
+            txtflightdate.Enabled = False
+            txtPickUpTime.Enabled = False
+            txtClientRef.Enabled = False
+            txthotelName.Disabled = True
+            txtAdult.Enabled = False
+            txtChild.Enabled = False
+            txthotelName.Disabled = True
+            ddlHotelName.Disabled = True
+            txtRoomNum.Enabled = False
+            txtShiftHotel.Disabled = True
+            ddlShiftHotelName.Disabled = True
+            ddlStartingCode.Disabled = True
+            ddlStartingName.Disabled = True
+            ddlEndingCode.Disabled = True
+            ddlEndingName.Disabled = True
+            ddlFlightCode.Disabled = True
+            txtFlightTime.Enabled = False
+            btnGetGlight.Enabled = False
+            ddlCarTypeCode.Disabled = True
+            ddlCarTypeName.Disabled = True
+            txtRemarks.ReadOnly = True
+            txtVehicle.Enabled = True
+            txtSale.Enabled = False
+            txtSalesPrice.Enabled = False
+            txtCostPrice.Enabled = False
+            txtHandling.Enabled = False
+            txtTotal.Enabled = False
+            txtHandlingValue.Enabled = False
+            ddlSupplierCar.Disabled = True
+            ddlSupplierCarName.Disabled = True
+            txtTotalValue.Enabled = False
+            chC.Enabled = False
+            chp.Enabled = False
+            btnSave.Visible = False
+            txtShiftHotel.Disabled = True
+        End If
+
+
+    End Sub
+
+    Private Sub ShowRecordFromDt(ByVal RefCode As String, ByVal LineNo As Integer)
+
+        Try
+
+            Dim showDt As New DataTable
+            Dim showDataRow() As DataRow
+            Dim sqlstr As String = ""
+
+            showDt = Session("DtTransfersSubEntry")
+
+            If showDt.Rows.Count > 0 Then
+
+
+                If RefCode = "" Then
+                    showDataRow = showDt.Select("tlineno=" & LineNo)
+                Else
+                    showDataRow = showDt.Select("requestid='" & RefCode & "' and tlineno=" & LineNo)
+                End If
+
+
+                If showDataRow.Length > 0 Then
+                    'showDataRow(0)("excid").ToString()
+
+                    'vij
+
+                    If IsDBNull(showDataRow(0)("hotelcode")) = False Then
+                        ddlHotelName.Value = showDataRow(0)("hotelcode")
+                    End If
+
+                    txthotelName.Value = ddlHotelName.Items(ddlHotelName.SelectedIndex).Text
+                    '26072014
+                    txtHotelValue.Value = ddlHotelName.Items(ddlHotelName.SelectedIndex).Value
+
+                    If IsDBNull(showDataRow(0)("shifthotelcode")) = False Then
+                        ddlShiftHotelName.Value = showDataRow(0)("shifthotelcode")
+                        txtShiftHotel.Value = ddlShiftHotelName.Items(ddlShiftHotelName.SelectedIndex).Text
+                    End If
+
+
+                    If IsDBNull(showDataRow(0)("transfertype")) = False Then
+                        If Val(showDataRow(0)("transfertype")) = 0 Then
+                            ddlFlightCode.Value = "1"
+                            objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlFlightCode, "flightcode", "flight_tranid", "select ltrim(rtrim(flightcode))flightcode,ltrim(rtrim(flight_tranid))flight_tranid from flightmast where  active=1 and type=1 order by flightcode", True)
+                            ddlShiftHotelName.Disabled = True
+                            txtShiftHotel.Disabled = True
+                            txtshifthotelname.Disabled = True
+                        ElseIf Val(showDataRow(0)("transfertype")) = 1 Then
+                            ddlFlightCode.Value = "0"
+                            objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlFlightCode, "flightcode", "flight_tranid", "select ltrim(rtrim(flightcode))flightcode,ltrim(rtrim(flight_tranid))flight_tranid from flightmast where  active=1 and type=0 order by flightcode", True)
+                            ddlShiftHotelName.Disabled = True
+                            txtShiftHotel.Disabled = True
+                            txtshifthotelname.Disabled = True
+                        Else
+                            If ViewState("TransfersState") = "EditRow" Or ViewState("TransfersState") = "AddRow" Then
+                                ddlShiftHotelName.Disabled = False
+                                txtShiftHotel.Disabled = False
+                                txtshifthotelname.Disabled = False
+                            End If
+
+                        End If
+
+                    End If
+
+                    If Session("Excid") Is Nothing Then
+                        ddlTransferType.SelectedIndex = Val(showDataRow(0)("transfertype"))
+                    Else
+                        ddlTransferType.SelectedIndex = 2
+
+                    End If
+
+
+                    If showDataRow(0)("transferdate").ToString = "" Then
+                        ddlTransferDate.Text = Today
+                    Else
+                        ddlTransferDate.Text = Format(CType(showDataRow(0)("transferdate"), Date), "dd/MM/yyyy")
+                    End If
+                    txtPickUp.Text = If(IsDBNull(showDataRow(0)("pickupdate")) = True, showDataRow(0)("transferdate"), showDataRow(0)("pickupdate"))
+                    txtflightdate.Text = If(IsDBNull(showDataRow(0)("flightdate")) = True, showDataRow(0)("pickupdate"), showDataRow(0)("flightdate"))
+
+                    ddlStartingName.Value = showDataRow(0)("startingpoint")
+                    'ddlStartingCode.Value
+                    ddlEndingName.Value = showDataRow(0)("endingpoint")
+
+                    ddlStartingCode.Value = ddlStartingName.Items(ddlStartingName.SelectedIndex).Text 'objUtils.GetDBFieldFromStringnew(Session("dbconnectionName"), "airportbordersmaster", "airportbordername", "airportbordercode", ddlStartingName.Value)
+                    ddlEndingCode.Value = ddlEndingName.Items(ddlEndingName.SelectedIndex).Text
+
+                    ddlCarTypeName.Value = showDataRow(0)("cartype")
+                    ddlCarTypeCode.Value = ddlCarTypeName.Items(ddlCarTypeName.SelectedIndex).Text
+
+                    ddlSupplierCar.Value = showDataRow(0)("supcartype")
+                    ddlSupplierCarName.Value = ddlSupplierCar.Items(ddlSupplierCar.SelectedIndex).Text
+
+                    txtVehicle.Text = showDataRow(0)("units")
+
+                    chC.Checked = Val(showDataRow(0)("complementcust"))
+
+                    '05082014
+                    chkcompfrmsup.Checked = CType(showDataRow(0)("compfromsup"), Integer)
+
+                    If IsDBNull(showDataRow(0)("guestname")) = False Then
+                        txtGuestName.Text = showDataRow(0)("guestname")
+                    End If
+
+                    If IsDBNull(showDataRow(0)("roomno")) = False Then
+                        txtRoomNum.Text = showDataRow(0)("roomno")
+
+                    End If
+
+                    If IsDBNull(showDataRow(0)("adults")) = False Then
+                        txtAdult.Text = showDataRow(0)("adults") 'Math.Round(showDataRow(0)("adults"), CType(txtdecimal.Value, Integer))
+                    End If
+
+                    If IsDBNull(showDataRow(0)("child")) = False Then
+                        txtChild.Text = showDataRow(0)("child") 'Math.Round(showDataRow(0)("child"), CType(txtdecimal.Value, Integer))
+                    End If
+
+                    'txtSale.Text = showDataRow(0)("salevalue")
+                    'hdnsale.Value = showDataRow(0)("salevalue")
+
+                    txtSaleValue.Text = showDataRow(0)("salevalue")
+                    hdnsalevalue.Value = showDataRow(0)("salevalue")
+
+                    'txtCostPrice.Text = showDataRow(0)("price")
+
+                    txtSalesPrice.Text = Val(showDataRow(0)("price"))
+
+                    'txtSalesPrice.Text = showDataRow(0)("salecurrency")
+                    'hdnsaleprice.Value = showDataRow(0)("salecurrency")
+
+                    txtSale.Text = showDataRow(0)("salecurrency")
+                    hdnsale.Value = Val(showDataRow(0)("salecurrency"))
+
+
+                    txtHandling.Text = showDataRow(0)("handling_currency")
+                    txtHandlingValue.Text = showDataRow(0)("handling_value")
+
+                    txtTotal.Text = Val(txtHandling.Text) + Val(txtSale.Text)
+                    txtTotalValue.Text = Val(txtHandlingValue.Text) + Val(txtSaleValue.Text)
+
+
+                    If IsDBNull(showDataRow(0)("pickuptime")) = False Then
+                        txtPickUpTime.Text = showDataRow(0)("pickuptime")
+                    End If
+
+                    If IsDBNull(showDataRow(0)("flightcode")) = False Then
+                        For i = 0 To ddlFlightCode.Items.Count - 1
+                            If ddlFlightCode.Items(i).Text = Trim(showDataRow(0)("flightcode")) Then
+                                ddlFlightCode.Value = ddlFlightCode.Items(i).Value
+                            End If
+
+                        Next
+                        'ddlFlightCode.Value = showDataRow(0)("flightcode")
+                    End If
+
+                    If IsDBNull(showDataRow(0)("flighttime")) = False Then
+                        txtFlightTime.Text = showDataRow(0)("flighttime")
+                    End If
+
+
+
+
+                    If IsDBNull(showDataRow(0)("remarks")) = False Then
+                        txtRemarks.Text = showDataRow(0)("remarks")
+                    End If
+                    txtCostPrice.Text = showDataRow(0)("costprice")
+                    txtSupplierRef.Text = showDataRow(0)("supplierref")
+                    chp.Checked = CType(showDataRow(0)("pagingboard"), Integer)
+
+                End If
+            End If
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+            objUtils.WritErrorLog("ExcursionStopSales.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+
+        End Try
+
+    End Sub
+
+    Protected Sub gv_Flight_RowCommand(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gv_Flight.RowCommand
+
+        Try
+            If e.CommandName = "Page" Then
+                Exit Sub
+            End If
+
+            Dim lblFlightNo, lblFlightTranID As Label
+            lblFlightNo = gv_Flight.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblFlightNo")
+            lblFlightTranID = gv_Flight.Rows(CType(e.CommandArgument.ToString, String)).FindControl("lblFlightTranID")
+
+            If e.CommandName = "SelectRow" Then
+                Session("RowState") = ""
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "FillFlightDetails('" & lblFlightTranID.Text.Trim & "');", True)
+            End If
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("TransfersRequestSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+    Private Sub FillFlight_Details()
+
+        Try
+
+            Dim MyDs As New DataTable
+            SqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+            '1-Arrival 0-Departure
+            If ddlTransferType.SelectedIndex = 0 Then
+                'strSqlQry = "select ltrim(rtrim(flightcode))flightcode,flight_tranid,city,arrivetime1,airport from flightmast where  active=1 and type=1 "
+                strSqlQry = " select ltrim(rtrim(flightcode))flightcode,min(flight_tranid)flight_tranid,min(city)city,min(arrivetime1)arrivetime1,min(airport)airport from flightmast where active=1 and type=1 group by flightcode "
+            Else
+                'strSqlQry = "select ltrim(rtrim(flightcode))flightcode,flight_tranid,city,Departtime1,airport from flightmast where  active=1 and type=0 "
+                strSqlQry = " select ltrim(rtrim(flightcode))flightcode,min(flight_tranid)flight_tranid,min(city)city,min(Departtime1)arrivetime1,min(airport)airport from flightmast where  active=1 and type=0 group by flightcode "
+            End If
+
+
+            If Trim(BuildCondition) <> "" Then
+                strSqlQry = strSqlQry & BuildCondition() & " order by flightcode "
+            Else
+                strSqlQry = strSqlQry & " order by flightcode "
+            End If
+
+            SqlCmd = New SqlCommand(strSqlQry, SqlConn)
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(MyDs)
+
+            If MyDs.Rows.Count > 0 Then
+                gv_Flight.DataSource = MyDs
+                gv_Flight.DataBind()
+                gv_Flight.Visible = True
+                lblMsg.Visible = False
+            Else
+                gv_Flight.Visible = False
+                lblMsg.Visible = True
+            End If
+
+        Catch ex As Exception
+            If SqlConn.State = ConnectionState.Open Then SqlConn.Close()
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Error Description: - " & ex.Message & "');", True)
+            objUtils.WritErrorLog("TransfersRequestEntry.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+    Private Function BuildCondition() As String
+
+        strWhereCond = ""
+
+        If ddlSearchType.Value = "1" Then
+
+            If txtSearch.Text.Trim <> "" Then
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = " having min(city) LIKE '" & Trim(txtSearch.Text.Trim.ToUpper) & "%'"
+                End If
+
+            End If
+        End If
+
+        If ddlSearchType.Value = "0" Then
+
+            If txtSearch.Text.Trim <> "" Then
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = " having min(airport) LIKE '" & Trim(txtSearch.Text.Trim.ToUpper) & "%'"
+                End If
+
+            End If
+        End If
+
+
+        If ddlSearchType.Value = "2" Then
+
+            If txtSearch.Text.Trim <> "" Then
+                If Trim(strWhereCond) = "" Then
+                    If ddlFlightCode.Value = "1" Then
+                        strWhereCond = " having min(arrivetime1) LIKE '" & Trim(txtSearch.Text.Trim.ToUpper) & "%'"
+                    Else
+                        strWhereCond = " having min(Departtime1) LIKE '" & Trim(txtSearch.Text.Trim.ToUpper) & "%'"
+                    End If
+
+                End If
+
+            End If
+        End If
+
+        If ddlSearchType.Value = "3" Then
+
+            If txtSearch.Text.Trim <> "" Then
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = " having flightcode LIKE '" & Trim(txtSearch.Text.Trim.ToUpper) & "%'"
+                End If
+
+            End If
+        End If
+        BuildCondition = strWhereCond
+
+    End Function
+
+
+    Protected Sub btnClose_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnClose.Click
+        Dim strscript As String = ""
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+    End Sub
+
+    Protected Sub btnReturn_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnReturn.Click
+        Dim strscript As String = ""
+        strscript = "window.opener.__doPostBack('TransfersWindowPostBack', '');window.opener.focus();window.close();"
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+    End Sub
+
+
+
+    Public Function formvalidation() As Boolean
+
+       
+
+        If txtGuestName.Text = "" Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Guest Name Cant Blank.');", True)
+            SetFocus(txtGuestName)
+            formvalidation = False
+            Exit Function
+        End If
+
+        If (txtAdult.Text = "0" Or txtAdult.Text = "") And (txtChild.Text = "0" Or txtChild.Text = "") Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('At least one adult or child should entered.');", True)
+            SetFocus(txtAdult)
+            formvalidation = False
+            Exit Function
+        End If
+
+        If ddlTransferDate.text = "" Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Transfer Date.');", True)
+            SetFocus(ddltransferdate)
+            formvalidation = False
+            Exit Function
+        End If
+
+        If txtpickup.text = "" Then
+
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Pickupdate Date.');", True)
+            SetFocus(txtpickup)
+            formvalidation = False
+            Exit Function
+
+        End If
+
+        If txtflightdate.Text = "" Then
+
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Flight Date.');", True)
+            SetFocus(txtflightdate)
+            formvalidation = False
+            Exit Function
+
+        End If
+
+        If ddlhotelname.items(ddlhotelname.selectedindex).text = "[Select]" Then
+
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Please Select Hotel.');", True)
+            SetFocus(ddlhotelname)
+            formvalidation = False
+            Exit Function
+        End If
+
+
+        If ddlstartingcode.items(ddlstartingcode.selectedindex).text = "[Select]" Then
+
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Please Select Starting Point.');", True)
+            SetFocus(ddlstartingcode)
+            formvalidation = False
+            Exit Function
+        End If
+
+        If ddlEndingCode.items(ddlEndingCode.selectedindex).text = "[Select]" Then
+
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Please Select Ending Point.');", True)
+            SetFocus(ddlEndingCode)
+            formvalidation = False
+            Exit Function
+        End If
+
+        If ddlCarTypeCode.items(ddlCarTypeCode.selectedindex).text = "[Select]" Then
+
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Please Select Vehicle Type.');", True)
+            SetFocus(ddlCarTypeCode)
+            formvalidation = False
+            Exit Function
+        End If
+
+        If ddlSupplierCar.items(ddlSupplierCar.selectedindex).text = "[Select]" Then
+
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Please Select Supplier Vehicle Type.');", True)
+            SetFocus(ddlSupplierCar)
+            formvalidation = False
+            Exit Function
+        End If
+
+        If txtsalesprice.text = "0" Or txtsalesprice.text = "" Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Price Cant be zero.');", True)
+            SetFocus(txtsalesprice)
+            formvalidation = False
+            Exit Function
+
+        End If
+
+
+        If ddlTransferType.SelectedIndex = 2 Then
+            If ddlShiftHotelName.Items(ddlShiftHotelName.SelectedIndex).Value = "[Select]" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Please Select  Shift Hotel');", True)
+                SetFocus(ddlStartingCode)
+                formvalidation = False
+            End If
+        End If
+
+
+        If ddlTransferType.SelectedIndex = 1 Then
+
+            If txtPickUp.Text > txtflightdate.Text Then
+
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Pickup Date Should be earlier than flight  Date ');", True)
+
+                SetFocus(txtPickUp)
+                formvalidation = False
+                Exit Function
+            ElseIf txtPickUp.Text = txtflightdate.Text Then
+                If txtFlightTime.Text <> "" Then
+                    If absofpicktime(txtFlightTime.Text) <= absofpicktime(txtPickUpTime.Text) Then
+                        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Pickup Time Should be earlier than flight  Time ');", True)
+                        SetFocus(txtPickUpTime)
+                        formvalidation = False
+                        Exit Function
+                    End If
+                End If
+               
+
+            End If
+
+          
+        End If
+
+        If Val(txtVehicle.Text) = 0 Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Number of vehicles can not be zero or blank');", True)
+            SetFocus(txtVehicle)
+            formvalidation = False
+            Exit Function
+        End If
+
+        
+
+       
+
+        formvalidation = True
+    End Function
+
+
+    Protected Sub btnGetGlight_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnGetGlight.Click
+        FillFlight_Details()
+        ModalPopupDays1.Show()
+    End Sub
+
+    Protected Sub chp_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles chp.CheckedChanged
+        If chp.Checked = True Then
+            txtRemarks.Text = txtRemarks.Text + " " + lblPaging.Text
+        Else
+
+            txtRemarks.Text = Replace(txtRemarks.Text, lblPaging.Text, "")
+        End If
+    End Sub
+
+    Private Function absofpicktime(ByVal mytime As String) As Integer
+        Try
+            Dim i As Integer = 1
+            Dim mystr As String = ".;:-,"
+            For i = 1 To 4
+                mytime = Replace(mytime, Mid(mystr, i, 1), "", 1)
+            Next
+            mytime = Trim(mytime)
+            absofpicktime = mytime
+        Catch ex As Exception
+
+        End Try
+    End Function
+End Class

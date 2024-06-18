@@ -1,0 +1,12 @@
+.mainMenu li a {
+	margin:0 1.6em;
+}
+.mainMenu li a:hover {
+	margin:0 1.6em;
+}
+.payment li input[type="text"], textarea {
+	width:98.69%
+}
+input[type="text"] {
+	height:20px; padding:8px 0 2px 0; 
+}

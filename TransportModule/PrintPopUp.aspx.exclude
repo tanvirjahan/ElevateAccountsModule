@@ -1,0 +1,50 @@
+﻿<%@ Page Title="" Language="VB" MasterPageFile="~/SubPageMaster.master" AutoEventWireup="false" CodeFile="PrintPopUp.aspx.vb" Inherits="TransportModule_PrintPopUp" %>
+<%@ Register Assembly="System.Web.Extensions, Version=1.0.61025.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+    Namespace="System.Web.UI" TagPrefix="asp" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" Runat="Server">
+
+<TABLE style="BORDER-RIGHT: gray 2px solid; BORDER-TOP: gray 2px solid; BORDER-LEFT: gray 2px solid; WIDTH: 1px; BORDER-BOTTOM: gray 2px solid" Width="200px">
+<TBODY>
+<TR>
+<TD class="field_heading" align=center colSpan=1>
+<asp:Label id="lblHeading" runat="server" Text="Print Transfer Vouchers" ForeColor="White" Width="200px" CssClass="field_heading"></asp:Label>
+</TD>
+</TR>
+
+<TR>
+<td class="td_cell">
+<input id="rdnbdeparture" runat="server" checked name="departure" type="radio" /> Departure Transfer Slip</td>
+</TR>
+<TR>
+<td class="td_cell">
+<input id="rdnarrival" runat="server" checked name="departure" type="radio" /> Arrival Sign Board</td>
+</TR>
+
+<tr>
+<td></td>
+
+
+</tr>
+<tr>
+<TD class="td_cell">
+
+<asp:Button id="btnReport" 
+         runat="server" Text="Load Report" Width="90px" 
+        CssClass="btn" ></asp:Button>
+        <asp:Button id="btnCancel" 
+         runat="server" Text="Cancel" Width="90px" 
+        CssClass="btn"></asp:Button>
+
+</tr>
+
+
+</TBODY>
+</TABLE>
+
+
+
+
+
+</asp:Content>
+

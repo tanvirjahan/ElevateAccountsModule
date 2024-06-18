@@ -1,0 +1,56 @@
+﻿
+Partial Class TransportModule_Default
+    Inherits System.Web.UI.Page
+
+
+
+
+#Region "Global Declaration"
+    Dim objUtils As New clsUtils
+#End Region
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        If Page.IsPostBack = False Then
+
+            Dim ImageName As String = ""
+            Dim Pagename As String = ""
+
+            If Not Session("CompanyName") Is Nothing Then
+                Me.Page.Title = CType(Session("CompanyName"), String)
+            End If
+
+            If Not (Request.QueryString("code") Is Nothing) = True Then
+                ImageName = CType(Request.QueryString("code"), String)
+            End If
+
+            If Not (Request.QueryString("pagename") Is Nothing) = True Then
+                Pagename = CType(Request.QueryString("pagename"), String)
+            End If
+
+            ShowImage(ImageName, Pagename)
+        End If
+    End Sub
+
+    Private Sub ShowImage(ByVal ImageName As String, ByVal Pagename As String)
+        Try
+            If ImageName = "" Or ImageName = Nothing Then
+                lblMessage.Visible = True
+                img1.Visible = False
+                Exit Sub
+            End If
+
+
+            img1.Src = "../Transportmodule/VehicleImages/" + ImageName
+            img1.Visible = True
+            lblMessage.Visible = False
+
+
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("ImageViewWindow.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+End Class
+ 

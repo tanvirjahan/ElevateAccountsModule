@@ -1,0 +1,115 @@
+﻿body {
+}
+.field_button_agent
+{
+	border: 1px solid #DDD9CF;
+	font-family: Tahoma;
+	font-size: 9pt;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	background-color: #325E89;
+	color: #ffffff;
+	text-align: left;
+}
+.field_input_agent
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 10pt;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	border-width:1px;
+	border-color:#06788B;
+}	
+.field_heading_agent
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 10pt;
+	font-weight: bold;
+	background-color: #325E89;
+	color: #E7FFFF;
+	height:20px;
+	text-align: center;
+}
+
+.td_cell_web
+{
+	font-family: Tahoma;
+	font-size: 9pt;
+	background-color:transparent;
+	color: windowframe;
+	text-align: left;
+}
+
+.btn_agnet
+{
+	border: 1px solid #DDD9CF;
+	font-family: Tahoma;
+	font-size: 9pt;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	background-color:Gray;
+}
+.container 
+{
+	overflow:auto;
+	border: 1px solid black;
+}
+.container table th 
+{
+	position:relative;
+	font-weight: bold;
+	border-bottom: solid 1px #CCCCCC;
+	text-align: left;
+}
+.container table tbody 
+{
+	overflow-x:hidden;
+}
+.container table tbody tr td 
+{
+	border-bottom: solid 1px #CCCCCC;
+	text-align: left;
+}
+
+
+.field_button_booking
+{
+	border: 1px solid #DDD9CF;
+	font-family: Tahoma;
+	font-size: 10pt;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	text-align: center;
+}
+.field_input_booking
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 11pt;
+	font-weight: bold;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+}	
+.field_heading_booking
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 12pt;
+	font-weight: bold;
+	background-color: #92BFED;
+	color: White;
+	width:100%;
+	height: 25px;
+}
+
+.td_cell_booking
+{
+	font-family: Tahoma;
+	font-size: 11pt;
+	background-color:transparent;
+	color: windowframe;
+	text-align: left;
+}

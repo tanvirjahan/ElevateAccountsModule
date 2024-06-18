@@ -1,0 +1,1091 @@
+﻿<%--<%@ Page Language="VB" AutoEventWireup="false" CodeFile="RptOperationReport.aspx.vb" 
+Inherits="ReservationModule_RptOperationReport" %>--%>
+
+<%@ Page Title="" Language="VB" MasterPageFile="~/ReservationMaster.master" AutoEventWireup="false"
+    CodeFile="RptOperationReport.aspx.vb" Inherits="RptOperationReport" %>
+
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<%@ Register Assembly="System.Web.Extensions, Version=1.0.61025.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+    Namespace="System.Web.UI" TagPrefix="asp" %>
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="cc1" %>
+<%@ Register Assembly="EclipseWebSolutions.DatePicker" Namespace="EclipseWebSolutions.DatePicker"
+    TagPrefix="ews" %>
+<%@ OutputCache Location="none" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" runat="Server">
+    <script src="../Content/vendor/jquery-1.11.0.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function () {
+            Txt_LocationNameKeyUp();
+            AgentsAutoCompleteExtenderKeyUp();
+            HotelsAutoCompleteExtenderKeyUp();
+            FlightCodesAutoCompleteExtenderKeyUp();
+            Txt_AirportNameKeyUp();
+            //             '*** Danny 08/12/2018 
+            CustomerGroupAutoCompleteExtenderKeyUp();
+            HotelChainGroupAutoCompleteExtenderKeyUp();
+            var headerChk = $(".chkHeader input");
+            var itemChk = $(".chkItem input");
+
+            headerChk.click(function () {
+                itemChk.each(function () {
+                    this.checked = headerChk[0].checked;
+                })
+            });
+
+            itemChk.each(function () {
+                $(this).click(function () {
+                    if (this.checked == false) { headerChk[0].checked = false; }
+                })
+            });
+
+            var headerChk1 = $(".clschkHeader input");
+            var itemChk1 = $(".clschkItem input");
+
+            headerChk1.click(function () {
+                itemChk1.each(function () {
+                    this.checked = headerChk1[0].checked;
+                })
+            });
+
+            itemChk1.each(function () {
+                $(this).click(function () {
+                    if (this.checked == false) { headerChk1[0].checked = false; }
+                })
+            });
+
+            Txt_ServiceName_KeyUp(); //changed by mohamed on 01/01/2019
+        });
+        function BookingDateSelectCalExt() {
+            var txtfromDate = document.getElementById("<%=txtBookingFromDate.ClientID%>");
+            if (txtfromDate.value != '') {
+                var calendarBehavior1 = $find("<%=BookingFromDate_CalendarExtender.ClientID %>");
+                var date = calendarBehavior1._selectedDate;
+
+                var dp = txtfromDate.value.split("/");
+                var newDt = new Date(dp[2] + "/" + dp[1] + "/" + dp[0]);
+                newDt = getFormatedDate(newDt);
+                newDt = new Date(newDt);
+                calendarBehavior1.set_selectedDate(newDt);
+            }
+            var txtfromDate2 = document.getElementById("<%=txtBookingToDate.ClientID%>");
+            if (txtfromDate2.value != '') {
+                var calendarBehavior2 = $find("<%=BookingToDate_CalendarExtender.ClientID %>");
+                var date2 = calendarBehavior2._selectedDate;
+
+                var dp2 = txtfromDate2.value.split("/");
+                var newDt2 = new Date(dp2[2] + "/" + dp2[1] + "/" + dp2[0]);
+                newDt2 = getFormatedDate(newDt2);
+                newDt2 = new Date(newDt2);
+                calendarBehavior2.set_selectedDate(newDt2);
+            }
+
+        }
+
+
+        function fillBookingTodate(fDate) {
+            var txtfromDate = document.getElementById("<%=txtBookingFromDate.ClientID%>");
+            var txtToDate = document.getElementById("<%=txtBookingToDate.ClientID%>");
+
+            if ((txtToDate.value != null) && (txtToDate.value != '')) {
+
+                var dpFrom = txtfromDate.value.split("/");
+                var newDt = new Date(dpFrom[2] + "/" + dpFrom[1] + "/" + dpFrom[0]);
+                newDt = getFormatedDate(newDt);
+                newDt = new Date(newDt);
+                var dpTo = txtToDate.value.split("/");
+                var newDtTo = new Date(dpTo[2] + "/" + dpTo[1] + "/" + dpTo[0]);
+                newDtTo = getFormatedDate(newDtTo);
+                newDtTo = new Date(newDtTo);
+                if (newDt > newDtTo) {
+
+                    txtToDate.value = txtfromDate.value;
+                    DateSelectCalExt();
+                    return;
+                }
+            }
+        }
+
+        function ValidateBookingDate() {
+
+            var txtfromDate = document.getElementById("<%=txtBookingFromDate.ClientID%>");
+            var txtToDate = document.getElementById("<%=txtBookingToDate.ClientID%>");
+            if (txtfromDate.value == null || txtfromDate.value == "") {
+                txtfromDate.value = txtToDate.value;
+            }
+
+            var dp = txtfromDate.value.split("/");
+            var newChkInDt = new Date(dp[2] + "/" + dp[1] + "/" + dp[0]);
+
+            var dp1 = txtToDate.value.split("/");
+            var newChkOutDt = new Date(dp1[2] + "/" + dp1[1] + "/" + dp1[0]);
+
+            newChkInDt = getFormatedDate(newChkInDt);
+            newChkOutDt = getFormatedDate(newChkOutDt);
+
+            newChkInDt = new Date(newChkInDt);
+            newChkOutDt = new Date(newChkOutDt);
+            if (newChkInDt > newChkOutDt) {
+                txtToDate.value = txtfromDate.value;
+                alert("To date should be greater than From date");
+            }
+        }
+        function ServiceModifyDateSelectCalExt() {
+            var txtfromDate = document.getElementById("<%=txtServiceModifyFromDate.ClientID%>");
+            if (txtfromDate.value != '') {
+                var calendarBehavior1 = $find("<%=ServiceModifyFromDate_CalendarExtender.ClientID %>");
+                var date = calendarBehavior1._selectedDate;
+
+                var dp = txtfromDate.value.split("/");
+                var newDt = new Date(dp[2] + "/" + dp[1] + "/" + dp[0]);
+                newDt = getFormatedDate(newDt);
+                newDt = new Date(newDt);
+                calendarBehavior1.set_selectedDate(newDt);
+            }
+            var txtfromDate2 = document.getElementById("<%=txtServiceModifyToDate.ClientID%>");
+            if (txtfromDate2.value != '') {
+                var calendarBehavior2 = $find("<%=ServiceModifyToDate_CalendarExtender.ClientID %>");
+                var date2 = calendarBehavior2._selectedDate;
+
+                var dp2 = txtfromDate2.value.split("/");
+                var newDt2 = new Date(dp2[2] + "/" + dp2[1] + "/" + dp2[0]);
+                newDt2 = getFormatedDate(newDt2);
+                newDt2 = new Date(newDt2);
+                calendarBehavior2.set_selectedDate(newDt2);
+            }
+
+        }
+
+
+        function fillServiceModifyTodate(fDate) {
+            var txtfromDate = document.getElementById("<%=txtServiceModifyFromDate.ClientID%>");
+            var txtToDate = document.getElementById("<%=txtServiceModifyToDate.ClientID%>");
+
+            if ((txtToDate.value != null) && (txtToDate.value != '')) {
+
+                var dpFrom = txtfromDate.value.split("/");
+                var newDt = new Date(dpFrom[2] + "/" + dpFrom[1] + "/" + dpFrom[0]);
+                newDt = getFormatedDate(newDt);
+                newDt = new Date(newDt);
+                var dpTo = txtToDate.value.split("/");
+                var newDtTo = new Date(dpTo[2] + "/" + dpTo[1] + "/" + dpTo[0]);
+                newDtTo = getFormatedDate(newDtTo);
+                newDtTo = new Date(newDtTo);
+                if (newDt > newDtTo) {
+
+                    txtToDate.value = txtfromDate.value;
+                    DateSelectCalExt();
+                    return;
+                }
+            }
+        }
+
+        function ValidateServiceModifyDate() {
+
+            var txtfromDate = document.getElementById("<%=txtServiceModifyFromDate.ClientID%>");
+            var txtToDate = document.getElementById("<%=txtServiceModifyToDate.ClientID%>");
+            if (txtfromDate.value == null || txtfromDate.value == "") {
+                txtfromDate.value = txtToDate.value;
+            }
+
+            var dp = txtfromDate.value.split("/");
+            var newChkInDt = new Date(dp[2] + "/" + dp[1] + "/" + dp[0]);
+
+            var dp1 = txtToDate.value.split("/");
+            var newChkOutDt = new Date(dp1[2] + "/" + dp1[1] + "/" + dp1[0]);
+
+            newChkInDt = getFormatedDate(newChkInDt);
+            newChkOutDt = getFormatedDate(newChkOutDt);
+
+            newChkInDt = new Date(newChkInDt);
+            newChkOutDt = new Date(newChkOutDt);
+            if (newChkInDt > newChkOutDt) {
+                txtToDate.value = txtfromDate.value;
+                alert("To date should be greater than From date");
+            }
+        }
+        function checkvalidation() {
+            ShowProgress();
+            $.removeCookie('Downloaded', { path: '/' });
+            //Check if receive cookie from server by second
+            intervalProgress = setInterval("$.checkDownloadFileCompletely()", 1000);
+            return true;
+        }
+        function ShowProgress() {
+            var ModalPopupLoading = $find("ModalPopupLoading");
+            ModalPopupLoading.show();
+            $.removeCookie('DownloadedArrivals', { path: '/' });
+            //Check if receive cookie from server by second
+            intervalProgress = setInterval("$.checkDownloadFileCompletely()", 1000);
+        }
+
+        function HideProgess() {
+            var ModalPopupLoading = $find("ModalPopupLoading");
+            ModalPopupLoading.hide(500);
+        }
+
+        $.checkDownloadFileCompletely = function () {
+
+            var cookieValue = $.getCookie('DownloadedArrivals');
+            console.log(cookieValue + "---> Cookie Value;");
+            //alert(console.log(cookieValue + "---> Cookie Value;")); //changed by mohamed on 09/12/2018
+            if (cookieValue == 'True') {
+                $.removeCookie('Downloaded');
+                clearInterval(intervalProgress);
+                HideProgess();
+            }
+        }
+
+        /* get cookie from document.cookie */
+        $.getCookie = function (cookieName) {
+
+            var cookieValue = document.cookie;
+            var c_start = cookieValue.indexOf(" " + cookieName + "=");
+            if (c_start == -1) {
+                c_start = cookieValue.indexOf(cookieName + "=");
+            }
+            if (c_start == -1) {
+                cookieValue = null;
+            }
+            else {
+                c_start = cookieValue.indexOf("=", c_start) + 1;
+                var c_end = cookieValue.indexOf(";", c_start);
+                if (c_end == -1) {
+                    c_end = cookieValue.length;
+                }
+                cookieValue = unescape(cookieValue.substring(c_start, c_end));
+            }
+            return cookieValue;
+        }
+
+        /* Remove cookie in document.cookie */
+        $.removeCookie = function (cookieName) {
+            var cookies = document.cookie.split(";");
+
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i];
+                var eqPos = cookie.indexOf("=");
+                var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                if (name == cookieName) {
+                    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                }
+            }
+        }
+
+
+        var prm = Sys.WebForms.PageRequestManager.getInstance();
+        prm.add_initializeRequest(InitializeRequestUserControl);
+        prm.add_endRequest(EndRequestUserControl);
+
+        function InitializeRequestUserControl(sender, args) {
+
+        }
+
+        function EndRequestUserControl(sender, args) {
+            Txt_LocationNameKeyUp();
+            AgentsAutoCompleteExtenderKeyUp();
+            HotelsAutoCompleteExtenderKeyUp();
+            FlightCodesAutoCompleteExtenderKeyUp();
+            Txt_AirportNameKeyUp();
+            Txt_ServiceName_KeyUp(); //changed by mohamed on 01/01/2019
+
+            CustomerGroupAutoCompleteExtenderKeyUp(); //             '*** Danny 08/12/2018 
+            HotelChainGroupAutoCompleteExtenderKeyUp();
+        }
+
+        function DateSelectCalExt1() {
+            var txtfromDate = document.getElementById("<%=txtfromDate.ClientID%>");
+            if (txtfromDate.value != '') {
+                var calendarBehavior1 = $find("<%=dpFromDate.ClientID %>");  // document.getElementById("<%=dpFromDate.ClientID%>"); 
+                var date = calendarBehavior1._selectedDate;
+
+                var dp = txtfromDate.value.split("/");
+                var newDt = new Date(dp[2] + "/" + dp[1] + "/" + dp[0]);
+                newDt = getFormatedDate(newDt);
+                newDt = new Date(newDt);
+                calendarBehavior1.set_selectedDate(newDt);
+            }
+            var txtfromDate2 = document.getElementById("<%=txtToDate.ClientID%>");
+            if (txtfromDate2.value != '') {
+                var calendarBehavior2 = $find("<%=dpToDate.ClientID %>");  // document.getElementById("<%=dpFromDate.ClientID%>"); 
+                var date2 = calendarBehavior2._selectedDate;
+
+                var dp2 = txtfromDate2.value.split("/");
+                var newDt2 = new Date(dp2[2] + "/" + dp2[1] + "/" + dp2[0]);
+                newDt2 = getFormatedDate(newDt2);
+                newDt2 = new Date(newDt2);
+                calendarBehavior2.set_selectedDate(newDt2);
+            }
+
+        }
+        function getFormatedDate(chkdate) {
+            var dd = chkdate.getDate();
+            var mm = chkdate.getMonth() + 1; //January is 0!
+            var yyyy = chkdate.getFullYear();
+            if (dd < 10) { dd = '0' + dd };
+            if (mm < 10) { mm = '0' + mm };
+            chkdate = mm + '/' + dd + '/' + yyyy;
+            return chkdate;
+        }
+
+        function filltodate(fDate) {
+            var txtfromDate = document.getElementById("<%=txtFromDate.ClientID%>");
+            var txtToDate = document.getElementById("<%=txtToDate.ClientID%>");
+
+            if ((txtToDate.value != null) && (txtToDate.value != '')) {
+
+                var dpTo = txtToDate.value.split("/");
+
+                var newDtTo = new Date(dpTo[2] + "/" + dpTo[1] + "/" + dpTo[0]);
+                var today = new Date();
+
+                newDtTo = getFormatedDate(newDtTo);
+                today = getFormatedDate(today);
+                newDtTo = new Date(newDtTo);
+                today = new Date(today);
+
+                var dp = txtfromDate.value.split("/");
+                var newDt = new Date(dp[2] + "/" + dp[1] + "/" + dp[0]);
+                newDt = getFormatedDate(newDt);
+                newDt = new Date(newDt);
+
+                if (newDt > newDtTo) {
+
+                    txtToDate.value = txtfromDate.value;
+                    DateSelectCalExt1();
+                    return;
+                }
+
+            }
+            if ((txtToDate.value == null) || (txtToDate.value == '')) {
+                txtToDate.value = txtfromDate.value;
+                DateSelectCalExt1();
+                return;
+            }
+        }
+
+        function fillfromdate(fDate) {
+            var txtfromDate = document.getElementById("<%=txtFromDate.ClientID%>");
+            var txtToDate = document.getElementById("<%=txtToDate.ClientID%>");
+
+            if ((txtToDate.value != null) && (txtToDate.value != '') && (txtfromDate.value != null) && (txtfromDate.value != '')) {
+
+                var dpTo = txtToDate.value.split("/");
+
+                var newDtTo = new Date(dpTo[2] + "/" + dpTo[1] + "/" + dpTo[0]);
+                var today = new Date();
+
+                newDtTo = getFormatedDate(newDtTo);
+                today = getFormatedDate(today);
+                newDtTo = new Date(newDtTo);
+                today = new Date(today);
+
+                var dp = txtfromDate.value.split("/");
+                var newDt = new Date(dp[2] + "/" + dp[1] + "/" + dp[0]);
+                newDt = getFormatedDate(newDt);
+                newDt = new Date(newDt);
+                if (newDtTo < newDt) {
+                    txtfromDate.value = txtToDate.value;
+                    DateSelectCalExt1();
+                    return;
+                }
+
+            }
+        }
+
+        function Txt_LocationCode_Selected(source, eventArgs) {
+
+            if (eventArgs != null) {
+                document.getElementById('<%=Txt_LocationCode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=Txt_LocationCode.ClientID%>').value = '';
+            }
+        }
+
+        function TxtHotelName_Selected(source, eventArgs) {
+            if (eventArgs != null) {
+                document.getElementById('<%=TxtHotelCode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=TxtHotelCode.ClientID%>').value = '';
+            }
+        }
+        //         '*** Danny 08/12/2018 
+        function Txt_CustomerGroup_Selected(source, eventArgs) {
+            if (eventArgs != null) {
+                document.getElementById('<%=Txt_CustomerGroupCode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=Txt_CustomerGroupCode.ClientID%>').value = '';
+            }
+        }
+        function Txt_HotelChain_Selected(source, eventArgs) {
+            if (eventArgs != null) {
+                document.getElementById('<%=Txt_HotelChainCode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=Txt_HotelChainCode.ClientID%>').value = '';
+            }
+        }
+        function HotelChainGroupAutoCompleteExtenderKeyUp() {
+            $("#<%= Txt_HotelChain.ClientID %>").bind("change", function () {
+                if (document.getElementById('<%=Txt_HotelChain.ClientID%>').value == '') {
+                    document.getElementById('<%=Txt_HotelChainCode.ClientID%>').value = '';
+                }
+            });
+
+            $("#<%= TxtHotelName.ClientID %>").keyup(function (event) {
+                if (document.getElementById('<%=Txt_HotelChain.ClientID%>').value == '') {
+                    document.getElementById('<%=Txt_HotelChainCode.ClientID%>').value = '';
+                }
+            });
+        }
+        function CustomerGroupAutoCompleteExtenderKeyUp() {
+            $("#<%= Txt_CustomerGroup.ClientID %>").bind("change", function () {
+                if (document.getElementById('<%=Txt_CustomerGroup.ClientID%>').value == '') {
+                    document.getElementById('<%=Txt_CustomerGroupCode.ClientID%>').value = '';
+                }
+            });
+
+            $("#<%= TxtHotelName.ClientID %>").keyup(function (event) {
+                if (document.getElementById('<%=Txt_CustomerGroup.ClientID%>').value == '') {
+                    document.getElementById('<%=Txt_CustomerGroupCode.ClientID%>').value = '';
+                }
+            });
+        }
+        function TxtAgentName_Selected(source, eventArgs) {
+            if (eventArgs != null) {
+                document.getElementById('<%=TxtAgentCode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=TxtAgentCode.ClientID%>').value = '';
+            }
+        }
+
+        function Txt_AirportName_Selected(source, eventArgs) {
+            if (eventArgs != null) {
+                document.getElementById('<%=Txt_AirportCode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=Txt_AirportCode.ClientID%>').value = '';
+            }
+        }
+
+        function flightcodesautocompleteselected(source, eventArgs) {
+            if (eventArgs != null) {
+                document.getElementById('<%=TxtFlightCode.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=TxtFlightCode.ClientID%>').value = '';
+            }
+        }
+
+        function Txt_LocationNameKeyUp() {
+            $("#<%= Txt_LocationName.ClientID %>").bind("change", function () {
+                if (document.getElementById('<%=Txt_LocationName.ClientID%>').value == '') {
+                    document.getElementById('<%=Txt_LocationCode.ClientID%>').value = '';
+                }
+            });
+
+            $("#<%= Txt_LocationName.ClientID %>").keyup(function (event) {
+                if (document.getElementById('<%=Txt_LocationName.ClientID%>').value == '') {
+                    document.getElementById('<%=Txt_LocationCode.ClientID%>').value = '';
+                }
+            });
+        }
+
+        function AgentsAutoCompleteExtenderKeyUp() {
+            $("#<%= TxtAgentName.ClientID %>").bind("change", function () {
+                if (document.getElementById('<%=TxtAgentName.ClientID%>').value == '') {
+                    document.getElementById('<%=TxtAgentCode.ClientID%>').value = '';
+                }
+            });
+
+            $("#<%= TxtAgentName.ClientID %>").keyup(function (event) {
+                if (document.getElementById('<%=TxtAgentName.ClientID%>').value == '') {
+                    document.getElementById('<%=TxtAgentCode.ClientID%>').value = '';
+                }
+            });
+        }
+
+        function HotelsAutoCompleteExtenderKeyUp() {
+            $("#<%= TxtHotelName.ClientID %>").bind("change", function () {
+                if (document.getElementById('<%=TxtHotelName.ClientID%>').value == '') {
+                    document.getElementById('<%=TxtHotelCode.ClientID%>').value = '';
+                }
+            });
+
+            $("#<%= TxtHotelName.ClientID %>").keyup(function (event) {
+                if (document.getElementById('<%=TxtHotelName.ClientID%>').value == '') {
+                    document.getElementById('<%=TxtHotelCode.ClientID%>').value = '';
+                }
+            });
+        }
+
+        function Txt_AirportNameKeyUp() {
+            $("#<%= Txt_AirportName.ClientID %>").bind("change", function () {
+                if (document.getElementById('<%=Txt_AirportName.ClientID%>').value == '') {
+                    document.getElementById('<%=Txt_AirportCode.ClientID%>').value = '';
+                }
+            });
+
+            $("#<%= Txt_AirportName.ClientID %>").keyup(function (event) {
+                if (document.getElementById('<%=Txt_AirportName.ClientID%>').value == '') {
+                    document.getElementById('<%=Txt_AirportCode.ClientID%>').value = '';
+                }
+            });
+        }
+
+        function FlightCodesAutoCompleteExtenderKeyUp() {
+            $("#<%= TxtFlightName.ClientID %>").bind("change", function () {
+                if (document.getElementById('<%=TxtFlightName.ClientID%>').value == '') {
+                    document.getElementById('<%=TxtFlightCode.ClientID%>').value = '';
+                }
+            });
+
+            $("#<%= TxtFlightName.ClientID %>").keyup(function (event) {
+                if (document.getElementById('<%=TxtFlightName.ClientID%>').value == '') {
+                    document.getElementById('<%=TxtFlightCode.ClientID%>').value = '';
+                }
+            });
+        }
+
+        function Txt_ServiceName_Selected(source, eventArgs) { //changed by mohamed on 01/01/2019
+            if (eventArgs != null) {
+                document.getElementById('<%=Txt_ServiceName_code.ClientID%>').value = eventArgs.get_value();
+            }
+            else {
+                document.getElementById('<%=Txt_ServiceName_code.ClientID%>').value = '';
+            }
+
+            SetServiceContextkey()
+        }
+        function Txt_ServiceName_KeyUp() { //changed by mohamed on 01/01/2019
+            $("#<%=Txt_ServiceName.ClientID %>").bind("change", function () {
+                var destName = document.getElementById('<%=Txt_ServiceName.ClientID%>');
+                if (destName.value == '') {
+                    document.getElementById('<%=Txt_ServiceName_code.ClientID%>').value = '';
+
+                }
+            });
+
+        }
+        function SetServiceContextkey() { //changed by mohamed on 01/01/2019
+            //            var dc = document.getElementById('< %=Txt_ServiceCode.ClientID%>').value;
+            //            var contxt = '';
+            //            if (dc != '') {
+            //                if (contxt != '') {
+            //                    contxt = contxt + '||' + 'DC:' + dc;
+            //                }
+            //                else {
+            //                    contxt = 'DC:' + dc;
+            //                }
+
+            //            }
+            //            $find('< %=AutoCompleteExtender_Txt_ServiceName.ClientID%>').set_contextKey(contxt);
+
+        }
+    </script>
+    <style>
+        .b
+        {
+            font-weight: 700;
+        }
+    </style>
+    <asp:HiddenField ID="hdmealcode" runat="server" />
+    <table style="border: 2px solid gray; width: 1200px; height: 156px;">
+        <tr style="padding-top: 10px; padding-left: 10px;">
+            <td align="center" colspan="5">
+                <asp:Label ID="lblHeading" runat="server" Text="OPERATIONS REPORT" CssClass="field_heading"
+                    Width="100%" Height="15px"></asp:Label>
+            </td>
+        </tr>
+        <tr style="padding-top: 10px; padding-left: 10px;">
+            <td class="td_cell b" style="padding-top: 15px; padding-left: 15px; width: 81px;
+                height: 25px;">
+                From<span style="color: #ff0000"> <span class="td_cell">*</span></span>
+            </td>
+            <td class="td_cell" style="padding-top: 15px; padding-left: 15px;">
+                <asp:TextBox ID="txtFromDate" runat="server" onchange="filltodate(this);" Width="100px"></asp:TextBox>
+                <asp:ImageButton ID="ImgBtnFrmDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                    TabIndex="2" />
+                <cc1:CalendarExtender ID="dpFromDate" runat="server" Format="dd/MM/yyyy" OnClientDateSelectionChanged="DateSelectCalExt1"
+                    PopupButtonID="ImgBtnFrmDt" PopupPosition="Right" TargetControlID="txtFromDate">
+                </cc1:CalendarExtender>
+                <cc1:MaskedEditExtender ID="MeFromDate" runat="server" Mask="99/99/9999" MaskType="Date"
+                    TargetControlID="txtFromDate"></cc1:MaskedEditExtender>
+                <cc1:MaskedEditValidator ID="MevFromDate" runat="server" ControlExtender="MeFromDate"
+                    ControlToValidate="txtFromDate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                    EmptyValueMessage="Date is required" ErrorMessage="MeFromDate" InvalidValueBlurredMessage="Invalid Date"
+                    InvalidValueMessage="Invalid Date" TooltipMessage="Input a Date in Date/Month/Year">
+                </cc1:MaskedEditValidator>
+            </td>
+            <td class="td_cell b" style="padding-top: 15px; padding-left: 15px; width: 81px">
+                To<span style="color: #ff0000"> <span class="td_cell">*</span>
+            </td>
+            <td class="td_cell" style="padding-top: 15px; padding-left: 15px; width: 181px">
+                <asp:TextBox ID="txtToDate" TabIndex="1" runat="server" onchange="fillfromdate(this);"
+                    Width="100px"></asp:TextBox>
+                <asp:ImageButton ID="ImgBtnToDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                    TabIndex="2" />
+                <cc1:CalendarExtender ID="dpToDate" runat="server" Format="dd/MM/yyyy" OnClientDateSelectionChanged="DateSelectCalExt1"
+                    PopupButtonID="ImgBtnToDt" PopupPosition="Right" TargetControlID="txtToDate">
+                </cc1:CalendarExtender>
+                <cc1:MaskedEditExtender ID="MeToDate" runat="server" Mask="99/99/9999" MaskType="Date"
+                    TargetControlID="txtToDate"></cc1:MaskedEditExtender>
+                <cc1:MaskedEditValidator ID="MevToDate" runat="server" ControlExtender="MeToDate"
+                    ControlToValidate="txtToDate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                    EmptyValueMessage="Date is required" ErrorMessage="MeToDate" InvalidValueBlurredMessage="Invalid Date"
+                    InvalidValueMessage="Invalid Date" TooltipMessage="Input a Date in Date/Month/Year">
+                </cc1:MaskedEditValidator>
+            </td>
+        </tr>
+        <tr>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px">
+                Booking No
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:TextBox ID="Txt_BookinNo" runat="server" CssClass="field_input" MaxLength="25"
+                    TabIndex="0" Width="297px"></asp:TextBox>
+            </td>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                Old Booking Ref
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:TextBox ID="Txt_OldBookinRef" runat="server" CssClass="field_input" MaxLength="25"
+                    TabIndex="3" Width="297px"></asp:TextBox>
+            </td>
+        </tr>
+        <tr>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px">
+                Service
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:DropDownList ID="ddlServiceName" runat="server" AutoPostBack="true">
+                    <asp:ListItem Text="ALL" Value="ALL" Selected="True"></asp:ListItem>
+                    <asp:ListItem Text="HOTEL" Value="HOTEL"></asp:ListItem>
+                    <asp:ListItem Text="TRANSFER" Value="TRANSFER"></asp:ListItem>
+                    <asp:ListItem Text="AIRPORTMA" Value="AIRPORTMA"></asp:ListItem>
+                    <asp:ListItem Text="TOURS" Value="TOURS"></asp:ListItem>
+                    <asp:ListItem Text="OTHERS" Value="OTHERS"></asp:ListItem>
+                    <asp:ListItem Text="VISA" Value="VISA"></asp:ListItem>
+                    <asp:ListItem Text="TRANSFER & Car Rental" Value="TRANSFER,TOURS"></asp:ListItem>
+                </asp:DropDownList>
+                <asp:TextBox ID="Txt_ServiceCode" runat="server" Style="display: none"></asp:TextBox>
+                <asp:Button ID="btn_ServiceName" TabIndex="14" runat="server" Text="Load Report"
+                    Style="display: none;" CssClass="field_button"></asp:Button>
+            </td>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                Service Name
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:TextBox CssClass="field_input" ID="Txt_ServiceName" TabIndex="3" runat="server"
+                    Width="95%"></asp:TextBox>
+                <asp:TextBox ID="Txt_ServiceName_code" runat="server" Style="display: none"></asp:TextBox>
+                <asp:AutoCompleteExtender ID="AutoCompleteExtender_Txt_ServiceName" runat="server"
+                    CompletionInterval="10" CompletionListCssClass="autocomplete_completionListElement"
+                    CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem" CompletionListItemCssClass="autocomplete_listItem"
+                    CompletionSetCount="1" DelimiterCharacters="" EnableCaching="false" Enabled="True"
+                    FirstRowSelected="false" MinimumPrefixLength="0" ServiceMethod="GetServiceName"
+                    UseContextKey="true" TargetControlID="Txt_ServiceName" OnClientItemSelected="Txt_ServiceName_Selected">
+                </asp:AutoCompleteExtender>
+            </td>
+        </tr>
+        <tr>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                Service Classification
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <table>
+                    <tr>
+                        <td>
+                            <div style="overflow-y: auto; height: 100px;">
+                                <asp:GridView ID="gv_ServiceClassifications" runat="server" AutoGenerateColumns="False">
+                                    <Columns>
+                                        <asp:TemplateField>
+                                            <HeaderStyle HorizontalAlign="Left" BackColor="#06788B" ForeColor="White" Width="2%" />
+                                            <HeaderTemplate>
+                                                <asp:CheckBox ID="clschkSelectAll" CssClass="clschkHeader" runat="server" Width="51px"
+                                                    Text="All" />
+                                            </HeaderTemplate>
+                                            <ItemTemplate>
+                                                <asp:CheckBox ID="clschkwkdays" CssClass="clschkItem" runat="server" AutoPostBack="true"
+                                                    OnCheckedChanged="chkApproved_CheckedChanged" />
+                                            </ItemTemplate>
+                                            <HeaderStyle HorizontalAlign="Center" Width="60px" />
+                                            <ItemStyle HorizontalAlign="Center" Width="60px" />
+                                        </asp:TemplateField>
+                                        <asp:TemplateField HeaderText="ClassificationsID" Visible="False">
+                                            <HeaderStyle HorizontalAlign="Left" Wrap="False" BackColor="#06788B" />
+                                            <ItemTemplate>
+                                                <asp:Label ID="ServiceCode" runat="server" Text='<%# Bind("ServiceCode") %>'></asp:Label>
+                                            </ItemTemplate>
+                                        </asp:TemplateField>
+                                        <asp:TemplateField HeaderText="Classifications">
+                                            <HeaderStyle HorizontalAlign="Left" Wrap="False" BackColor="#06788B" ForeColor="White" />
+                                            <ItemTemplate>
+                                                <asp:Label ID="ServiceName" runat="server" Text='<%# Bind("ServiceName") %>'></asp:Label>
+                                            </ItemTemplate>
+                                        </asp:TemplateField>
+                                    </Columns>
+                                </asp:GridView>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <asp:DropDownList ID="ddl_ServiceClassifications" runat="server" multiple="multiple"
+                    EnableViewState="true" Style="width: 181px; display: none;">
+                </asp:DropDownList>
+            </td>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px">
+                Location
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:TextBox ID="Txt_LocationCode" runat="server" Style="display: none"></asp:TextBox>
+                <asp:TextBox ID="Txt_LocationName" runat="server" Style="display: none" CssClass="field_input"
+                    MaxLength="25" TabIndex="5" Width="297px"></asp:TextBox>
+                <asp:AutoCompleteExtender ID="AutoCompleteExtender_Txt_LocationName" runat="server"
+                    CompletionInterval="10" CompletionListCssClass="autocomplete_completionListElement"
+                    CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem" CompletionListItemCssClass="autocomplete_listItem"
+                    CompletionSetCount="1" DelimiterCharacters="" EnableCaching="false" Enabled="True"
+                    FirstRowSelected="false" MinimumPrefixLength="0" ServiceMethod="GetLocation"
+                    TargetControlID="Txt_LocationName" OnClientItemSelected="Txt_LocationCode_Selected">
+                </asp:AutoCompleteExtender>
+                <div style="overflow-y: auto; height: 100px;">
+                    <asp:GridView ID="gv_Location" runat="server" AutoGenerateColumns="False">
+                        <Columns>
+                            <asp:TemplateField>
+                                <HeaderStyle HorizontalAlign="Left" BackColor="#06788B" ForeColor="White" />
+                                <HeaderTemplate>
+                                    <asp:CheckBox ID="chkSelectAll" CssClass="chkHeader" runat="server" Width="51px"
+                                        Text="All" />
+                                </HeaderTemplate>
+                                <ItemTemplate>
+                                    <asp:CheckBox ID="chkwkdays" CssClass="chkItem" runat="server" />
+                                </ItemTemplate>
+                                <HeaderStyle HorizontalAlign="Center" Width="60px" />
+                                <ItemStyle HorizontalAlign="Center" Width="60px" />
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="ClassificationsID" Visible="False">
+                                <HeaderStyle HorizontalAlign="Left" Wrap="False" BackColor="#06788B" />
+                                <ItemTemplate>
+                                    <asp:Label ID="ServiceCode" runat="server" Text='<%# Bind("othtypcode") %>'></asp:Label>
+                                </ItemTemplate>
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="Location">
+                                <HeaderStyle HorizontalAlign="Left" Wrap="False" BackColor="#06788B" ForeColor="White" />
+                                <ItemTemplate>
+                                    <asp:Label ID="ServiceName" runat="server" Width="100%" Text='<%# Bind("othtypname") %>'></asp:Label>
+                                </ItemTemplate>
+                            </asp:TemplateField>
+                        </Columns>
+                    </asp:GridView>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                Supplier
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:TextBox ID="TxtHotelName" runat="server" CssClass="field_input" MaxLength="25"
+                    TabIndex="6" Width="297px"></asp:TextBox>
+                <asp:TextBox ID="TxtHotelCode" runat="server" Style="display: none"></asp:TextBox>
+                <asp:AutoCompleteExtender ID="AutoCompleteExtender_TxtHotelName" runat="server" CompletionInterval="10"
+                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                    ServiceMethod="GetHotels" TargetControlID="TxtHotelName" OnClientItemSelected="TxtHotelName_Selected">
+                </asp:AutoCompleteExtender>
+            </td>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px">
+                Agent
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:TextBox ID="TxtAgentCode" runat="server" Style="display: none"></asp:TextBox>
+                <asp:TextBox ID="TxtAgentName" runat="server" CssClass="field_input" MaxLength="25"
+                    TabIndex="5" Width="297px"></asp:TextBox>
+                <asp:AutoCompleteExtender ID="AutoCompleteExtender_TxtAgentName" runat="server" CompletionInterval="10"
+                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                    ServiceMethod="GetAgents" TargetControlID="TxtAgentName" OnClientItemSelected="TxtAgentName_Selected">
+                </asp:AutoCompleteExtender>
+            </td>
+        </tr>
+        <tr>
+         <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                Supplier Chain
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+               <asp:TextBox ID="Txt_HotelChain" runat="server" CssClass="field_input" MaxLength="25"
+                    TabIndex="6" Width="297px"></asp:TextBox>
+                <asp:TextBox ID="Txt_HotelChainCode" runat="server" Style="display: none"></asp:TextBox>
+                <asp:AutoCompleteExtender ID="AutoCompleteExtender_Txt_HotelChain" runat="server" CompletionInterval="10"
+                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                    ServiceMethod="GetHotelChain" TargetControlID="Txt_HotelChain" OnClientItemSelected="Txt_HotelChain_Selected">
+                </asp:AutoCompleteExtender>
+            </td>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                Agent Group
+            </td>            
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:TextBox ID="Txt_CustomerGroup" runat="server" CssClass="field_input" MaxLength="25"
+                    TabIndex="6" Width="297px"></asp:TextBox>
+                <asp:TextBox ID="Txt_CustomerGroupCode" runat="server" Style="display: none"></asp:TextBox>
+                <asp:AutoCompleteExtender ID="AutoCompleteExtender_Txt_CustomerGroup" runat="server" CompletionInterval="10"
+                    CompletionListCssClass="autocomplete_completionListElement" CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem"
+                    CompletionListItemCssClass="autocomplete_listItem" CompletionSetCount="1" DelimiterCharacters=""
+                    EnableCaching="false" Enabled="True" FirstRowSelected="false" MinimumPrefixLength="0"
+                    ServiceMethod="GetAgentGroups" TargetControlID="Txt_CustomerGroup" OnClientItemSelected="Txt_CustomerGroup_Selected">
+                </asp:AutoCompleteExtender>
+            </td>
+           
+        </tr>
+        <tr>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px">
+                Airports
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:TextBox ID="Txt_AirportCode" runat="server" Style="display: none"></asp:TextBox>
+                <asp:TextBox ID="Txt_AirportName" runat="server" CssClass="field_input" MaxLength="25"
+                    TabIndex="8" Width="297px"></asp:TextBox>
+                <asp:AutoCompleteExtender ID="AutoCompleteExtender_Txt_AirportName" runat="server"
+                    CompletionInterval="10" CompletionListCssClass="autocomplete_completionListElement"
+                    CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem" CompletionListItemCssClass="autocomplete_listItem"
+                    CompletionSetCount="1" DelimiterCharacters="" EnableCaching="false" Enabled="True"
+                    FirstRowSelected="false" MinimumPrefixLength="0" ServiceMethod="GetAirports"
+                    TargetControlID="Txt_AirportName" OnClientItemSelected="Txt_AirportName_Selected">
+                </asp:AutoCompleteExtender>
+            </td>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px">
+                Flight
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:TextBox ID="TxtFlightCode" runat="server" Style="display: none"></asp:TextBox>
+                <asp:TextBox ID="TxtFlightName" runat="server" CssClass="field_input" MaxLength="25"
+                    TabIndex="8" Width="297px"></asp:TextBox>
+                <asp:AutoCompleteExtender ID="TxtFlightName_AutoCompleteExtender" runat="server"
+                    CompletionInterval="10" CompletionListCssClass="autocomplete_completionListElement"
+                    CompletionListHighlightedItemCssClass="autocomplete_highlightedListItem" CompletionListItemCssClass="autocomplete_listItem"
+                    CompletionSetCount="1" DelimiterCharacters="" EnableCaching="false" Enabled="True"
+                    FirstRowSelected="false" MinimumPrefixLength="0" ServiceMethod="GetFlightDetails"
+                    TargetControlID="TxtFlightName" OnClientItemSelected="flightcodesautocompleteselected">
+                </asp:AutoCompleteExtender>
+            </td>
+        </tr>
+        <tr>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                Service Status
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:DropDownList ID="ddlBookingStatus" Width="300px" runat="server">
+                    <asp:ListItem>All Active Bookings</asp:ListItem>
+                    <asp:ListItem>All</asp:ListItem>
+                    <asp:ListItem>Confirmed bookings</asp:ListItem>
+                    <asp:ListItem>On request bookings</asp:ListItem>
+                    <%--<asp:ListItem>Amended bookings</asp:ListItem>--%>
+                    <asp:ListItem>Cancelled bookings</asp:ListItem>
+                </asp:DropDownList>
+            </td>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                Agent Ref
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:TextBox ID="Txt_AgentRef" runat="server" CssClass="field_input" MaxLength="25"
+                    TabIndex="3" Width="297px"></asp:TextBox>
+            </td>
+        </tr>
+        <tr>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                Booking Status
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+                <asp:DropDownList ID="ddlBookingStatusManual" class="custom-select custom-select-BookingStatusManual"
+                                                    Style="text-transform: uppercase;" runat="server" >
+                                                    <asp:ListItem Text="All Booking Except Cancelled" Value="ALLEXCCAN" Selected="True"></asp:ListItem>
+                                                </asp:DropDownList>
+            </td>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+               
+            </td>
+        </tr>
+        <tr>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                Booking Date
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+               <asp:DropDownList ID="ddlBookingDate" TabIndex="8" class="field_input"  Style="text-transform: uppercase;"
+                                            runat="server" AutoPostBack="true">
+                                            <asp:ListItem>Any Dates</asp:ListItem>
+                                            <asp:ListItem>Specific date</asp:ListItem>                                            
+                                        </asp:DropDownList>
+            </td>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+              
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+               
+            </td>
+        </tr>
+       
+         <tr>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                <asp:label id="lblBookingFromDate" runat="server" style="font-weight:700;" visible="false" class="field_caption">Booking From date</asp:label>
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+               <div id="dvBookingFromDate" runat="server" visible="false">
+                            <asp:TextBox CssClass="field_input" ID="txtBookingFromDate" class="field_input" runat="server"  onchange="fillBookingTodate(this);"></asp:TextBox>
+                                        <asp:CalendarExtender ID="BookingFromDate_CalendarExtender" runat="server" Format="dd/MM/yyyy" PopupButtonID="ImgBtnBookingFromDate" 
+                                        OnClientDateSelectionChanged="BookingDateSelectCalExt" PopupPosition="Right" TargetControlID="txtBookingFromDate">
+                                        </asp:CalendarExtender>
+                                        <asp:MaskedEditExtender ID="BookingFromDate_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                            MaskType="Date" TargetControlID="txtBookingFromDate">
+                                        </asp:MaskedEditExtender>
+                                        <asp:ImageButton ID="ImgBtnBookingFromDate" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                                            TabIndex="-1" />
+                                        <asp:MaskedEditValidator ID="BookingFromDate_mev" runat="server" ControlExtender="BookingFromDate_MaskedEditExtender"
+                                            ControlToValidate="txtBookingFromDate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                            EmptyValueMessage="Date is required" ErrorMessage="BookingFromDate_MaskedEditExtender"
+                                            InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                            TooltipMessage="Date/Month/Year">
+                                        </asp:MaskedEditValidator>
+                                        </div>
+            </td>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+               <asp:label id="lblBookingToDate" runat="server"  style="font-weight:700;" visible="false" class="field_caption">Booking To Date</asp:label>
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+               <div class="divCol"  id="dvBookingToDate" runat="server" visible="false">
+                            <asp:TextBox CssClass="field_input" ID="txtBookingToDate" class="field_input" runat="server"  onchange="ValidateBookingDate();"></asp:TextBox>
+                                        <asp:CalendarExtender ID="BookingToDate_CalendarExtender" runat="server" Format="dd/MM/yyyy" PopupButtonID="ImgBtnBookingToDate" 
+                                        OnClientDateSelectionChanged="BookingDateSelectCalExt" PopupPosition="Right" TargetControlID="txtBookingToDate">
+                                        </asp:CalendarExtender>
+                                        <asp:MaskedEditExtender ID="BookingToDate_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                            MaskType="Date" TargetControlID="txtBookingToDate">
+                                        </asp:MaskedEditExtender>
+                                        <asp:ImageButton ID="ImgBtnBookingToDate" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                                            TabIndex="-1" />
+                                        <asp:MaskedEditValidator ID="BookingToDate_mev" runat="server" ControlExtender="BookingToDate_MaskedEditExtender"
+                                            ControlToValidate="txtBookingToDate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                            EmptyValueMessage="Date is required" ErrorMessage="BookingToDate_MaskedEditExtender"
+                                            InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                            TooltipMessage="Date/Month/Year">
+                                        </asp:MaskedEditValidator>
+                                        </div>
+            </td>
+        </tr>
+         <tr>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                Service Modify Date
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+               <asp:DropDownList ID="ddl_ServiceModifyDate" TabIndex="8" class="field_input"  Style="text-transform: uppercase;"
+                                            runat="server" AutoPostBack="true">
+                                            <asp:ListItem>Any Dates</asp:ListItem>
+                                            <asp:ListItem>Specific date</asp:ListItem>                                            
+                                        </asp:DropDownList>
+            </td>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+              
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+               
+            </td>
+        </tr>
+        <%-- '*** Danny 11/12/2018 --%>
+         <tr>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+                <asp:label id="lbl_ServiceModifyFromDate" runat="server" style="font-weight:700;" visible="false" class="field_caption">Service Modify From date</asp:label>
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+               <div id="dvServiceModifyFromDate" runat="server" visible="false">
+                            <asp:TextBox CssClass="field_input" ID="txtServiceModifyFromDate" class="field_input" runat="server"  onchange="fillServiceModifyTodate(this);"></asp:TextBox>
+                                        <asp:CalendarExtender ID="ServiceModifyFromDate_CalendarExtender" runat="server" Format="dd/MM/yyyy" PopupButtonID="ImgBtnServiceModifyFromDate" 
+                                        OnClientDateSelectionChanged="ServiceModifyDateSelectCalExt" PopupPosition="Right" TargetControlID="txtServiceModifyFromDate">
+                                        </asp:CalendarExtender>
+                                        <asp:MaskedEditExtender ID="ServiceModifyFromDate_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                            MaskType="Date" TargetControlID="txtServiceModifyFromDate">
+                                        </asp:MaskedEditExtender>
+                                        <asp:ImageButton ID="ImgBtnServiceModifyFromDate" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                                            TabIndex="-1" />
+                                        <asp:MaskedEditValidator ID="ServiceModifyFromDate_mev" runat="server" ControlExtender="ServiceModifyFromDate_MaskedEditExtender"
+                                            ControlToValidate="txtServiceModifyFromDate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                            EmptyValueMessage="Date is required" ErrorMessage="ServiceModifyFromDate_MaskedEditExtender"
+                                            InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                            TooltipMessage="Date/Month/Year">
+                                        </asp:MaskedEditValidator>
+                                        </div>
+            </td>
+            <td class="td_cell b" style="padding-left: 15px; width: 81px; height: 25px;">
+               <asp:label id="lblServiceModifyToDate" runat="server"  style="font-weight:700;" visible="false" class="field_caption">Service Modify To Date</asp:label>
+            </td>
+            <td class="td_cell" style="padding-left: 15px; width: 181px">
+               <div class="divCol"  id="dvServiceModifyToDate" runat="server" visible="false">
+                            <asp:TextBox CssClass="field_input" ID="txtServiceModifyToDate" class="field_input" runat="server"  onchange="ValidateServiceModifyDate();"></asp:TextBox>
+                                        <asp:CalendarExtender ID="ServiceModifyToDate_CalendarExtender" runat="server" Format="dd/MM/yyyy" PopupButtonID="ImgBtnServiceModifyToDate" 
+                                        OnClientDateSelectionChanged="ServiceModifyDateSelectCalExt" PopupPosition="Right" TargetControlID="txtServiceModifyToDate">
+                                        </asp:CalendarExtender>
+                                        <asp:MaskedEditExtender ID="ServiceModifyToDate_MaskedEditExtender" runat="server" Mask="99/99/9999"
+                                            MaskType="Date" TargetControlID="txtServiceModifyToDate">
+                                        </asp:MaskedEditExtender>
+                                        <asp:ImageButton ID="ImgBtnServiceModifyToDate" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png"
+                                            TabIndex="-1" />
+                                        <asp:MaskedEditValidator ID="ServiceModifyToDate_mev" runat="server" ControlExtender="ServiceModifyToDate_MaskedEditExtender"
+                                            ControlToValidate="txtServiceModifyToDate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                            EmptyValueMessage="Date is required" ErrorMessage="ServiceModifyToDate_MaskedEditExtender"
+                                            InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date"
+                                            TooltipMessage="Date/Month/Year">
+                                        </asp:MaskedEditValidator>
+                                        </div>
+            </td>
+        </tr>
+        <tr>
+            <td class="td_cell b" style="padding-left: 10px; width: 81px; height: 25px;" colspan="4">
+                <asp:CheckBox ID="chk_SelfDrive" runat="server" Text="Self Drive Bookings only" />
+                <asp:CheckBox ID="chk_CarPickup" CssClass="clschkItemCR" Text="Car Pickup Only" runat="server" />
+                <asp:CheckBox ID="chk_CarDelivery" CssClass="clschkItemCR" Text="Car Delivery Only"
+                    runat="server" />
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4" align="center" class="td_cell" style="padding: 15px;">
+                <asp:Button ID="btnLoadReport" TabIndex="14" runat="server" OnClientClick=" ShowProgress()"
+                    Text="Load Report" CssClass="field_button"></asp:Button>
+            </td>
+        </tr>
+        <tr style="display: none">
+            <td style="width: 100%; padding: 10px 0px 12px 0px" align="center">
+                <asp:Button ID="Button1" runat="server" Text="Help" Font-Bold="False" CssClass="search_button"
+                    Style="display: none"></asp:Button>
+                &nbsp;&nbsp;<asp:Button ID="btnAddNew" runat="server" Text="Add New" Font-Bold="False"
+                    CssClass="btn" Style="display: none"></asp:Button>
+                <asp:Button ID="btnprint" runat="server" CssClass="btn" Font-Bold="False" Text="Export To Excel"
+                    Style="display: none" />
+                <asp:Button ID="btnExportToExcel" runat="server" CssClass="btn" Font-Bold="False"
+                    Text="Export To Excel" Style="display: none" />
+                <asp:GridView ID="gvSearchResult" runat="server" Style="display: none">
+                </asp:GridView>
+            </td>
+        </tr>
+    </table>
+    <center>
+        <div id="Loading1" runat="server" style="height: 150px; width: 500px; vertical-align: middle;">
+            <img alt="" id="Image1" runat="server" src="~/Images/loader-progressbar.gif" width="150" />
+            <h2 style="color: #06788B">
+                Processing please wait...</h2>
+        </div>
+    </center>
+    <asp:ModalPopupExtender ID="ModalPopupLoading" runat="server" BehaviorID="ModalPopupLoading"
+        TargetControlID="btnInvisibleLoading" CancelControlID="btnCloseLoading" PopupControlID="Loading1"
+        BackgroundCssClass="ModalPopupBG">
+    </asp:ModalPopupExtender>
+    <input id="btnInvisibleLoading" runat="server" type="button" value="Cancel" style="display: none" />
+    <input id="btnCloseLoading" runat="server" type="button" value="Cancel" style="display: none" />
+</asp:Content>
+

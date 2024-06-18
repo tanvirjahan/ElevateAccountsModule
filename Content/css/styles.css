@@ -1,0 +1,211 @@
+@charset "UTF-8";
+/* CSS Document */
+*{
+	outline:none;
+}
+html{
+	height:100%;
+}
+body{
+	height:100%;
+	min-height:100%;
+	padding:0;
+	margin:0;
+	background:url(../images/water.jpg) top center;
+	font-family:Verdana, Geneva, sans-serif;
+	font-size:12px;
+}
+a{
+	color:#ffffff;
+}
+div#container{
+	width:100%;
+	height:100%;
+	background:url(../images/grid.png);
+	position:relative;
+	overflow:hidden;
+}
+
+div#map{
+	width:1982px;
+	height: 974px;
+	position:absolute;
+	left:0px;
+	top:0px;
+	background:url(../images/map.png) no-repeat center center;
+}
+.contentHolderRel{
+	width:1982px;
+	height:974px;
+	position:relative;
+}
+
+.contentHolderAbs{
+	/*border:1px solid #ffffff;*/
+	width:960px;
+	height:550px;
+	position:absolute;
+	left:507px;
+	top:212px;
+}
+#loginBlock{
+	position:absolute;
+	width:250px;
+	height:243px;
+	left:163px;
+	bottom:4px;
+	color:#ffffff;	/*border:1px solid #ffffff;*/
+}
+.forgetSignUp{
+	width:231px;
+	font-size:11px;
+	float:left;
+	text-align:left;
+	width:120px;
+}
+.forgetSignUp a{
+	font-weight:bold;
+}
+#loginBlock h1{
+	font-family: 'Cuprum', arial, serif;
+	color:#ffffff;
+	height:21px;
+	padding:0;
+	margin:0 0 15px 0;
+	font-weight:normal;
+	text-shadow:1px 1px 2px #000000;
+	/*background:url(../images/agentLogin.png) no-repeat;*/
+}
+#logo{
+	position:absolute;
+	width:83px;
+	height:90px;
+	left:100px;
+	top:40px;
+	background:url(../images/logo.png) no-repeat;
+}
+#logoTitle{
+	width:262px;
+	height:40px;
+	position:absolute;
+	left:20px;
+	top:140px;
+	background:url(../images/logoTitle.png) center center no-repeat;
+}
+#loginBlock input{
+	color:#074575;
+}
+#loginBlock input[type='submit']{
+	color:#ffffff;
+}
+#loginBlock select{
+	width:112px;
+	margin-bottom:5px;
+}
+#loginBlock select option{
+	background:#e9e9e5;
+	border:none;
+	border-bottom:1px dotted #999999;
+}
+#loginBlock input[type='text'], #loginBlock input[type='password']{
+	width:221px;
+	height:20px;
+	background:url(../images/fieldBG.png) center center no-repeat;
+	border:none;
+	text-indent:5px;
+	margin:5px 0;
+	padding:7px 4px 3px 6px;
+}
+.type{
+	float:left;
+	width:115px;
+	padding-right:5px;
+}
+.type label{
+	display:none;
+}
+.user label{
+	display:none;
+}
+.password label{
+	display:none;
+}
+.remember label{
+	
+}
+.loginBtn {
+	text-align:right;
+	width:233px;
+	padding-top:3px;
+}
+.loginBtn input{
+	background:url(../images/loginBtn.png) no-repeat;
+	width:80px;
+	height:30px;
+	border:none;
+	color:#ffffff;
+	font-weight:bold;
+}
+.jordanNetwork{
+	width:45px;
+	height:63px;
+	background:url(../images/jordan_network.png) center center no-repeat;
+	right:362px;
+	bottom:387px;
+	position:absolute;
+}
+.uaeNetwork{
+	width:85px;
+	height:39px;
+	background:url(../images/uae_network.png) center center no-repeat;
+	right:230px;
+	bottom:344px;
+	position:absolute;
+}
+a.jordanPointer{
+	position:absolute;
+	right:275px;
+	bottom:403px;
+	width:96px;
+	height:55px;
+	background:url(../images/jordan_pointer.png) no-repeat;
+}
+a.uaePointer{
+	position:absolute;
+	right:157px;
+	bottom:342px;
+	width:96px;
+	height:55px;
+	background:url(../images/uae_pointer.png) no-repeat;
+}
+.infoBlock{
+	position:absolute;
+	width:240px;
+	height:230px;
+	color:#ffffff;
+	right:0;
+	bottom:0;
+}
+.infoBlock h1{
+	font-family: 'Cuprum', arial, serif;
+	color:#ffffff;
+	padding:0;
+	margin:0 0 5px 0;
+	text-shadow:1px 1px 2px #000000;
+	font-weight:normal;
+}
+.infoBlock .country{
+	font-size:16px;
+	text-shadow:1px 1px #000000;
+	color:#e9e9e5;
+}
+.infoBlock p{
+	margin:0 0 5px 0;
+}
+a.visitIt{
+	display:block;
+	width:90px;
+	height:30px;
+	background:url(../images/visitWeb.png) no-repeat;
+	float:right;
+}

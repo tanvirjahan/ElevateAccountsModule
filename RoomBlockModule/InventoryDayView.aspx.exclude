@@ -1,0 +1,1194 @@
+﻿<%@ Page Title="" Language="VB" MasterPageFile="~/RoomBlockMaster.master" AutoEventWireup="false"
+    CodeFile="InventoryDayView.aspx.vb" Inherits="InventoryDayView" %>
+
+<%@ OutputCache Location="none" %>
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<%@ Register Src="~/RoomBlockModule/InventoryView.ascx" TagName="InventoryView" TagPrefix="IV" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" runat="server">
+    <link rel="stylesheet" href="../Content/lib/css/reset.css" type="text/css" media="screen"
+        charset="utf-8">
+    <link rel="stylesheet" href="../Content/lib/css/icons.css" type="text/css" media="screen"
+        charset="utf-8">
+    <link rel="stylesheet" href="../Content/lib/css/workspace.css" type="text/css" media="screen"
+        charset="utf-8">
+    <link href="../css/VisualSearch.css" rel="stylesheet" type="text/css" />
+    <script src="../Content/vendor/jquery-1.11.0.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/vendor/jquery.ui.core.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/vendor/jquery.ui.widget.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/vendor/jquery.ui.position.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/vendor/jquery.ui.menu.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/vendor/jquery.ui.autocomplete.js" type="text/javascript"
+        charset="utf-8"></script>
+    <script src="../Content/vendor/underscore-1.5.2.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/vendor/backbone-1.1.0.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/visualsearch.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/views/search_box.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/views/search_facet.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/views/search_input.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/models/search_facets.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/models/search_query.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/utils/backbone_extensions.js" type="text/javascript"
+        charset="utf-8"></script>
+    <script src="../Content/lib/js/utils/hotkeys.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/utils/jquery_extensions.js" type="text/javascript"
+        charset="utf-8"></script>
+    <script src="../Content/lib/js/utils/search_parser.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/utils/inflector.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../Content/lib/js/templates/templates.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/jscript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"> 
+    </script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function () {
+            visualsearchbox();
+            visualsearchboxAgent();
+        });
+
+        var glcallback;
+
+        function TimeOutHandler(result) {
+            alert("Timeout :" + result);
+        }
+
+        function ErrorHandler(result) {
+            var msg = result.get_exceptionType() + "\r\n";
+            msg += result.get_message() + "\r\n";
+            msg += result.get_stackTrace();
+            alert(msg);
+        }
+
+        function visualsearchbox() {
+            var $txtvsprocess = $(document).find('.cs_txtvsprocess');
+            $txtvsprocess.val('Country:" " City:" " Sector:" " Category:" "' + '"Hotel Group":" " Hotels:" " Text:" "');
+            window.visualSearch = VS.init({
+                container: $('#search_box_container'),
+                query: $txtvsprocess.val(),
+                showFacets: true,
+                readOnly: false,
+                unquotable: [
+            'text',
+            'account',
+            'filter',
+            'access'
+          ],
+                placeholder: 'Search for..',
+                callbacks: {
+                    search: function (query, searchCollection) {
+                        var $txtvsprocess = $(document).find('.cs_txtvsprocess');
+                        $txtvsprocess.val(visualSearch.searchQuery.serialize());
+                        var $txtvsprocesssplit = $(document).find('.cs_txtvsprocesssplit');
+                        $txtvsprocesssplit.val(visualSearch.searchQuery.serializetosplit());
+
+                        var btnvsprocess = document.getElementById("<%=btnvsprocess.ClientID%>");
+                        btnvsprocess.click();
+                        clearTimeout(window.queryHideDelay);
+                        window.queryHideDelay = setTimeout(function () {
+                            $query.animate({
+                                opacity: 0
+                            }, {
+                                duration: 1000,
+                                queue: false
+                            });
+                        }, 2000);
+                    },
+                    valueMatches: function (category, searchTerm, callback) {
+                        switch (category) {
+                            case 'Country':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayCountryVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'City':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayCityVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Sector':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArraySectorVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Category':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayCategoryVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Hotel Group':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayHotelGroupVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Hotels':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayHotelsVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                        }
+                    },
+                    facetMatches: function (callback) {
+                        callback([
+                { label: 'Text' },
+                { label: 'Country', category: 'Hotels' },
+                { label: 'City', category: 'Hotels' },
+                { label: 'Sector', category: 'Hotels' },
+                { label: 'Category', category: 'Hotels' },
+                { label: 'Hotel Group', category: 'Hotels' },
+                 { label: 'Hotels', category: 'Hotels' }
+              ]);
+                    }
+                }
+            });
+        }
+
+
+        function visualsearchboxAgent() {
+
+
+            var $txtvsprocessAgent = $(document).find('.cs_txtvsprocessAgent');
+            $txtvsprocessAgent.val('Country:" " City:" " Sector:" " Category:" "' + '"Country Group":" " Agent:" " Text:" "');
+
+            window.visualSearch1 = VS.init({
+                container: $('#searchAgent'),
+                query: $txtvsprocessAgent.val(),
+                showFacets: true,
+                readOnly: false,
+                unquotable: [
+            'text',
+            'account',
+            'filter',
+            'access'
+          ],
+                placeholder: 'Search for',
+                callbacks: {
+                    search: function (query, searchCollection) {
+
+                        var $query = $('.search_query');
+                        $query.stop().animate({ opacity: 1 }, { duration: 300, queue: false });
+                        $query.html('<span class="raquo">&raquo;</span> You searched for: <b>' + searchCollection.serialize() + '</b>');
+
+                        var $txtvsprocessAgent = $(document).find('.cs_txtvsprocessAgent');
+                        $txtvsprocessAgent.val(visualSearch1.searchQuery.serialize());
+
+                        var $txtvsprocesssplitAgent = $(document).find('.cs_txtvsprocesssplitAgent');
+                        $txtvsprocesssplitAgent.val(visualSearch1.searchQuery.serializetosplit());
+
+                        var btnvsprocessAgent = document.getElementById("<%=btnvsprocessAgent.ClientID%>");
+                        btnvsprocessAgent.click(visualSearch1.searchQuery.serializetosplit());
+
+                        clearTimeout(window.queryHideDelay);
+                        window.queryHideDelay = setTimeout(function () {
+                            $query.animate({
+                                opacity: 0
+                            }, {
+                                duration: 1000,
+                                queue: false
+                            });
+                        }, 2000);
+                    },
+                    valueMatches: function (category, searchTerm, callback) {
+                        switch (category) {
+
+                            case 'Country':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayCountryVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'City':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayCityVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Sector':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsAgentServices.GetListOfArrayAgentSectorVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Category':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsAgentServices.GetListOfArrayAgentCategoryVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Country Group':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayCountryGroupVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Agent':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsAgentServices.GetListOfArrayAgentsVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                        }
+                    },
+                    facetMatches: function (callback) {
+                        callback([
+                { label: 'Text' },
+                { label: 'Country', category: 'Agents' },
+                { label: 'City', category: 'Agents' },
+                { label: 'Sector', category: 'Agents' },
+                { label: 'Category', category: 'Agents' },
+                { label: 'Hotel Group', category: 'Agents' },
+                 { label: 'Agent', category: 'Agents' }
+              ]);
+                    }
+                }
+            });
+
+
+        }
+        function fnFillSearchVS(result) {
+            glcallback(result, {
+                preserveOrder: true // Otherwise the selected value is brought to the top
+            });
+        }
+
+    </script>
+    <script type="text/javascript">
+
+        var prm = Sys.WebForms.PageRequestManager.getInstance();
+        prm.add_initializeRequest(InitializeRequest);
+        prm.add_endRequest(EndRequest);
+
+        function InitializeRequest(sender, args) {
+
+        }
+
+        function EndRequest(sender, args) {
+            // after update occur on UpdatePanel re-init the Autocomplete
+            visualsearchbox();
+            visualsearchboxAgent();
+        }
+
+        function validateDigitOnly(evt) {
+            var theEvent = evt || window.event;
+            var key = theEvent.keyCode || theEvent.which;
+            key = String.fromCharCode(key);
+            var regex = /[0-9]/;
+            if (!regex.test(key)) {
+                theEvent.returnValue = false;
+                if (theEvent.preventDefault) theEvent.preventDefault();
+            }
+        }
+
+        function DateSelectCalExt() {
+            var txtfromDate = document.getElementById("<%=txtfromDate.ClientID%>");
+            if (txtfromDate.value != '') {
+                var calendarBehavior1 = $find("<%=dpFromDate.ClientID %>");  // document.getElementById("<%=dpFromDate.ClientID%>"); 
+                var date = calendarBehavior1._selectedDate;
+
+                var dp = txtfromDate.value.split("/");
+                var newDt = new Date(dp[2] + "/" + dp[1] + "/" + dp[0]);
+                newDt = getFormatedDate(newDt);
+                newDt = new Date(newDt);
+                calendarBehavior1.set_selectedDate(newDt);
+            }
+            var txtfromDate2 = document.getElementById("<%=txtToDate.ClientID%>");
+            if (txtfromDate2.value != '') {
+                var calendarBehavior2 = $find("<%=dpToDate.ClientID %>");  // document.getElementById("<%=dpFromDate.ClientID%>"); 
+                var date2 = calendarBehavior2._selectedDate;
+
+                var dp2 = txtfromDate2.value.split("/");
+                var newDt2 = new Date(dp2[2] + "/" + dp2[1] + "/" + dp2[0]);
+                newDt2 = getFormatedDate(newDt2);
+                newDt2 = new Date(newDt2);
+                calendarBehavior2.set_selectedDate(newDt2);
+            }
+        }
+        function getFormatedDate(chkdate) {
+            var dd = chkdate.getDate();
+            var mm = chkdate.getMonth() + 1; //January is 0!
+            var yyyy = chkdate.getFullYear();
+            if (dd < 10) { dd = '0' + dd };
+            if (mm < 10) { mm = '0' + mm };
+            chkdate = mm + '/' + dd + '/' + yyyy;
+            return chkdate;
+        }
+
+        function filltodate(fDate) {
+            var txtfromDate = document.getElementById("<%=txtFromDate.ClientID%>");
+            var txtToDate = document.getElementById("<%=txtToDate.ClientID%>");
+
+            if ((txtToDate.value != null) && (txtToDate.value != '')) {
+
+                var dpTo = txtToDate.value.split("/");
+
+                var newDtTo = new Date(dpTo[2] + "/" + dpTo[1] + "/" + dpTo[0]);
+                var today = new Date();
+
+                newDtTo = getFormatedDate(newDtTo);
+                today = getFormatedDate(today);
+                newDtTo = new Date(newDtTo);
+                today = new Date(today);
+
+                var dp = txtfromDate.value.split("/");
+                var newDt = new Date(dp[2] + "/" + dp[1] + "/" + dp[0]);
+                newDt = getFormatedDate(newDt);
+                newDt = new Date(newDt);
+                if (today > newDt) {
+                    newDt = today;
+                    txtfromDate.value = today;
+                    DateSelectCalExt();
+                }
+                newDtTo.setDate(newDt.getDate() + 14);
+                txtToDate.value = newDtTo
+                DateSelectCalExt();
+
+                //                if (daydiff(newDt, newDtTo) > 14) {
+                //                    newDtTo.setDate(newDt.getDate() + 14);
+                //                    txtToDate.value = newDtTo
+                //                    DateSelectCalExt();
+                //                }
+                //               
+                //                if (newDt > newDtTo) {
+                //                    txtToDate.value = txtfromDate.value;
+                //                    DateSelectCalExt();
+                //                    return;
+                //                }
+
+
+                //}
+            }
+
+        }
+
+        function ValidateChkInDate() {
+
+            var txtfromDate = document.getElementById("<%=txtfromDate.ClientID%>");
+            var txtToDate = document.getElementById("<%=txtToDate.ClientID%>");
+            if (txtfromDate.value == null || txtfromDate.value == "") {
+                txtToDate.value = "";
+                alert("Please select From date.");
+            }
+
+            var dp = txtfromDate.value.split("/");
+            var newChkInDt = new Date(dp[2] + "/" + dp[1] + "/" + dp[0]);
+
+            var dp1 = txtToDate.value.split("/");
+            var newChkOutDt = new Date(dp1[2] + "/" + dp1[1] + "/" + dp1[0]);
+
+            newChkInDt = getFormatedDate(newChkInDt);
+            newChkOutDt = getFormatedDate(newChkOutDt);
+
+            newChkInDt = new Date(newChkInDt);
+            newChkOutDt = new Date(newChkOutDt);
+            if (newChkInDt > newChkOutDt) {
+                txtToDate.value = txtfromDate.value
+                var dp2 = txtToDate.value.split("/");
+                var newDt = new Date(dp2[2] + "/" + dp2[1] + "/" + dp2[0]);
+                newDt = getFormatedDate(newDt);
+                newDt = new Date(newDt);
+                var newDtTo = newDt
+                newDtTo.setDate(newDt.getDate() + 14);
+                txtToDate.value = newDtTo
+                DateSelectCalExt();
+                //alert("Todate date should not be greater than From date");
+            }
+            if (daydiff(newChkInDt, newChkOutDt) > 14) {
+                newChkInDt.setDate(newChkInDt.getDate() + 14);
+                var calendarBehavior2 = $find("<%=dpToDate.ClientID %>");  // document.getElementById("<%=dpFromDate.ClientID%>"); 
+                calendarBehavior2.set_selectedDate(newChkInDt);
+                alert("Date range should be within 15 days");
+            }
+        }
+
+        function daydiff(first, second) {
+            return Math.round((second - first) / (1000 * 60 * 60 * 24));
+        }
+
+        $("[src*=PlusGray]").live("click", function () {
+            $(this).closest("tr").after("<tr><td></td><td colspan = '999'>" + $(this).next().html() + "</td></tr>")
+            $(this).attr("src", "../images/MinusGray.ico");
+        });
+        $("[src*=MinusGray]").live("click", function () {
+            $(this).attr("src", "../images/PlusGray.ico");
+            $(this).closest("tr").next().remove();
+        });
+
+        function ShowPopup(strs) {
+            var ApplicableTo = document.getElementById(strs.id).innerText;
+            var CtryAgt = document.getElementById(strs.id).title;
+            var splitStr = CtryAgt.split("Agents :-")
+            document.getElementById("paraApplicable").innerHTML = ApplicableTo.replace("Applicable To :-", "<b>Applicable To :- </b>");
+            document.getElementById("paraCtry").innerHTML = splitStr[0].replace("Countries :-", "<b>Countries :- </b>");
+            document.getElementById("paraAgent").innerHTML = "<b>Agents :-</b> " + splitStr[1]
+            var ModalPopupLoading = $find("ModalPopupLoading");
+            ModalPopupLoading.show();
+        }
+        function hidePopup() {
+            var ModalPopupLoading = $find("ModalPopupLoading");
+            ModalPopupLoading.hide();
+        }
+        
+        function ShowOffer(HotelCode,RoomCode,InvDt) {
+          
+            $.ajax({
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                url: "InventoryDayView.aspx/GetOffers",
+                data: "{HotelCode : '" + HotelCode + "', RoomType : '" + RoomCode +"', InvDate : '" + InvDt +"'}",
+                dataType: "json",
+                success: OnSuccess,
+                failure: function (response) {
+                    alert("Error: " + response.d);
+                },
+                error: function (response) {
+                    alert("Error: " + response.d);
+                }
+            });
+        } 
+               
+        function hidePopupOffer() {
+            var ModalPopupOffer = $find("ModalPopupOffer");
+            ModalPopupOffer.hide();
+        }
+
+        function OnSuccess(response) {
+            var xmlDoc = $.parseXML(response.d);
+            var xml = $(xmlDoc);
+            var OffersData = xml.find("dtOffers");
+            var row = $("[id*=gvOffers] tr:last-child").clone(true);
+            $("[id*=gvOffers] tr").not($("[id*=gvOffers] tr:first-child")).remove();
+            $.each(OffersData, function () {
+                var offer = $(this);
+                $("td", row).eq(0).html(offer.find("LinkTo").text());
+                $("td", row).eq(1).html(offer.find("RoomsAvailable").text());
+                $("td", row).eq(2).html(offer.find("PromotionID").text());
+                $("td", row).eq(3).html(offer.find("PromotionName").text());
+                $("td", row).eq(4).html(offer.find("ApplicableTo").text());
+                $("td", row).eq(5).html(offer.find("Period").text());
+                $("[id*=gvOffers]").append(row);
+                row = $("[id*=gvOffers] tr:last-child").clone(true);
+            });
+
+           var ModalPopupOffer = $find("ModalPopupOffer");
+           ModalPopupOffer.show();
+        };
+    </script>
+    <style>
+        .Filterbutton
+        {
+            background-color: #e7e7e7; /* Green */
+            border: 2px;
+            color: black;
+            padding: 8px 8px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px;
+            margin-left: -8px;
+            cursor: pointer;
+        }
+        .FilterbuttonClose
+        {
+            background-color: #e7e7e7; /* Green */
+            border: 2px;
+            color: black;
+            padding: 8px 10px;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 0px;
+            cursor: pointer;
+        }
+        .dvOffday
+        {
+            background: #ccc;
+        }
+        .txtCal
+        {
+            background: #f5dfee;
+            background-image: -webkit-linear-gradient(top, #f5f5f5, #f0d8ec);
+            background-image: -moz-linear-gradient(top, #f5f5f5, #f0d8ec);
+            background-image: -ms-linear-gradient(top, #f5f5f5, #f0d8ec);
+            background-image: -o-linear-gradient(top, #f5f5f5, #f0d8ec);
+            background-image: linear-gradient(to bottom, #f5f5f5, #f0d8ec);
+            -webkit-border-radius: 5;
+            -moz-border-radius: 5;
+            border-radius: 5px;
+            font-family: Arial;
+            color: #050005;
+            font-size: 14px;
+            padding: 5px 10px 5px 10px;
+            border: solid #ccc 1px;
+            text-decoration: none;
+        }
+        
+        .txtCal:hover
+        {
+            background: #f5f5f5;
+            background-image: -webkit-linear-gradient(top, #f5f5f5, #f0d8ec);
+            background-image: -moz-linear-gradient(top, #f5f5f5, #f0d8ec);
+            background-image: -ms-linear-gradient(top, #f5f5f5, #f0d8ec);
+            background-image: -o-linear-gradient(top, #f5f5f5, #f0d8ec);
+            background-image: linear-gradient(to bottom, #f5f5f5, #f0d8ec);
+            text-decoration: none;
+        }
+        
+        
+        .buttonCal
+        {
+            background-color: #555555;
+            color: White;
+            font-size: 20px;
+            border: solid #555555 1px;
+        }
+        /* Black */
+        #nav
+        {
+            width: 100%;
+            float: left;
+            margin: 0 0 3em 0;
+            padding: 0;
+            list-style: none; /*background-color: #f2f2f2; 
+         border-top: 1px solid #ccc;
+          border-bottom: 1px solid #ccc; 
+       */
+            font: medium /2.0 Arial, Helvetica, sans-serif;
+        }
+        #nav li
+        {
+            float: left;
+        }
+        #nav li a
+        {
+            display: block;
+            padding: 8px 15px;
+            text-decoration: none;
+            font-weight: bold;
+            color: #069; /*  border-right: 1px solid #ccc; */
+        }
+        #nav li a:hover
+        {
+            color: #c00;
+            background-color: #fff;
+        }
+        /* End navigation bar styling. */
+        
+        /* This is just styling for this specific page. 
+   body {
+      background-color: #555; 
+      font: small/1.3 Arial, Helvetica, sans-serif; }*/
+        #wrap
+        {
+            width: 750px;
+            margin: 0 auto;
+            background-color: #fff;
+        }
+        h1
+        {
+            font-size: 1.5em;
+            padding: 1em 8px;
+            color: #333;
+            background-color: #069;
+            margin: 0;
+        }
+        #content
+        {
+            padding: 0 50px 30px;
+        }
+        .style1
+        {
+            width: 100%;
+        }
+        .LabelStyle
+        {
+            font: small Arial, Helvetica, sans-serif;
+            color: #575757;
+            font-weight: bold;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+        .LabelHeadingStyle
+        {
+            font: Arial, Helvetica, sans-serif;
+            color: #575757;
+            font-weight: bold;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+        .LabelSubHeadingStyle
+        {
+            font: small Arial, Helvetica, sans-serif;
+            color: #575757;
+            font-weight: bold;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+        .LabelStyle
+        {
+            font: small Arial, Helvetica, sans-serif;
+            color: #575757;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+        .ExhibitionStyle
+        {
+            font: small Arial, Helvetica, sans-serif;
+            color: #b57edc;
+            width: 100%;
+            margin-left: -5px;
+        }
+        .DropdownStyle
+        {
+            font: small Arial, Helvetica, sans-serif;
+            color: #575757;
+            height: 25px;
+            width: 90%;
+        }
+        
+        .checkboxStyle
+        {
+            font: small Arial, Helvetica, sans-serif;
+            color: #575757;
+            height: 25px;
+            width: 90%;
+        }
+        .ChildGrid
+        {
+            border: 1px none #999999;
+            font-family: Verdana, Arial, Geneva, ms sans serif;
+            font-size: 12px;
+            background: White;
+            color: #DDD9CF;
+            font-weight: normal;
+            margin-top: 0px;
+        }
+        .ChildGridHeader
+        {
+            font-family: Verdana, Arial, Geneva, ms sans serif;
+            background-color: #6C6C6C !important;
+            color: White;
+            font-size: 12px;
+            line-height: 150%;
+        }
+        
+        .ChildgrdAternaterow
+        {
+            font-family: Verdana, Arial, Geneva, ms sans serif;
+            font-size: 12px;
+            font-weight: normal;
+            background: #FFDDCC;
+            color: black;
+            line-height: 150%;
+        }
+        .ChildgrdRowstyle
+        {
+            font-family: Verdana, Arial, Geneva, ms sans serif;
+            background: white;
+            font-weight: normal;
+            color: black;
+            font-size: 12px;
+            line-height: 150%;
+        }
+        .Countrycss
+        {
+            font-weight: bold;
+            text-decoration: underline;
+            max-width: 250px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        div.Countrycss:hover
+        {
+            color: Blue;
+            cursor: pointer;
+        }
+        
+        .imageStyle
+        {
+            width: 24px;
+            height: 24px;
+            margin-left: -5px;
+            margin-right: -3px;
+            margin-top: -5px;
+            margin-bottom: -5px;
+            padding: 0px,0px,0px,0px;
+        }
+        .imageGreenStyle
+        {
+            width: 24px;
+            height: 24px;
+            margin-left: -5px;
+            margin-right: -3px;
+            margin-top: -5px;
+            margin-bottom: -5px;
+            padding: 0px,0px,0px,0px;
+        }
+        .imageGreenStyle:hover
+        {
+            cursor:pointer;
+         }
+        .LabelStyle1
+        {
+            font: small Arial, Helvetica, sans-serif;
+            color: #575757;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+        .LabelDynamic
+        {
+            font: Verdana, Arial, Geneva, ms sans serif;
+            font-size: 12px;
+            padding: 0px,0px,0px,0px;
+            vertical-align: top;
+        }
+        .TableDynamic
+        {
+            width: 80px;
+        }
+        .FirstColumn
+        {
+            width: 200px;
+            display: block;
+        }
+        .btnStyle
+        {
+            font: Verdana;
+            font-size: 10pt;
+            color: White;
+            font-weight: bold;
+            background-color: #2D7C8A;
+            border: Solid 1px #06788B;
+            padding: 5px 5px 5px 5px;
+            border-style: outset;
+            cursor: pointer;
+        }
+        .gvHeaderStyle
+        {
+            background-color: Red;
+        }
+        .NoData
+        {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            text-align: center;
+            vertical-align: middle;
+            font-weight: bold;
+            height: 70px;
+            color: Red;
+        }
+        .grdpagerstyle
+        {
+            font-family: Verdana, Arial, Geneva, ms sans serif;
+            background: white;
+            color: Blue;
+            font-size: 14px;
+            text-decoration: underline;
+        }
+        .grdpagerstyle span
+        {
+            color: Blue;
+            font-weight: bold;
+            font-size: 13pt;
+        }
+        .paraStyle
+        {
+            font: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            padding: 3px 3px 3px 5px;
+            color: #282626;
+            text-align: justify;
+            line-height: 18px;
+        }
+        .grdstyleOffer
+        {
+	        border: 1px Solid #06788B;
+	        font-family: Verdana, Arial, Geneva, ms sans serif;
+	        font-size :12px;
+	        background :White;
+	        color:#DDD9CF;
+	        font-weight: normal;
+	        margin-top: 0px;
+        }
+        .grdstyleOffer td
+        {
+            border: 1px Solid #06788B;
+            padding:2px;
+        } 
+         
+    </style>
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <table style="width: 100%; margin-top: -20px">
+                <tr>
+                    <td>
+                        <table style="width: 100%" align="left">
+                            <tr>
+                                <td style="width: 40%;">
+                                    <label id="Label1" runat="server" class="LabelSubHeadingStyle">
+                                        Hotel Search</label>
+                                </td>
+                                <td style="width: 60%; vertical-align: top">
+                                    <label class="LabelHeadingStyle">
+                                        Inventory Day View</label>
+                                </td>
+                            </tr>
+                        </table>
+                        <div style="width: 100%">
+                            <div style="width: 85%; display: inline-block; margin: 2px 4px 0 0;">
+                                <div id="VS" class="container" style="border: 0px;">
+                                    <div id="search_box_container">
+                                    </div>
+                                    <asp:TextBox ID="txtvsprocess" runat="server" class="cs_txtvsprocess" Style="display: none"></asp:TextBox>
+                                    <asp:TextBox ID="txtvsprocesssplit" runat="server" class="cs_txtvsprocesssplit" Style="display: none"></asp:TextBox>
+                                    <asp:Button ID="btnvsprocess" runat="server" Style="display: none" />
+                                </div>
+                            </div>
+                            <div style="width: 12%; display: inline-block; vertical-align: top; margin: 8px 0 0 0;">
+                                <asp:Button ID="btnResetSelection" runat="server" CssClass="btn" Font-Bold="False"
+                                    Text="Reset Search" /></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label id="Label8" runat="server" class="LabelSubHeadingStyle">
+                            Agent Search</label>
+                        <div style="width: 100%">
+                            <div style="width: 85%; display: inline-block; margin: 2px 4px 0 0;">
+                                <div id="VSagent" class="container" style="border: 0px;">
+                                    <div id="searchAgent">
+                                    </div>
+                                    <asp:TextBox ID="txtvsprocessAgent" runat="server" class="cs_txtvsprocessAgent" Style="display: none"></asp:TextBox>
+                                    <asp:TextBox ID="txtvsprocesssplitAgent" runat="server" class="cs_txtvsprocesssplitAgent"
+                                        Style="display: none"></asp:TextBox>
+                                    <asp:Button ID="btnvsprocessAgent" runat="server" Style="display: none" />
+                                </div>
+                            </div>
+                            <div style="width: 12%; display: inline-block; vertical-align: top; margin: 8px 0 0 0;">
+                                <asp:Button ID="btnResetAgent" runat="server" CssClass="btn" Font-Bold="False" Text="Reset Search" /></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <table style="width: 100%; border-top: 1px solid #ccc;">
+                            <tr>
+                                <td width="15%" valign="top" style="border-right: 1px solid #ccc;">
+                                    <div style="width: 100%;">
+                                        <table class="style1">
+                                            <tr>
+                                                <td style="border-bottom: 1px solid #ccc; height: 40%">
+                                                    <asp:Label ID="Label2" CssClass="LabelSubHeadingStyle" runat="server" Text="Filter by : Hotels"></asp:Label>
+                                                    <div style="overflow: scroll; min-height: 110px; max-width: 220px; max-height: 220px">
+                                                        <asp:DataList ID="dlHotels" runat="server" RepeatColumns="1" RepeatDirection="Horizontal">
+                                                            <ItemTemplate>
+                                                                <table style="border: 0px; width: 100%">
+                                                                    <tr style="">
+                                                                        <td style="border: 0px; position: relative">
+                                                                            <asp:Button ID="lbClose" runat="server" class="FilterbuttonClose button4" OnClick="lbClose_Click"
+                                                                                Text="X" />
+                                                                            <asp:Button ID="lnkCodeAndValue" runat="server" class="Filterbutton button4" Font-Bold="False"
+                                                                                Font-Size="Small" ForeColor="#000099" OnClientClick="return false;" Text='<%# Eval("CodeAndValue") %>' />
+                                                                            <asp:Button ID="lnkCode" runat="server" class="button button4" Style="display: none"
+                                                                                Text='<%# Eval("Code") %>' />
+                                                                            <asp:Button ID="lnkValue" runat="server" class="button button4" Style="display: none"
+                                                                                Text='<%# Eval("Value") %>' />
+                                                                        </td>
+                                                                    </tr>
+                                                                </table>
+                                                            </ItemTemplate>
+                                                            <ItemStyle Wrap="false" />
+                                                        </asp:DataList>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border-bottom: 1px solid #ccc; height: 40%">
+                                                    <asp:Label ID="Label3" CssClass="LabelSubHeadingStyle" runat="server" Text="Filter by : Agents"></asp:Label>
+                                                    <div style="overflow: scroll; min-height: 110px; max-width: 220px; max-height: 220px">
+                                                        <asp:DataList ID="dlAgents" runat="server" RepeatColumns="1" RepeatDirection="Horizontal"
+                                                            Width="100%">
+                                                            <ItemTemplate>
+                                                                <table style="border: 0px; width: 100%;">
+                                                                    <tr style="">
+                                                                        <td style="border: 0px; position: relative">
+                                                                            <asp:Button ID="lbAgentClose" runat="server" class="FilterbuttonClose button4" OnClick="lbAgentClose_Click"
+                                                                                Text="X" />
+                                                                            <asp:Button ID="lnkAgentCodeAndValue" runat="server" class="Filterbutton button4"
+                                                                                Font-Bold="False" Font-Size="Small" ForeColor="#000099" OnClientClick="return false;"
+                                                                                Text='<%# Eval("CodeAndValue") %>' />
+                                                                            <asp:Button ID="lnkAgentCode" runat="server" class="button button4" Style="display: none"
+                                                                                Text='<%# Eval("Code") %>' />
+                                                                            <asp:Button ID="lnkAgentValue" runat="server" class="button button4" Style="display: none"
+                                                                                Text='<%# Eval("Value") %>' />
+                                                                        </td>
+                                                                    </tr>
+                                                                </table>
+                                                            </ItemTemplate>
+                                                            <ItemStyle Wrap="false" />
+                                                        </asp:DataList>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border-bottom: 1px solid #ccc; height: 20%">
+                                                    <asp:Label ID="Label33" CssClass="LabelSubHeadingStyle" runat="server" Text="Inventory Type"></asp:Label>
+                                                    <table class="style1">
+                                                        <tr>
+                                                            <td>
+                                                                <div style="float: left; margin-top: -5px;">
+                                                                    <asp:Image ID="Image6" ImageUrl="../images/bullet-amber.png" Width="25px" runat="server" /></div>
+                                                                <div style="float: left">
+                                                                    <asp:Label ID="Label9" CssClass="LabelStyle" runat="server" Text="B2B"></asp:Label></div>
+                                                                <div style="float: right; text-align: right">
+                                                                    <asp:CheckBox ID="chkB2B" runat="server" AutoPostBack="true" TextAlign="Left" Text=""
+                                                                        CssClass="checkboxStyle" /></div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <div style="float: left; margin-top: -5px;">
+                                                                    <asp:Image ID="Image8" ImageUrl="../images/bullet-yellow.ico" Width="25px" runat="server" /></div>
+                                                                <div style="float: left">
+                                                                    <asp:Label ID="Label10" runat="server" CssClass="LabelStyle" Text="Financial"></asp:Label></div>
+                                                                <div style="float: right; text-align: right">
+                                                                    <asp:CheckBox ID="chkFinancial" runat="server" AutoPostBack="true" TextAlign="Right"
+                                                                        Text="" CssClass="checkboxStyle" /></div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <div style="float: left; margin-top: -5px;">
+                                                                    <asp:Image ID="Image9" ImageUrl="../images/bullet-Magenta.png" Width="25px" runat="server" /></div>
+                                                                <div style="float: left">
+                                                                    <asp:Label ID="Label11" CssClass="LabelStyle" runat="server" Text="General"></asp:Label></div>
+                                                                <div style="float: right; text-align: right">
+                                                                    <asp:CheckBox ID="chkGeneral" runat="server" AutoPostBack="true" TextAlign="Right"
+                                                                        Text=" " CssClass="checkboxStyle" /></div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <div style="float: left; margin-top: -5px;">
+                                                                    <asp:Image ID="Image10" ImageUrl="../images/bullet-blue.ico" Width="25px" runat="server" /></div>
+                                                                <div style="float: left">
+                                                                    <asp:Label ID="Label12" CssClass="LabelStyle" runat="server" Text="Dummy Booking "></asp:Label></div>
+                                                                <div style="float: right; text-align: right">
+                                                                    <asp:CheckBox ID="chkDummy" runat="server" TextAlign="Left" Text="" CssClass="checkboxStyle" /></div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <div style="float: left; margin-top: -5px;">
+                                                                    <asp:Image ID="Image11" ImageUrl="../images/bullet-green.ico" Width="25px" runat="server" /></div>
+                                                                <div style="float: left">
+                                                                    <asp:Label ID="Label13" CssClass="LabelStyle" runat="server" Text="Free Sale"></asp:Label></div>
+                                                                <div style="float: right; text-align: right">
+                                                                    <asp:CheckBox ID="chkFreeSale" runat="server" AutoPostBack="true" TextAlign="Left"
+                                                                        Text="" CssClass="checkboxStyle" /></div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <div style="float: left; margin-top: -5px;">
+                                                                    <asp:Image ID="Image12" ImageUrl="../images/bullet-red.ico" Width="25px" runat="server" /></div>
+                                                                <div style="float: left">
+                                                                    <asp:Label ID="Label14" CssClass="LabelStyle" runat="server" Text="Stop Sale"></asp:Label></div>
+                                                                <div style="float: right; text-align: right">
+                                                                    <asp:CheckBox ID="chkStopSale" runat="server" AutoPostBack="true" TextAlign="Left"
+                                                                        Text="" CssClass="checkboxStyle" /></div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="min-width: 150px">
+                                                                <asp:Label ID="Label5" CssClass="LabelStyle1" runat="server" Text="Days for Near Release"></asp:Label>
+                                                                &nbsp;<asp:TextBox ID="txtReleaseDays" runat="server" Width="20%" MaxLength="3" CssClass="field_input"
+                                                                    Text="3"></asp:TextBox>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </td>
+                                <td width="85%" valign="top">
+                                    <div id="dvCalendar" style="padding-left: 10px;">
+                                        <table width="100%">
+                                            <tr>
+                                                <td>
+                                                    <table width="100%">
+                                                        <tr>
+                                                            <td style="width: 25%; vertical-align: middle">
+                                                                <IV:InventoryView ID="InventoryView1" runat="server" />
+                                                            </td>
+                                                            <td align="left" style="vertical-align: middle; width: 10%">
+                                                                <asp:Button ID="btnShow" runat="server" CssClass="btnStyle" Text="Search" TabIndex="8" />
+                                                            </td>
+                                                            <td style="vertical-align: middle; width: 20%;">
+                                                                <asp:RadioButton ID="RdoSummary" GroupName="ShowType" Text="Summary" runat="server"
+                                                                    Checked="true" AutoPostBack="true" TabIndex="4" />
+                                                                <asp:RadioButton ID="RdoDetails" GroupName="ShowType" Text="Details" runat="server"
+                                                                    AutoPostBack="true" TabIndex="5" />
+                                                            </td>
+                                                            <td style="vertical-align: middle; width: 25%; min-width: 150px">
+                                                                <label id="lblFromDt">
+                                                                    From Date</label>
+                                                                <asp:TextBox ID="txtFromDate" runat="server" Style="width: 90px" CssClass="field_input"
+                                                                    onchange="filltodate(this);" MaxLength="3" TabIndex="6"></asp:TextBox>
+                                                                <asp:ImageButton ID="ImgBtnFrmDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png" />
+                                                                <asp:CalendarExtender ID="dpFromDate" runat="server" Format="dd/MM/yyyy" OnClientDateSelectionChanged="DateSelectCalExt"
+                                                                    PopupButtonID="ImgBtnFrmDt" PopupPosition="Right" TargetControlID="txtFromDate">
+                                                                </asp:CalendarExtender>
+                                                                <asp:MaskedEditExtender ID="MeFromDate" runat="server" Mask="99/99/9999" MaskType="Date"
+                                                                    TargetControlID="txtFromDate">
+                                                                </asp:MaskedEditExtender>
+                                                                <asp:MaskedEditValidator ID="MevFromDate" runat="server" ControlExtender="MeFromDate"
+                                                                    ControlToValidate="txtFromDate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                                                    EmptyValueMessage="Date is required" ErrorMessage="MeFromDate" InvalidValueBlurredMessage="Invalid Date"
+                                                                    InvalidValueMessage="Invalid Date" TooltipMessage="Input a Date in Date/Month/Year">
+                                                                </asp:MaskedEditValidator>
+                                                            </td>
+                                                            <td style="vertical-align: middle; width: 25%; min-width: 150px">
+                                                                <label id="lblToDate">
+                                                                    To Date</label>
+                                                                <asp:TextBox ID="txtToDate" runat="server" Style="width: 90px" onchange="ValidateChkInDate();"
+                                                                    CssClass="field_input" MaxLength="3" TabIndex="7"></asp:TextBox>
+                                                                <asp:ImageButton ID="ImgBtnToDt" runat="server" ImageUrl="~/Images/Calendar_scheduleHS.png" />
+                                                                <asp:CalendarExtender ID="dpToDate" runat="server" Format="dd/MM/yyyy" OnClientDateSelectionChanged="DateSelectCalExt"
+                                                                    PopupButtonID="ImgBtnToDt" PopupPosition="Right" TargetControlID="txtToDate">
+                                                                </asp:CalendarExtender>
+                                                                <asp:MaskedEditExtender ID="MeToDate" runat="server" Mask="99/99/9999" MaskType="Date"
+                                                                    TargetControlID="txtToDate">
+                                                                </asp:MaskedEditExtender>
+                                                                <asp:MaskedEditValidator ID="MevToDate" runat="server" ControlExtender="MeToDate"
+                                                                    ControlToValidate="txtToDate" CssClass="field_error" Display="Dynamic" EmptyValueBlurredText="Date is required"
+                                                                    EmptyValueMessage="Date is required" ErrorMessage="MeFromDate" InvalidValueBlurredMessage="Invalid Date"
+                                                                    InvalidValueMessage="Invalid Date" TooltipMessage="Input a Date in Date/Month/Year">
+                                                                </asp:MaskedEditValidator>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <div id="divGrid">
+                                                        <asp:GridView ID="gvDayView" runat="server" Font-Size="10px" Width="100%" CssClass="grdstyle"
+                                                            GridLines="Vertical" CellPadding="3" BorderWidth="1px" BorderStyle="None" AutoGenerateColumns="False"
+                                                            Font-Bold="true" AllowPaging="True" PageSize="20" ShowHeaderWhenEmpty="true">
+                                                            <FooterStyle CssClass="grdfooter" />
+                                                            <Columns>
+                                                                <asp:TemplateField>
+                                                                    <ItemTemplate>
+                                                                        <img runat="server" id="imgSign" alt="" style="cursor: pointer" src="~/Images/PlusGray.ico" />
+                                                                        <asp:Panel ID="panRoomType" runat="server" Style="display: none; width: 100%;">
+                                                                            <div style="overflow: scroll; max-width: 1100px;">
+                                                                                <asp:GridView ID="gvRoomType" runat="server" AutoGenerateColumns="false" CssClass="ChildGrid"
+                                                                                    Width="100%">
+                                                                                    <Columns>
+                                                                                        <asp:TemplateField Visible="false" HeaderText="Room Code">
+                                                                                            <ItemTemplate>
+                                                                                                <asp:Label ID="lblRTypeCode" runat="server" Text='<%# Bind("RTypeCode") %>'></asp:Label>
+                                                                                            </ItemTemplate>
+                                                                                        </asp:TemplateField>
+                                                                                        <asp:TemplateField HeaderText="Room Type">
+                                                                                            <ItemTemplate>
+                                                                                                <asp:Label ID="lblRTypeName" runat="server" Text='<%# Bind("RTypeName") %>'></asp:Label>
+                                                                                            </ItemTemplate>
+                                                                                            <ItemStyle Wrap="true" CssClass="FirstColumn" HorizontalAlign="Left" />
+                                                                                            <HeaderStyle CssClass="FirstColumn" />
+                                                                                        </asp:TemplateField>
+                                                                                    </Columns>
+                                                                                    <HeaderStyle CssClass="ChildGridHeader" HorizontalAlign="Center"></HeaderStyle>
+                                                                                    <RowStyle CssClass="ChildgrdRowstyle" HorizontalAlign="Center"></RowStyle>
+                                                                                    <AlternatingRowStyle CssClass="ChildgrdAternaterow" HorizontalAlign="Center"></AlternatingRowStyle>
+                                                                                </asp:GridView>
+                                                                            </div>
+                                                                        </asp:Panel>
+                                                                    </ItemTemplate>
+                                                                    <ItemStyle HorizontalAlign="Left" />
+                                                                </asp:TemplateField>
+                                                                <asp:TemplateField Visible="false" HeaderText="Hotel Code">
+                                                                    <ItemTemplate>
+                                                                        <asp:Label ID="lblCountries" runat="server" Text='<%# Bind("Countries") %>'></asp:Label>
+                                                                        <asp:Label ID="lblAgent" runat="server" Text='<%# Bind("Agents") %>'></asp:Label>
+                                                                        <asp:Label ID="lblCountriesName" runat="server" Text='<%# Bind("CountriesName") %>'></asp:Label>
+                                                                        <asp:Label ID="lblAgentsName" runat="server" Text='<%# Bind("AgentsName") %>'></asp:Label>
+                                                                        <asp:Label ID="lblApplicableTo" runat="server" Text='<%# Bind("ApplicableTo") %>'></asp:Label>
+                                                                        <asp:Label ID="lblHotelCode" runat="server" Text='<%# Bind("PartyCode") %>'></asp:Label>
+                                                                    </ItemTemplate>
+                                                                </asp:TemplateField>
+                                                                <asp:TemplateField HeaderText="Hotel Name">
+                                                                    <ItemTemplate>
+                                                                        <asp:Label ID="lblHotelName" runat="server" Text='<%# Bind("HotelName") %>'></asp:Label>
+                                                                    </ItemTemplate>
+                                                                    <ItemStyle Wrap="true" Width="250px" />
+                                                                </asp:TemplateField>
+                                                            </Columns>
+                                                            <RowStyle CssClass="grdRowstyle" HorizontalAlign="Left"></RowStyle>
+                                                            <AlternatingRowStyle CssClass="grdAternaterow" HorizontalAlign="Left"></AlternatingRowStyle>
+                                                            <SelectedRowStyle CssClass="grdselectrowstyle"></SelectedRowStyle>
+                                                            <HeaderStyle CssClass="grdheader" ForeColor="white"></HeaderStyle>
+                                                            <PagerStyle CssClass="grdpagerstyle" HorizontalAlign="Center"></PagerStyle>
+                                                        </asp:GridView>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+            <center>
+                <div id="showGroup" runat="server" style="overflow: scroll; min-height: 200px; max-height: 400px;
+                    min-width: 200px; max-width: 600px; border: 3px solid green; background-color: White;
+                    display: none">
+                    <p id="paraApplicable" class="paraStyle">
+                    </p>
+                    <p id="paraCtry" class="paraStyle">
+                    </p>
+                    <p id="paraAgent" class="paraStyle">
+                    </p>
+                    <input type="button" class="field_button" value="Close" style="width: 75px" onclick="hidePopup()" />
+                </div>
+            </center>
+            <asp:ModalPopupExtender ID="ModalPopupLoading" runat="server" BehaviorID="ModalPopupLoading"
+                TargetControlID="btnInvisibleLoading" CancelControlID="btnCloseLoading" PopupControlID="showGroup"
+                BackgroundCssClass="ModalPopupBG">
+            </asp:ModalPopupExtender>
+            <input id="btnInvisibleLoading" runat="server" type="button" value="Cancel" style="display: none" />
+            <input id="btnCloseLoading" type="button" value="Cancel" style="display: none" />
+            <center>
+                <div id="ShowOffer" runat="server" style="overflow: scroll; min-height: 200px; max-height: 400px;
+                    min-width: 600px; max-width: 1000px; border: 3px solid green; background-color: White;
+                    display: none;" >
+                    <h5 class="field_heading">Offers / Contracts </h5>
+                    <br />
+                    <asp:GridView ID="gvOffers" runat="server" AutoGenerateColumns="false" Width="95%" GridLines="Vertical" CellPadding="2" CssClass="grdstyleOffer" >    
+                    <Columns>
+                    <asp:BoundField HeaderText="Link To" DataField="LinkTo" />
+                    <asp:BoundField HeaderText="Rooms Available" DataField="RoomsAvailable" />
+                    <asp:BoundField HeaderText="Promotion ID" DataField="PromotionID" />
+                    <asp:BoundField HeaderText="Promotion Name" DataField="PromotionName" />
+                    <asp:BoundField HeaderText="Applicable To" DataField="ApplicableTo" />
+                    <asp:BoundField HeaderText="Period" DataField="Period" />
+                    </Columns>
+                    <RowStyle CssClass="grdRowstyle" HorizontalAlign="Left"  ></RowStyle>
+                    <HeaderStyle CssClass="grdheader" ForeColor="white"></HeaderStyle>                    
+                    </asp:GridView>
+                    <br />
+                    <input type="button" class="field_button" value="Close" style="width: 75px" onclick="hidePopupOffer()" />                    
+                </div>
+            </center>
+            <asp:ModalPopupExtender ID="ModalPopupOffer" runat="server" BehaviorID="ModalPopupOffer"
+                TargetControlID="btnOfferInvisible" CancelControlID="btnOfferClose" PopupControlID="showOffer"
+                BackgroundCssClass="ModalPopupBG">
+            </asp:ModalPopupExtender>
+            <input id="btnOfferInvisible" runat="server" type="button" value="Cancel" style="display: none" />
+            <input id="btnOfferClose" type="button" value="Cancel" style="display: none" />
+        </ContentTemplate>
+    </asp:UpdatePanel>     
+    <div id="div1">
+        <asp:ScriptManagerProxy ID="ScriptManagerProxy1" runat="server">
+            <Services>
+                <asp:ServiceReference Path="~/clsHotelGroupServices.asmx" />
+                <asp:ServiceReference Path="~/clsAgentServices.asmx" />
+            </Services>
+        </asp:ScriptManagerProxy>
+    </div>
+</asp:Content>

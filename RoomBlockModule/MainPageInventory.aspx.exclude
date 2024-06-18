@@ -1,0 +1,757 @@
+<%@ Page Language="VB" AutoEventWireup="false" CodeFile="MainPageInventory.aspx.vb" Inherits="MainPageInventory" EnableEventValidation="false"  MasterPageFile="~/RoomBlockMaster.master" Strict="true" %>
+<%@ OutputCache location="none" %> 
+   <%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="cc1" %>
+   <%@ Register Src ="~/RoomBlockModule/InventoryView.ascx" TagName="InventoryView" TagPrefix="IV" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" runat="server" >
+  <link rel="stylesheet" href="../Content/lib/css/reset.css" type="text/css" media="screen" charset="utf-8">
+  <link rel="stylesheet" href="../Content/lib/css/icons.css" type="text/css" media="screen" charset="utf-8">
+  <link rel="stylesheet" href="../Content/lib/css/workspace.css" type="text/css" media="screen" charset="utf-8">
+  <link href="../css/VisualSearch.css" rel="stylesheet" type="text/css" />
+  
+  <script src="../Content/vendor/jquery-1.11.0.js" type="text/javascript" charset="utf-8"></script>   
+  <script src="../Content/vendor/jquery.ui.core.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/vendor/jquery.ui.widget.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/vendor/jquery.ui.position.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/vendor/jquery.ui.menu.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/vendor/jquery.ui.autocomplete.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/vendor/underscore-1.5.2.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/vendor/backbone-1.1.0.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/lib/js/visualsearch.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/lib/js/views/search_box.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/lib/js/views/search_facet.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/lib/js/views/search_input.js" type="text/javascript" charset="utf-8"></script> 
+  <script src="../Content/lib/js/models/search_facets.js" type="text/javascript" charset="utf-8"></script> 
+  <script src="../Content/lib/js/models/search_query.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/lib/js/utils/backbone_extensions.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/lib/js/utils/hotkeys.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/lib/js/utils/jquery_extensions.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/lib/js/utils/search_parser.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/lib/js/utils/inflector.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../Content/lib/js/templates/templates.js" type="text/javascript" charset="utf-8"></script> 
+    
+    <script type="text/jscript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js">
+    </script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function () {
+            visualsearchbox();
+            visualsearchboxAgent();
+        });
+
+        var glcallback;
+
+        function TimeOutHandler(result) {
+            alert("Timeout :" + result);
+        }
+
+        function ErrorHandler(result) {
+            var msg = result.get_exceptionType() + "\r\n";
+            msg += result.get_message() + "\r\n";
+            msg += result.get_stackTrace();
+            alert(msg);
+        }
+
+        function visualsearchbox() {
+            var $txtvsprocess = $(document).find('.cs_txtvsprocess');
+            $txtvsprocess.val('Country:" " City:" " Sector:" " Category:" "' + '"Hotel Group":" " Hotels:" " Text:" "');
+            window.visualSearch = VS.init({
+                container: $('#search_box_container'),
+                query: $txtvsprocess.val(),
+                showFacets: true,
+                readOnly: false,
+                unquotable: [
+            'text',
+            'account',
+            'filter',
+            'access'
+          ],
+                placeholder: 'Search for..',
+                callbacks: {
+                    search: function (query, searchCollection) {
+                        var $txtvsprocess = $(document).find('.cs_txtvsprocess');
+                        $txtvsprocess.val(visualSearch.searchQuery.serialize());
+                        var $txtvsprocesssplit = $(document).find('.cs_txtvsprocesssplit');
+                        $txtvsprocesssplit.val(visualSearch.searchQuery.serializetosplit());
+                       
+                        var btnvsprocess = document.getElementById("<%=btnvsprocess.ClientID%>");
+                        btnvsprocess.click();
+                        clearTimeout(window.queryHideDelay);
+                        window.queryHideDelay = setTimeout(function () {
+                            $query.animate({
+                                opacity: 0
+                            }, {
+                                duration: 1000,
+                                queue: false
+                            });
+                        }, 2000);
+                    },
+                    valueMatches: function (category, searchTerm, callback) {
+                        switch (category) {
+                            case 'Country':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayCountryVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'City':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayCityVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Sector':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArraySectorVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Category':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayCategoryVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Hotel Group':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayHotelGroupVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Hotels':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayHotelsVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                        }
+                    },
+                    facetMatches: function (callback) {
+                        callback([
+                { label: 'Text' },
+                { label: 'Country', category: 'Hotels' },
+                { label: 'City', category: 'Hotels' },
+                { label: 'Sector', category: 'Hotels' },
+                { label: 'Category', category: 'Hotels' },
+                { label: 'Hotel Group', category: 'Hotels' },
+                 { label: 'Hotels', category: 'Hotels' }
+              ]);
+                    }
+                }
+            });
+        }
+
+
+        function visualsearchboxAgent() {
+
+          
+            var $txtvsprocessAgent = $(document).find('.cs_txtvsprocessAgent');
+            $txtvsprocessAgent.val('Country:" " City:" " Sector:" " Category:" "' + '"Country Group":" " Agent:" " Text:" "');
+           
+            window.visualSearch1 = VS.init({
+                container: $('#searchAgent'),
+                query: $txtvsprocessAgent.val(),
+                showFacets: true,
+                readOnly: false,
+                unquotable: [
+            'text',
+            'account',
+            'filter',
+            'access'
+          ],
+                placeholder: 'Search for',
+                callbacks: {
+                    search: function (query, searchCollection) {
+                     
+                        var $query = $('.search_query');
+                        $query.stop().animate({ opacity: 1 }, { duration: 300, queue: false });
+                        $query.html('<span class="raquo">&raquo;</span> You searched for: <b>' + searchCollection.serialize() + '</b>');
+                      
+                        var $txtvsprocessAgent = $(document).find('.cs_txtvsprocessAgent');
+                        $txtvsprocessAgent.val(visualSearch1.searchQuery.serialize());
+
+                        var $txtvsprocesssplitAgent = $(document).find('.cs_txtvsprocesssplitAgent');
+                        $txtvsprocesssplitAgent.val(visualSearch1.searchQuery.serializetosplit());
+                        
+                        var btnvsprocessAgent = document.getElementById("<%=btnvsprocessAgent.ClientID%>");
+                        btnvsprocessAgent.click(visualSearch1.searchQuery.serializetosplit());
+
+                        clearTimeout(window.queryHideDelay);
+                        window.queryHideDelay = setTimeout(function () {
+                            $query.animate({
+                                opacity: 0
+                            }, {
+                                duration: 1000,
+                                queue: false
+                            });
+                        }, 2000);
+                    },
+                    valueMatches: function (category, searchTerm, callback) {
+                        switch (category) {
+
+                            case 'Country':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayCountryVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'City':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayCityVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Sector':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsAgentServices.GetListOfArrayAgentSectorVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Category':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsAgentServices.GetListOfArrayAgentCategoryVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Country Group':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsHotelGroupServices.GetListOfArrayCountryGroupVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                            case 'Agent':
+                                var asSqlqry = '';
+                                glcallback = callback;
+                                ColServices.clsAgentServices.GetListOfArrayAgentsVisualSearch(asSqlqry, fnFillSearchVS, ErrorHandler, TimeOutHandler);
+                                break;
+                        }
+                    },
+                    facetMatches: function (callback) {
+                        callback([
+                { label: 'Text' },
+                { label: 'Country', category: 'Agents' },
+                { label: 'City', category: 'Agents' },
+                { label: 'Sector', category: 'Agents' },
+                { label: 'Category', category: 'Agents' },
+                { label: 'Hotel Group', category: 'Agents' },
+                 { label: 'Agent', category: 'Agents' }
+              ]);
+                    }
+                }
+            });
+
+
+        }
+        function fnFillSearchVS(result) {
+            glcallback(result, {
+                preserveOrder: true // Otherwise the selected value is brought to the top
+            });
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        var prm = Sys.WebForms.PageRequestManager.getInstance();
+        prm.add_initializeRequest(InitializeRequest);
+        prm.add_endRequest(EndRequest);
+
+        function InitializeRequest(sender, args) {
+
+        }
+
+        function EndRequest(sender, args) {
+            // after update occur on UpdatePanel re-init the Autocomplete
+            visualsearchbox();
+            visualsearchboxAgent();
+        }
+        function validateDigitOnly(evt) {
+            var theEvent = evt || window.event;
+            var key = theEvent.keyCode || theEvent.which;
+            key = String.fromCharCode(key);
+            var regex = /[0-9]/;
+            if (!regex.test(key)) {
+                theEvent.returnValue = false;
+                if (theEvent.preventDefault) theEvent.preventDefault();
+            }
+        }
+
+        function onCalendarShown() {
+            var cal = $find("calendar1");
+            cal._switchMode("months", true);
+            if (cal._monthsBody) {
+                for (var i = 0; i < cal._monthsBody.rows.length; i++) {
+                    var row = cal._monthsBody.rows[i];
+                    for (var j = 0; j < row.cells.length; j++) {
+                        Sys.UI.DomEvent.addHandler(row.cells[j].firstChild, "click", call);
+                    }
+                }
+            }
+        }
+
+        function onCalendarHidden() {
+            var cal = $find("calendar1");
+            if (cal._monthsBody) {
+                for (var i = 0; i < cal._monthsBody.rows.length; i++) {
+                    var row = cal._monthsBody.rows[i];
+                    for (var j = 0; j < row.cells.length; j++) {
+                        Sys.UI.DomEvent.removeHandler(row.cells[j].firstChild, "click", call);
+                    }
+                }
+            }
+        }
+
+        function call(eventElement) {
+            var target = eventElement.target;
+            switch (target.mode) {
+                case "month":
+                    var cal = $find("calendar1");
+                    cal._visibleDate = target.date;
+                    cal.set_selectedDate(target.date);
+                    cal._switchMonth(target.date);
+                    cal._blur.post(true);
+                    cal.raiseDateSelectionChanged();
+                    document.getElementById("<%= btnMonth.ClientID %>").click();
+                    break;
+            }
+        }
+    </script>
+    <style>
+    .Filterbutton {
+    background-color: #e7e7e7; /* Green */
+    border: 2px;
+    color: black;
+    padding: 8px 8px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    margin-left:-8px;
+    cursor: pointer;
+}
+    .FilterbuttonClose {
+    background-color: #e7e7e7; /* Green */
+    border: 2px;
+    color: black;
+    padding: 8px 10px;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    font-weight:bold;
+    margin-right:0px;
+    cursor: pointer;
+}
+   .dvOffday
+   {
+       background: #ccc;
+   }
+   .txtCal{
+  background: #f5dfee;
+  background-image: -webkit-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: -moz-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: -ms-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: -o-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: linear-gradient(to bottom, #f5f5f5, #f0d8ec);
+  -webkit-border-radius: 5;
+  -moz-border-radius: 5;
+  border-radius: 5px;
+  font-family: Arial;
+  color: #050005;
+  font-size: 14px;
+  padding: 7px 10px 5px 10px;
+  border: solid #ccc 1px;
+  text-decoration: none;
+}
+
+.txtCal:hover {
+  background: #f5f5f5;
+  background-image: -webkit-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: -moz-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: -ms-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: -o-linear-gradient(top, #f5f5f5, #f0d8ec);
+  background-image: linear-gradient(to bottom, #f5f5f5, #f0d8ec);
+  text-decoration: none;
+}
+   
+   
+   .buttonCal 
+   {
+       background-color: #555555;
+       color:White;
+       font-size: 20px;
+        border: solid #555555 1px;
+       } /* Black */
+   #nav {
+      width: 100%;
+      float: left;
+      margin: 0 0 3em 0;
+      padding: 0;
+      list-style: none;
+       /*background-color: #f2f2f2; 
+         border-top: 1px solid #ccc;
+          border-bottom: 1px solid #ccc; 
+       */
+     
+       font: medium /2.0 Arial, Helvetica, sans-serif;
+     }
+   #nav li {
+      float: left; }
+   #nav li a {
+      display: block;
+      padding: 8px 15px;
+      text-decoration: none;
+      font-weight: bold;
+      color: #069;
+        /*  border-right: 1px solid #ccc; */
+       }
+   #nav li a:hover {
+      color: #c00;
+      background-color: #fff; }
+   /* End navigation bar styling. */
+   
+   /* This is just styling for this specific page. 
+   body {
+      background-color: #555; 
+      font: small/1.3 Arial, Helvetica, sans-serif; }*/
+   #wrap {
+      width: 750px;
+      margin: 0 auto;
+      background-color: #fff; }
+   h1 {
+      font-size: 1.5em;
+      padding: 1em 8px;
+      color: #333;
+      background-color: #069;
+      margin: 0; }
+   #content {
+      padding: 0 50px 30px; }
+    .style1
+    {
+        width: 100%;
+    }
+      .LabelStyle
+    {
+        font: small Arial, Helvetica, sans-serif;
+        color:  #575757;
+        font-weight:bold;
+        padding-top:10px;
+        padding-bottom:10px;
+    }
+       .LabelHeadingStyle
+    {
+        font: Arial, Helvetica, sans-serif;
+        color:  #575757;
+        font-weight:bold;
+        padding-top:10px;
+        padding-bottom:10px;
+    }
+       .LabelSubHeadingStyle
+    {
+          font: small Arial, Helvetica, sans-serif;
+        color:  #575757;
+        font-weight:bold;
+        padding-top:10px;
+        padding-bottom:10px;
+    }
+        .LabelStyle
+    {
+        font: small Arial, Helvetica, sans-serif;
+        color:  #575757;
+        padding-top:10px;
+        padding-bottom:10px;
+    }
+    .LabelStyle1
+    {
+        font: small Arial, Helvetica, sans-serif;
+        color:  #575757;
+        padding-top:10px;
+        padding-bottom:10px;       
+    }
+    .btnStyle
+    {
+        font :Verdana;
+        font-size:10pt;
+        color:White;
+        font-weight:bold;
+        background-color:#2D7C8A;
+        border:Solid 1px #06788B;
+        padding: 4px 5px 5px 5px;            
+        border-style:outset;
+        cursor:pointer;
+    }
+    .InventoryTextStyle
+    {
+    	font: small Arial, Helvetica, sans-serif;  
+    	font-size:9pt;
+    	vertical-align:text-top;      
+    }
+    .ExhibitionStyle
+    {
+    	font: small Arial, Helvetica, sans-serif;
+        color:#b57edc;
+        width:100%;
+        margin-left:-5px;
+    }
+       .DropdownStyle
+    {
+        font: small Arial, Helvetica, sans-serif;
+        color:  #575757;
+        height:25px;
+        width:90%;
+    }
+    .checkboxStyle
+    {
+          font: small Arial, Helvetica, sans-serif;
+        color:  #575757;
+        height:25px;
+        width:90%;
+    }    
+    .imageStyle
+    {
+        width:24px;
+        height:24px;
+        margin-left:-5px;
+        margin-right:-5px;
+        margin-top:-5px;
+        margin-bottom:-5px;
+        padding:0px,0px,0px,0px;
+    }
+    .ImgMonth
+    {
+        margin-bottom:-6px;        
+    }
+</style>
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+    <ContentTemplate>
+    <table style="width: 100%;margin-top:-20px">        
+        <tr>
+            <td> 
+            <table style="width:100%" align="left"><tr><td style="width:40%;"><label id="Label4" runat="server" class="LabelSubHeadingStyle">Hotel Search</label></td><td style="width:60%; vertical-align:top"><label class="LabelHeadingStyle">Inventory Month View</label></td> </tr> </table>            
+            <div style="width:100%" >
+        <div style="width:85%;display: inline-block; margin: 2px 4px 0 0;">
+            <div id="VS" class="container" style="border:0px;">
+                <div id="search_box_container">
+                </div>                        
+                <asp:TextBox ID="txtvsprocess" runat="server" class="cs_txtvsprocess" 
+                    style="display:none"></asp:TextBox>
+                <asp:TextBox ID="txtvsprocesssplit" runat="server" class="cs_txtvsprocesssplit" 
+                    style="display:none"></asp:TextBox>
+                <asp:Button ID="btnvsprocess" runat="server" style="display:none" />
+            </div> </div> 
+             <div style=" width:12%; display: inline-block;vertical-align:top; margin: 8px 4px 0 0;">
+                 <asp:Button ID="btnResetSelection" runat="server" 
+    CssClass="btn" Font-Bold="False" 
+                            tabIndex="4" Text="Reset Search" /></div></div>
+               </td>
+        </tr>
+        <tr>
+            <td>
+            <label id="Label8" runat="server" class="LabelSubHeadingStyle">Agent Search</label>
+            <div style="width:100%" >
+        <div style="width:85%;display: inline-block; margin: 2px 4px 0 0;">
+            <div id="VSagent" class="container" style="border:0px;">
+                <div id="searchAgent">
+                </div>                        
+                <asp:TextBox ID="txtvsprocessAgent" runat="server" class="cs_txtvsprocessAgent" 
+                    style="display:none"></asp:TextBox>
+                <asp:TextBox ID="txtvsprocesssplitAgent" runat="server" class="cs_txtvsprocesssplitAgent" 
+                    style="display:none"></asp:TextBox>
+                <asp:Button ID="btnvsprocessAgent" runat="server" style="display:none" />
+            </div> </div> 
+             <div style=" width:12%; display: inline-block;vertical-align:top; margin: 8px 4px 0 0;">
+                 <asp:Button ID="btnResetAgent" runat="server" 
+    CssClass="btn" Font-Bold="False" 
+                            tabIndex="4" Text="Reset Search" /></div></div>
+               </td>
+        </tr>
+        <tr>
+            <td>
+                <table style="width: 100%;border-top:1px solid #ccc;" >
+                    <tr>
+                        <td width="15%" valign="top" style="border-right: 1px solid #ccc;">
+                        <div style="width:100%;"> 
+                                <table class="style1">   
+                                <tr><td style="border-bottom: 1px solid #ccc;height:40%"><asp:Label ID="Label1" CssClass="LabelSubHeadingStyle" runat="server" Text="Filter by : Hotels"></asp:Label>
+                                <div style="overflow: scroll; min-height:110px; max-width:220px; max-height:200px"> 
+                                <asp:DataList ID="dlHotels" runat="server" RepeatColumns="1" RepeatDirection="Horizontal">
+                                <ItemTemplate>
+                                    <table style="border: 0px; width:100%">
+                                        <tr style="">
+                                            <td style="border: 0px; position:relative">
+                                                <asp:Button ID="lbClose" runat="server" class="FilterbuttonClose button4" onclick="lbClose_Click" Text="X" />
+                                                <asp:Button ID="lnkCodeAndValue" runat="server" class="Filterbutton button4" Font-Bold="False"
+                                                    Font-Size="Small" ForeColor="#000099" OnClientClick="return false;" Text='<%# Eval("CodeAndValue") %>' />
+                                                <asp:Button ID="lnkCode" runat="server" class="button button4" Style="display: none"
+                                                    Text='<%# Eval("Code") %>' />
+                                                <asp:Button ID="lnkValue" runat="server" class="button button4" Style="display: none"
+                                                    Text='<%# Eval("Value") %>' />                                                                                                
+                                            </td>
+                                        </tr>
+                                    </table>                                    
+                                </ItemTemplate>  
+                                <ItemStyle Wrap="false" />                                
+                            </asp:DataList>
+                            </div>
+                                </td></tr>
+                                 <tr><td style="border-bottom: 1px solid #ccc;height:40%"><asp:Label ID="Label3" CssClass="LabelSubHeadingStyle" runat="server" Text="Filter by : Agents"></asp:Label>
+                                 <div style="overflow: scroll; min-height:110px; max-width:220px; max-height:200px"> 
+                                 <asp:DataList ID="dlAgents" runat="server" RepeatColumns="1" RepeatDirection="Horizontal" Width="100%">
+                                <ItemTemplate>
+                                    <table style="border: 0px; width:100%;" >
+                                        <tr style="">
+                                            <td style="border: 0px; position:relative">
+                                                <asp:Button ID="lbAgentClose" runat="server" class="FilterbuttonClose button4" onclick="lbAgentClose_Click" Text="X" />
+                                                <asp:Button ID="lnkAgentCodeAndValue" runat="server" class="Filterbutton button4" Font-Bold="False"
+                                                    Font-Size="Small" ForeColor="#000099" OnClientClick="return false;" Text='<%# Eval("CodeAndValue") %>' />                                                
+                                                <asp:Button ID="lnkAgentCode" runat="server" class="button button4" Style="display: none"
+                                                    Text='<%# Eval("Code") %>' />
+                                                <asp:Button ID="lnkAgentValue" runat="server" class="button button4" Style="display: none"
+                                                    Text='<%# Eval("Value") %>' />                                                
+                                            </td>
+                                        </tr>
+                                    </table>                                    
+                                </ItemTemplate> 
+                                <ItemStyle Wrap="false" />                              
+                            </asp:DataList>
+
+
+                                </div>
+                                 </td></tr>                                                       <tr>
+                                        <td  style="border-bottom: 1px solid #ccc;height:20%">
+                                        <asp:Label ID="Label2" CssClass="LabelSubHeadingStyle" runat="server" Text="Inventory Type"></asp:Label>
+                                            <table class="style1">
+                                             <tr>
+                                                    <td>
+                                                        <div  style="float:left;margin-top:-5px;">      <asp:Image ID="Image6"  ImageUrl="../images/bullet-amber.png"  Width="25px" runat="server" /></div>
+                                   <div  style="float:left">
+                                       <asp:Label ID="Label9"   CssClass="LabelStyle"  runat="server" Text="B2B"></asp:Label></div> <div  style="float:right;text-align:right">      <asp:CheckBox ID="chkB2B" runat="server" AutoPostBack="true" TextAlign="Left" 
+                                                Text="" CssClass="checkboxStyle" /></div>  </td>
+                                                </tr>                                                
+                                                <tr>
+                                                    <td>                                                     
+                                                        <div  style="float:left;margin-top:-5px;">  <asp:Image ID="Image8" ImageUrl="../images/bullet-yellow.ico" Width="25px" runat="server" /></div>
+                                          <div style="float:left" >
+                                              <asp:Label ID="Label10" runat="server" CssClass="LabelStyle" Text="Financial"></asp:Label></div> <div style="float:right;text-align:right"><asp:CheckBox ID="chkFinancial" runat="server" AutoPostBack="true" TextAlign="Right" 
+                                                Text="" CssClass="checkboxStyle" /></div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                    <div  style="float:left;margin-top:-5px;">     <asp:Image ID="Image9"  ImageUrl="../images/bullet-Magenta.png"  Width="25px" runat="server" /></div>
+                                     <div  style="float:left">
+                                         <asp:Label ID="Label11"  CssClass="LabelStyle"  runat="server" Text="General"></asp:Label></div>   <div  style="float:right;text-align:right"><asp:CheckBox ID="chkGeneral" runat="server" AutoPostBack="true" TextAlign="Right" Text=" " 
+                                                CssClass="checkboxStyle" /></div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div  style="float:left;margin-top:-5px;">      <asp:Image ID="Image10"  ImageUrl="../images/bullet-blue.ico"  Width="25px" runat="server" /></div>
+                                   <div  style="float:left">
+                                       <asp:Label ID="Label12"   CssClass="LabelStyle"  runat="server" Text="Dummy Booking "></asp:Label></div> <div  style="float:right;text-align:right">      <asp:CheckBox ID="chkDummy" runat="server" TextAlign="Left" 
+                                                Text="" CssClass="checkboxStyle" /></div>  </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div  style="float:left;margin-top:-5px;">      <asp:Image ID="Image11"  ImageUrl="../images/bullet-green.ico"  Width="25px" runat="server" /></div>
+                                   <div  style="float:left">
+                                       <asp:Label ID="Label13"   CssClass="LabelStyle"  runat="server" Text="Free Sale"></asp:Label></div> <div  style="float:right;text-align:right">      <asp:CheckBox ID="chkFreeSale" runat="server" AutoPostBack="true" TextAlign="Left" 
+                                                Text="" CssClass="checkboxStyle" /></div>  </td>
+                                                </tr>                                                
+                                                <tr>
+                                                    <td>
+                                                        <div  style="float:left;margin-top:-5px;">      <asp:Image ID="Image12"  ImageUrl="../images/bullet-red.ico"  Width="25px" runat="server" /></div>
+                                   <div  style="float:left">
+                                       <asp:Label ID="Label14"   CssClass="LabelStyle"  runat="server" Text="Stop Sale"></asp:Label></div> <div  style="float:right;text-align:right">      <asp:CheckBox ID="chkStopSale" runat="server" AutoPostBack="true" TextAlign="Left" 
+                                                Text="" CssClass="checkboxStyle" /></div>  </td>
+                                                </tr>
+                                                <tr>
+                                                <td style="min-width:150px">
+                                                <asp:Label ID="Label5"   CssClass="LabelStyle1"  runat="server" Text="Days for Near Release"></asp:Label>
+                                            &nbsp;<asp:TextBox ID="txtReleaseDays" runat="server" Width="20%" MaxLength="3"  CssClass="field_input" Text="3"></asp:TextBox>
+                                        </td></tr>
+                                            </table>                                          
+                                        </td>
+                                    </tr>                                    
+                                </table>
+                        </div>
+                        </td>
+                        <td width="85%" valign="top" >
+                        <div id="dvCalendar" style="padding-left:10px;"> 
+                        <table width="100%">
+                        <tr><td><table width="100%"> 
+                        <tr>
+                        <td  style=" vertical-align:middle; width:225px">
+                            <IV:InventoryView ID="InventoryView1" runat="server" />                          
+                        </td>
+                        <td align="left" style=" vertical-align:middle;"><asp:Button ID="btnSearch" runat="server" CssClass="btnStyle" Text="Search" /></td>
+                         <td align="right" style="padding-right:20px; vertical-align:middle;"> 
+                              <asp:Button ID="btnBack" CssClass="buttonCal" runat="server" Text="&lt;" />
+                                 <asp:TextBox ID="txtMonthYear" CssClass="txtCal" Width="130px" runat="server" 
+                                     Enabled="False"></asp:TextBox> 
+                                 <asp:Button ID="btnNext"  CssClass="buttonCal"  runat="server" Text="&gt;" />
+                                 <asp:ImageButton ID="ImgBtnMonth" Height="27" CssClass="ImgMonth"  runat="server" ImageUrl="~/Images/MonthlyCalendar.ico"/>                             
+                                 <asp:Button ID="btnMonth" runat="server" Style="display: none" />
+                                 <cc1:CalendarExtender ID="txtMonthYear_CalendarExtender" runat="server" OnClientHidden="onCalendarHidden" DefaultView="Months"
+                                    OnClientShown="onCalendarShown" Format="MMMM, yyyy" BehaviorID="calendar1"  TargetControlID="txtMonthYear" PopupButtonID="ImgBtnMonth">
+                                 </cc1:CalendarExtender>
+                        </td> </tr>
+                        </table> </td></tr>
+                        <tr><td>
+                               <asp:UpdatePanel ID="UpdatePanelCalendar" runat="server">
+                             <ContentTemplate>
+                                 <asp:DataList ID="dlMonthlyCalendar" runat="server" RepeatColumns="7"  Width="99%"
+                                     RepeatDirection="Horizontal">                        
+                                     <ItemTemplate>
+                                     <div style= "width:100%;">
+                                      <asp:Label ID="lblDay" runat="server"  width="90%" Text='<%# Eval("theDayName") %>'  CssClass="LabelStyle"
+                                                         Visible="true"></asp:Label>
+                                     <div id="dvDay" runat="server" style= "border: 1px solid #ccc; width:90%;height:80px;margin-bottom:18px; background-color:#FFFFFF">
+                                         <table class="style1">
+                                             <tr>
+                                                 <td>
+                                                     &nbsp;</td>
+                                                 <td align="right">
+                                                     <asp:Label ID="lblDate" runat="server" Text='<%# Eval("DayNumber") %>' 
+                                                         CssClass="LabelStyle"
+                                                         ForeColor="White" Font-Bold="False"></asp:Label>&nbsp;</td>
+
+                                             </tr>
+                                             <tr>
+                                                 <td colspan="2">
+                                                 
+                                                 </td>
+                                             </tr>
+                                         </table>
+                                         <div style="margin-top:-22px; height:60px; width:100px; vertical-align:top;">
+                                         <table style="width:100%">
+                                         <tr><td runat="server" id="col1"><asp:Image ID="imgB2B"  ImageUrl="../images/bullet-amber.png" CssClass="imageStyle" Visible="false" runat="server"/>
+                                         <asp:Label ID="lblB2B" runat="server"  CssClass="InventoryTextStyle" Text="" ></asp:Label><br id="brB2B" runat="server" visible="false" />                                             
+                                         <asp:Image ID="imgFinancial"  ImageUrl="../images/bullet-yellow.ico" CssClass="imageStyle" Visible="false" runat="server"/>
+                                         <asp:Label ID="lblFinancial" runat="server" CssClass="InventoryTextStyle" Text="" ></asp:Label><br id="brFinancial" runat="server" visible="false" />                                             
+                                         <asp:Image ID="imgGeneral"  ImageUrl="../images/bullet-Magenta.png" CssClass="imageStyle" Visible="false" runat="server"/>
+                                         <asp:Label ID="lblGeneral" runat="server"  CssClass="InventoryTextStyle" Text=""></asp:Label> <br id="brGeneral" runat="server" visible="false" />
+                                         </td>
+                                         <td runat="server" id="col2">
+                                         <asp:Image ID="imgFreeSale"  ImageUrl="../images/bullet-green.ico" CssClass="imageStyle" Visible="false" runat="server"/>
+                                         <asp:Label ID="lblFreeSale" runat="server"  CssClass="InventoryTextStyle" Text="" Visible="false"></asp:Label> <br id="brFreeSale" runat="server" visible="false" />                                                                                     
+                                         <asp:Image ID="imgStopSale"  ImageUrl="../images/bullet-Red.ico" CssClass="imageStyle" Visible="false" runat="server"/>
+                                         <asp:Label ID="lblStopSale" runat="server"  CssClass="InventoryTextStyle" Text="" Visible="false"></asp:Label>  <br id="brStopSale" runat="server" visible="false" />                                                                                                                            
+                                         </td>                                         
+                                         </tr>
+                                         </table>
+                                         </div>
+                                        <div style="height:80px; margin-top:0px; vertical-align:bottom;"  >
+                                             <div id="divExhibition" runat="server" >
+                                                 <asp:Label ID="lblExhibition" runat="server"></asp:Label>                                         </div> </div> </div> 
+                                         </div>  
+                                     </ItemTemplate>
+                                     <ItemStyle Width= "150px"/>
+                                 </asp:DataList>
+                             </ContentTemplate>
+                                 </asp:UpdatePanel>
+                                 </td></tr>
+                                 </table>
+                              </div> 
+                            <asp:HiddenField ID="hfMonthGrid" runat="server" />
+                             </td>
+                    </tr>
+                </table>
+                
+            </td>      
+        </tr>
+    </table>
+    </ContentTemplate>
+    </asp:UpdatePanel>    
+    <div id="div1">
+    <asp:ScriptManagerProxy ID="ScriptManagerProxy1" runat="server">
+        <services>
+            <asp:ServiceReference Path="~/clsHotelGroupServices.asmx" />
+            <asp:ServiceReference Path="~/clsAgentServices.asmx" />
+        </services>
+    </asp:ScriptManagerProxy>
+            </div>
+ </asp:Content>

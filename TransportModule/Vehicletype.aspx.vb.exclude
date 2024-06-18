@@ -1,0 +1,1090 @@
+﻿#Region "Namespace"
+Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Collections.ArrayList
+Imports System.Collections.Generic
+#End Region
+
+Partial Class TransportModule_Vehicletype
+    Inherits System.Web.UI.Page
+
+#Region "Global Declaration"
+    Dim objUtils As New clsUtils
+    Dim strSqlQry As String
+    Dim mySqlCmd As SqlCommand
+    Dim mySqlReader As SqlDataReader
+    Dim mySqlConn As SqlConnection
+    Dim sqlTrans As SqlTransaction
+    Dim FindPage As String
+#End Region
+
+#Region "Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load"
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        If Page.IsPostBack = False Then
+
+            Try
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+                FillDropDown()
+                txtconnection.Value = Session("dbconnectionName")
+
+                'ViewState.Add("OthcatState", Request.QueryString("State"))
+                'ViewState.Add("OthcatRefCode", Request.QueryString("RefCode"))
+                ViewState.Add("VTState", Request.QueryString("State"))
+                ViewState.Add("VTRefCode", Request.QueryString("RefCode"))
+
+
+                ' objUtils.FillDropDownListnew(Session("dbconnectionName"), ddlGroup, "othgrpcode", "select othgrpcode from othgrpmast where active=1 order by othgrpcode", True)
+
+
+                'If FindPage = "Yes" Then
+                '    'strSqlQry = strSqlQry & " WHERE dbo.othcatmast.othgrpcode=(Select Option_Selected From Reservation_ParaMeters Where Param_Id='1001') And  " & BuildCondition() & " ORDER BY " & strorderby & " " & strsortorder
+                objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlOtherGrpCode, "othgrpcode", "othgrpname", "select othgrpcode,othgrpname from othgrpmast where active=1 And othgrpcode=(Select Option_Selected From Reservation_ParaMeters Where Param_Id='1001') order by othgrpcode", True)
+                'objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlOtherGrpName, "othgrpname", "othgrpcode", "select othgrpcode,othgrpname from othgrpmast where active=1 And othgrpcode=(Select Option_Selected From Reservation_ParaMeters Where Param_Id='1001') order by othgrpcode", True)
+                If ViewState("VTState") = "New" Then
+                    ddlOtherGrpCode.SelectedIndex = 0
+                    txtCode.Disabled = True
+                    'ddlOtherGrpName.SelectedIndex = 0
+                End If
+                'Else
+                ''strSqlQry = strSqlQry & " WHERE dbo.othcatmast.othgrpcode<>(Select Option_Selected From Reservation_ParaMeters Where Param_Id='1001') And  " & BuildCondition() & " ORDER BY " & strorderby & " " & strsortorder
+                'objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlOtherGrpCode, "othgrpcode", "othgrpname", "select othgrpcode,othgrpname from othgrpmast where active=1 And othgrpcode<>(Select Option_Selected From Reservation_ParaMeters Where Param_Id='1001') order by othgrpcode", True)
+                'objUtils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlOtherGrpName, "othgrpname", "othgrpcode", "select othgrpcode,othgrpname from othgrpmast where active=1 And othgrpcode<>(Select Option_Selected From Reservation_ParaMeters Where Param_Id='1001') order by othgrpcode", True)
+
+                'End If
+
+                Numbers(txtOrder)
+                Numbers(txtMinPax)
+                Numbers(maxpax)
+                Numbers(txtMaxPax)
+                Numbers(txtchild)
+                'charcters1(txtRemark)
+                charcters(txtCapacity)
+                charcters(txtOptions)
+
+
+                Numbers(txtexcMinPax)
+                Numbers(txtExcMaxad)
+                Numbers(txtExcMaxchild)
+                Numbers(txtexcmaxpax)
+                Numbers(txtchildfreeupto)
+
+                Session("transfersupplier_deleterow") = Nothing
+
+                If ViewState("VTState") = "New" Then
+                    SetFocus(txtCode)
+                    lblHeading.Text = "Add New Vehicle Type"
+                    Page.Title = Page.Title + " " + "New Vehicle Type Master"
+                    btnSave.Text = "Save"
+                    Dim strQry As String = "select isnull (max(grporder),0) from othcatmast where dbo.othcatmast.othgrpcode=(Select Option_Selected From Reservation_ParaMeters " & _
+                        "   Where Param_Id='1001') "
+
+                    txtOrder.Value = objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), strQry) + 1
+
+                    btnSave.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to save Vehicle Type?')==false)return false;")
+
+
+
+                    'btnSave.Attributes.Add("onclick", "return FormValidation('New')")
+                ElseIf ViewState("VTState") = "Edit" Then
+                    SetFocus(txtName)
+                    lblHeading.Text = "Edit Vehicle Type"
+                    Page.Title = Page.Title + " " + "Edit Vehicle Type Master"
+                    btnSave.Text = "Update"
+                    DisableControl()
+                    ShowRecord(CType(ViewState("VTRefCode"), String))
+                    btnSave.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to update Vehicle Type?')==false)return false;")
+                    '                    btnSave.Attributes.Add("onclick", "return FormValidation('Edit')")
+                ElseIf ViewState("VTState") = "View" Then
+                    SetFocus(btnCancel)
+                    lblHeading.Text = "View Vehicle Type"
+                    Page.Title = Page.Title + " " + "View Vehicle Type Master"
+                    btnSave.Visible = False
+                    'btnCancel.Text = "Return to Other Category"
+                    DisableControl()
+                    ShowRecord(CType(ViewState("VTRefCode"), String))
+
+                ElseIf ViewState("VTState") = "Delete" Then
+                    SetFocus(btnSave)
+                    lblHeading.Text = "Delete Vehicle Type"
+                    Page.Title = Page.Title + " " + "Delete Vehicle Type Master"
+                    btnSave.Text = "Delete"
+                    DisableControl()
+                    ShowRecord(CType(ViewState("VTRefCode"), String))
+                    'btnSave.Attributes.Add("onclick", "return FormValidation('Delete')")
+                    btnSave.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to delete Vehicle Type?')==false)return false;")
+                End If
+                btnCancel.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to cancel?')==false)return false;")
+
+                '                btnSave.Attributes.Add("onclick", "return FormValidation()")
+
+                '   ValidateOnlyNumber()
+                btnViewimage.Attributes.Add("onclick", "return PopUpImageView('" & lblimage.Text & "')")
+                Dim typ As Type
+                typ = GetType(DropDownList)
+
+                If (Page.ClientScript.IsClientScriptIncludeRegistered(typ, "TADDScript.js")) = False Then
+                    Page.ClientScript.RegisterClientScriptInclude(typ, "TADDScript.js", "TADDScript.js")
+                    ddlOtherGrpCode.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+                    'ddlOtherGrpName.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+                End If
+                'charcters(txtCode)
+                'charcters(txtName)
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("VehicleTypeSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+        End If
+    End Sub
+#End Region
+
+#Region "charcters1"
+    Public Sub charcters1(ByVal txtbox As TextBox)
+        txtbox.Attributes.Add("onkeypress", "return checkCharacter(event)")
+    End Sub
+#End Region
+
+#Region "Numbers"
+    Public Sub Numbers(ByVal txtbox As HtmlInputText)
+        txtbox.Attributes.Add("onkeypress", "return checkNumber(event)")
+    End Sub
+#End Region
+
+#Region "charcters"
+    Public Sub charcters(ByVal txtbox As HtmlInputText)
+        txtbox.Attributes.Add("onkeypress", "return checkCharacter(event)")
+    End Sub
+#End Region
+
+#Region "Private Sub DisableControl()"
+
+    Private Sub DisableControl()
+        If ViewState("VTState") = "View" Or ViewState("VTState") = "Delete" Then
+            txtCode.Disabled = True
+            txtName.Disabled = True
+            ddlOtherGrpCode.Disabled = True
+            txtRemark.Enabled = False
+            'ddlCalcPax.Enabled = False
+            'ddladchild.Enabled = False
+            txtOrder.Disabled = True
+            txtMinPax.Disabled = True
+            maxpax.Disabled = True
+            ChkActive.Disabled = True
+            txtCapacity.Disabled = True
+            txtOptions.Disabled = True
+            ChkPakReq.Disabled = True
+            txtchild.Disabled = True
+            'ChkPrnRemark.Disabled = True
+            txtMaxPax.Disabled = True
+            chkshuttle.Disabled = True
+            ddlAllotType.Enabled = False
+            ddlCarType.Enabled = False
+            txtsuppname.Enabled = False
+            txtchildfreeupto.Disabled = True
+        ElseIf ViewState("VTState") = "Edit" Then
+            txtCode.Disabled = True
+        End If
+
+    End Sub
+
+#End Region
+
+#Region " Validate Page"
+    Public Function ValidatePage() As Boolean
+        Try
+
+            If txtName.Value.Trim = "" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Name field can not be blank.');", True)
+                SetFocus(txtName)
+                ValidatePage = False
+                Exit Function
+            End If
+
+            'If ddlOtherGrpCode.Value = "[Select]" Then
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Please select group.');", True)
+            '    SetFocus(ddlOtherGrpCode)
+            '    ValidatePage = False
+            '    Exit Function
+            'End If
+            'If txtOrder.Value.Trim = "" Then
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Order field can not be blank.');", True)
+            '    SetFocus(txtOrder)
+            '    ValidatePage = False
+            '    Exit Function
+            'Else
+            '    If Val(txtOrder.Value) <= 0 Then
+            '        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Order can not be less than or equal to zero.');", True)
+            '        SetFocus(txtOrder)
+            '        ValidatePage = False
+            '        Exit Function
+            '    End If
+            'End If
+
+            'If txtCapacity.Value.Trim = "" Then
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Capacity field can not be blank.');", True)
+            '    SetFocus(txtCapacity)
+            '    ValidatePage = False
+            '    Exit Function
+            'End If
+
+
+            If txtMinPax.Value.Trim = "" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('MinPax field can not be blank.');", True)
+                SetFocus(txtMinPax)
+                ValidatePage = False
+                Exit Function
+            Else
+                If Val(txtMinPax.Value) <= 0 Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('MinPax can not be less than or equal to zero.');", True)
+                    SetFocus(txtMinPax)
+                    ValidatePage = False
+                    Exit Function
+                End If
+            End If
+
+
+            If Val(txtMinPax.Value) > Val(maxpax.Value.Trim) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('MaxPax field can not be less than Minpax.');", True)
+                SetFocus(txtMaxPax)
+                ValidatePage = False
+                Exit Function
+            End If
+
+
+
+            If maxpax.Value.Trim = "" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('MaxPax field can not be blank.');", True)
+                SetFocus(txtMaxPax)
+                ValidatePage = False
+                Exit Function
+            Else
+                If Val(maxpax.Value) < 0 Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('MaxPax can not be less than zero.');", True)
+                    SetFocus(txtMaxPax)
+                    ValidatePage = False
+                    Exit Function
+                End If
+            End If
+
+            'If txtsuppname.Text.Trim = "" Then
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Prefered Supplier can not be blank.');", True)
+            '    SetFocus(txtsuppname)
+            '    ValidatePage = False
+            '    Exit Function
+            'End If
+
+            'If objUtils.GetDBFieldValueExistnew(Session("dbconnectionName"), "partymast", "partycode", CType(txtsuppcode.Text.Trim, String)) = False Then
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Selected Supplier not belongs to this Supplier Master');", True)
+            '    ValidatePage = False
+            '    Exit Function
+            'End If
+
+            ValidatePage = True
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+
+        End Try
+    End Function
+#End Region
+    <System.Web.Script.Services.ScriptMethod()> _
+<System.Web.Services.WebMethod()> _
+    Public Shared Function Getsupplierlist(ByVal prefixText As String) As List(Of String)
+
+        Dim strSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim suppname As New List(Of String)
+        Try
+
+            strSqlQry = "select partycode,partyname  from  partymast where active=1 and sptypecode in (select option_selected from reservation_parameters where param_id=564) and  partyname like  '" & Trim(prefixText) & "%' order by partyname "
+
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            ' SqlConn = clsDBConnect.dbConnectionnew(objclsConnectionName.ConnectionName)
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+
+                    suppname.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("partyname").ToString(), myDS.Tables(0).Rows(i)("partycode").ToString()))
+
+                Next
+
+            End If
+
+            Return suppname
+        Catch ex As Exception
+            Return suppname
+        End Try
+
+    End Function
+    
+
+#Region "Protected Sub btnSave_Click(ByVal sender As Object, ByVal e As System.EventArgs) "
+
+    Protected Sub btnSave_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            Dim strpath1 As String = ""
+            Dim strpath2 As String = ""
+            Dim strpath3 As String = ""
+            Dim strpath4 As String = ""
+            Dim strpath_logo1 As String = ""
+            Dim strpath_logo2 As String = ""
+            Dim strpath_logo3 As String = ""
+            Dim strpath_logo4 As String = ""
+            If Page.IsValid = True Then
+                If ViewState("VTState") = "New" Or ViewState("VTState") = "Edit" Then
+                    If ValidatePage() = False Then
+                        Exit Sub
+                    End If
+                    If checkForDuplicate() = False Then
+                        Exit Sub
+                    End If
+
+                    For Each GVRow In grdsuppdetails.Rows
+
+                        Dim txtPriorOrder1 As TextBox = GVRow.FindControl("txtPriorOrder")
+                        Dim txtPreferedCode1 As TextBox = GVRow.FindControl("txtPreferedCode")
+                        If txtPreferedCode1.Text = "" Then
+                            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Prefered supplier field can not be blank.');", True)
+                            SetFocus(txtPreferedCode1)
+                            Exit Sub
+                        End If
+                        If txtPriorOrder1.Text = "" Then
+                            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Prioritize field can not be blank.');", True)
+                            SetFocus(txtPriorOrder1)
+                            Exit Sub
+                        End If
+                    Next
+
+
+
+
+
+
+
+
+                    If fileVehicleImage.FileName <> "" Then
+                        strpath_logo1 = fileVehicleImage.FileName ' IIf(txtimg.Value = "", fileVehicleImage.FileName, txtimg.Value)
+
+                        strpath1 = Server.MapPath("VehicleImages/" & strpath_logo1)
+                        fileVehicleImage.PostedFile.SaveAs(strpath1)
+
+                        lblimage.Text = strpath_logo1
+                    Else
+                        lblimage.Text = IIf(lblimage.Text = "", fileVehicleImage.FileName, lblimage.Text)
+
+                        ' SendImageToWebService(strpath1, strpath_logo1)
+                    End If
+
+                    mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+                    sqlTrans = mySqlConn.BeginTransaction           'SQL  Trans start
+
+                    If ViewState("VTState") = "New" Then
+                        Dim optionval As String
+                        optionval = objUtils.GetAutoDocNo("VEHTYPE", mySqlConn, sqlTrans)
+                        txtCode.Value = optionval.Trim
+                        mySqlCmd = New SqlCommand("sp_add_othcat", mySqlConn, sqlTrans)
+                    ElseIf ViewState("VTState") = "Edit" Then
+                        mySqlCmd = New SqlCommand("sp_mod_othcat", mySqlConn, sqlTrans)
+                    End If
+
+
+
+
+
+
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+
+                    mySqlCmd.Parameters.Add(New SqlParameter("@othcatcode", SqlDbType.VarChar, 20)).Value = CType(txtCode.Value.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@othcatname", SqlDbType.VarChar, 150)).Value = CType(txtName.Value.Trim, String)
+                    'mySqlCmd.Parameters.Add(New SqlParameter("@othgrpcode", SqlDbType.VarChar, 20)).Value = CType(ddlGroup.SelectedValue, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@othgrpcode", SqlDbType.VarChar, 20)).Value = CType(ddlOtherGrpCode.Items(ddlOtherGrpCode.SelectedIndex).Text, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@grporder", SqlDbType.Int, 4)).Value = CType(Val(txtOrder.Value.Trim), Long)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@minpax", SqlDbType.Int, 4)).Value = CType(Val(txtMinPax.Value.Trim), Long)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@maxpax", SqlDbType.Int, 4)).Value = CType(Val(maxpax.Value.Trim), Long)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@unitname", SqlDbType.VarChar, 10)).Value = " "
+                    mySqlCmd.Parameters.Add(New SqlParameter("@remarks", SqlDbType.Text)).Value = CType(txtRemark.Text.Trim, String)
+                    If ChkActive.Checked = True Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@active", SqlDbType.Int)).Value = 1
+                    ElseIf ChkActive.Checked = False Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@active", SqlDbType.Int)).Value = 0
+                    End If
+
+                    ' Print Remark not present in ths screen , but saved as '1' in othr cat table (same table for 'Othrcat' & 'Vehicle Type')
+                    'If ChkPrnRemark.Checked = True Then
+                    mySqlCmd.Parameters.Add(New SqlParameter("@printremarks", SqlDbType.Int)).Value = 1
+                    'ElseIf ChkPrnRemark.Checked = False Then
+                    '    mySqlCmd.Parameters.Add(New SqlParameter("@printremarks", SqlDbType.Int)).Value = 0
+                    'End If
+                    If ChkPakReq.Checked = True Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@paxcheckReqd", SqlDbType.Int)).Value = 1
+                    ElseIf ChkPakReq.Checked = False Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@paxcheckReqd", SqlDbType.Int)).Value = 0
+                    End If
+                    ' 'Calc by pax' not present in ths screen , but saved as 'No' in othr cat table (same table for 'Othrcat' & 'Vehicle Type')
+                    mySqlCmd.Parameters.Add(New SqlParameter("@calcyn", SqlDbType.VarChar, 10)).Value = "No"
+                    mySqlCmd.Parameters.Add(New SqlParameter("@adultchild", SqlDbType.VarChar, 10)).Value = CType(txtMaxPax.Value.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@dispname", SqlDbType.VarChar, 50)).Value = " "
+                    mySqlCmd.Parameters.Add(New SqlParameter("@Capacity", SqlDbType.Text)).Value = CType(txtCapacity.Value.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@Options", SqlDbType.Text)).Value = CType(txtOptions.Value.Trim, String)
+                    If chkshuttle.Checked = True Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@shuttle", SqlDbType.Int)).Value = 1
+                    Else
+                        mySqlCmd.Parameters.Add(New SqlParameter("@shuttle", SqlDbType.Int)).Value = 0
+                    End If
+                    mySqlCmd.Parameters.Add(New SqlParameter("@cartype", SqlDbType.Int)).Value = CType(ddlCarType.SelectedValue, Integer)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@allottype", SqlDbType.Int)).Value = CType(ddlAllotType.SelectedValue, Integer)
+                    ' If fileVehicleImage.FileName <> "" Then
+                    mySqlCmd.Parameters.Add(New SqlParameter("@imagename", SqlDbType.VarChar, 100)).Value = CType(lblimage.Text, String) ' CType(fileVehicleImage.FileName, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@child", SqlDbType.Int, 4)).Value = CType(Val(txtchild.Value.Trim), Long)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@presupplier", SqlDbType.Text)).Value = CType(txtsuppcode.Text.Trim, String)
+
+                    mySqlCmd.Parameters.Add(New SqlParameter("@excminpax", SqlDbType.Int, 4)).Value = CType(Val(txtexcMinPax.Value.Trim), Long)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@excmaxpax", SqlDbType.Int, 4)).Value = CType(Val(txtexcmaxpax.Value.Trim), Long)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@excmaxadult", SqlDbType.Int, 4)).Value = CType(Val(txtExcMaxad.Value.Trim), Long)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@excmaxchild", SqlDbType.Int, 4)).Value = CType(Val(txtExcMaxchild.Value.Trim), Long)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@childfreeupto", SqlDbType.Decimal)).Value = CType(Val(txtchildfreeupto.Value.Trim), Decimal)
+
+                    'Added by abin on 20190523
+                    Dim txtPreferedCode As TextBox
+                    Dim txtPriorOrder As TextBox
+                    Dim strPreferedSupplier As New StringBuilder
+                    strPreferedSupplier.Append("<DocumentElement>")
+                    For Each GVRow In grdsuppdetails.Rows
+
+                        txtPriorOrder = GVRow.FindControl("txtPriorOrder")
+                        txtPreferedCode = GVRow.FindControl("txtPreferedCode")
+                        strPreferedSupplier.Append("<Table>")
+                        strPreferedSupplier.Append("<othcatcode>" & CType(txtCode.Value.Trim, String) & "</othcatcode>")
+                        strPreferedSupplier.Append("<presupplier>" & txtPreferedCode.Text.Trim & "</presupplier>")
+                        strPreferedSupplier.Append("<PriorOrder>" & txtPriorOrder.Text.Trim & "</PriorOrder>")
+                        strPreferedSupplier.Append("</Table>")
+                    Next
+                    strPreferedSupplier.Append("</DocumentElement>")
+                    mySqlCmd.Parameters.Add(New SqlParameter("@Supplierxml", SqlDbType.VarChar, 20000)).Value = CType(strPreferedSupplier.ToString, String)
+                    ' @Supplierxml 
+
+                    'End If
+                    mySqlCmd.ExecuteNonQuery()
+
+
+                ElseIf ViewState("VTState") = "Delete" Then
+                    If checkForDeletion() = False Then
+                        Exit Sub
+                    End If
+                    mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+                    sqlTrans = mySqlConn.BeginTransaction           'SQL  Trans start
+
+                    mySqlCmd = New SqlCommand("sp_del_othcat", mySqlConn, sqlTrans)
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@othcatcode", SqlDbType.VarChar, 20)).Value = CType(txtCode.Value.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                    mySqlCmd.ExecuteNonQuery()
+                End If
+
+                sqlTrans.Commit()    'SQl Tarn Commit
+                clsDBConnect.dbSqlTransation(sqlTrans)              ' sql Transaction disposed 
+                clsDBConnect.dbCommandClose(mySqlCmd)               'sql command disposed
+                clsDBConnect.dbConnectionClose(mySqlConn)           'connection close
+                'Response.Redirect("OtherServiceCategoriesSearch.aspx", False)
+                Dim strscript As String = ""
+
+                strscript = "window.opener.__doPostBack('CarTypeWindowPostBack', '');window.opener.focus();window.close();"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            If mySqlConn.State = ConnectionState.Open Then
+                sqlTrans.Rollback()
+            End If
+
+            objUtils.WritErrorLog("VehicleType.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+#End Region
+
+#Region " Private Sub ShowRecord(ByVal RefCode As String)"
+
+    Private Sub ShowRecord(ByVal RefCode As String)
+        Try
+
+          
+
+
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+            mySqlCmd = New SqlCommand("Select * from othcatmast Where othcatcode='" & RefCode & "'", mySqlConn)
+            mySqlReader = mySqlCmd.ExecuteReader(CommandBehavior.CloseConnection)
+            If mySqlReader.HasRows Then
+                If mySqlReader.Read() = True Then
+                    If IsDBNull(mySqlReader("othcatcode")) = False Then
+                        Me.txtCode.Value = CType(mySqlReader("othcatcode"), String)
+                    Else
+                        Me.txtCode.Value = ""
+                    End If
+
+          
+
+                    If IsDBNull(mySqlReader("othcatname")) = False Then
+                        Me.txtName.Value = CType(mySqlReader("othcatname"), String)
+                    Else
+                        Me.txtName.Value = ""
+                    End If
+                    'If IsDBNull(mySqlReader("othgrpcode")) = False Then
+                    '    Me.ddlGroup.SelectedValue = CType(mySqlReader("othgrpcode"), String)
+                    '    Me.txtOtherGroup.Value = CType(objUtils.GetDBFieldFromStringnew(Session("dbconnectionName"),"othgrpmast", "othgrpname", "othgrpcode", ddlGroup.SelectedValue), String)
+                    'End If
+                    If IsDBNull(mySqlReader("othgrpcode")) = False Then
+                        ddlOtherGrpCode.Value = CType(objUtils.GetDBFieldFromStringnew(Session("dbconnectionName"), "othgrpmast", "othgrpname", "othgrpcode", CType(mySqlReader("othgrpcode"), String)), String)
+                        'ddlOtherGrpName.Value = CType(mySqlReader("othgrpcode"), String)
+                    Else
+                        ddlOtherGrpCode.Value = "[Select]"
+                        'ddlOtherGrpName.Value = "[Select]"
+                    End If
+
+                    If IsDBNull(mySqlReader("presupplier")) = False Then
+                        txtsuppcode.Text = mySqlReader("presupplier")
+                        txtsuppname.Text = objUtils.GetDBFieldFromStringnew(Session("dbconnectionName"), "partymast", "partyname", "partycode", mySqlReader("presupplier"))
+                    End If
+
+                    If IsDBNull(mySqlReader("grporder")) = False Then
+                        txtOrder.Value = mySqlReader("grporder")
+                    Else
+                        Me.txtOrder.Value = ""
+                    End If
+                    If IsDBNull(mySqlReader("remarks")) = False Then
+                        txtRemark.Text = mySqlReader("remarks")
+                    Else
+                        Me.txtRemark.Text = ""
+                    End If
+                    If IsDBNull(mySqlReader("minpax")) = False Then
+                        Me.txtMinPax.Value = mySqlReader("minpax")
+                    Else
+                        Me.txtMinPax.Value = ""
+                    End If
+                    If IsDBNull(mySqlReader("maxpax")) = False Then
+                        Me.maxpax.Value = mySqlReader("maxpax")
+                    Else
+                        Me.maxpax.Value = ""
+                    End If
+                    If IsDBNull(mySqlReader("capacity")) = False Then
+                        Me.txtCapacity.Value = mySqlReader("capacity")
+                    Else
+                        Me.txtCapacity.Value = ""
+                    End If
+                    If IsDBNull(mySqlReader("options")) = False Then
+                        Me.txtOptions.Value = mySqlReader("options")
+                    Else
+                        Me.txtOptions.Value = ""
+                    End If
+
+                    If IsDBNull(mySqlReader("imagename")) = False Then
+                        btnViewimage.Visible = True
+                        Me.lblimage.Text = mySqlReader("imagename")
+                    Else
+                        Me.lblimage.Text = ""
+                        btnViewimage.Visible = False
+                    End If
+                    If IsDBNull(mySqlReader("child")) = False Then
+                        Me.txtchild.Value = mySqlReader("child")
+                    Else
+                        Me.txtchild.Value = ""
+                    End If
+
+                    If IsDBNull(mySqlReader("minpax")) = False Then
+                        Me.txtMinPax.Value = mySqlReader("minpax")
+                    Else
+                        Me.txtMinPax.Value = ""
+                    End If
+
+                    If IsDBNull(mySqlReader("excminpax")) = False Then
+                        Me.txtexcMinPax.Value = mySqlReader("excminpax")
+                    Else
+                        Me.txtexcMinPax.Value = ""
+                    End If
+                    If IsDBNull(mySqlReader("excmaxpax")) = False Then
+                        Me.txtexcmaxpax.Value = mySqlReader("excmaxpax")
+                    Else
+                        Me.txtexcmaxpax.Value = ""
+                    End If
+                    If IsDBNull(mySqlReader("excmaxadult")) = False Then
+                        Me.txtExcMaxad.Value = mySqlReader("excmaxadult")
+                    Else
+                        Me.txtExcMaxad.Value = ""
+                    End If
+                    If IsDBNull(mySqlReader("excmaxchild")) = False Then
+                        Me.txtExcMaxchild.Value = mySqlReader("excmaxchild")
+                    Else
+                        Me.txtExcMaxchild.Value = ""
+                    End If
+
+                    If IsDBNull(mySqlReader("childfreeupto")) = False Then
+                        Me.txtchildfreeupto.Value = mySqlReader("childfreeupto")
+                    Else
+                        Me.txtchildfreeupto.Value = ""
+                    End If
+
+
+                    'If IsDBNull(mySqlReader("calcyn")) = False Then
+                    '    Me.ddlCalcPax.SelectedValue = mySqlReader("calcyn")
+                    'End If
+
+                    'Select Case CType(objUtils.ExecuteQueryReturnStringValuenew(Session("dbconnectionName"), "select ratesbasedonpax from othgrpmast where active=1 and othgrpcode='" & CType(ddlOtherGrpCode.Items(ddlOtherGrpCode.SelectedIndex).Text, String) & "'"), String)
+                    '    Case "1"
+
+                    '        Select Case mySqlReader("adultchild")
+                    '            Case "A"
+                    '                Me.ddladchild.SelectedIndex = 0
+                    '            Case "C"
+                    '                Me.ddladchild.SelectedIndex = 1
+                    '        End Select
+
+                    '    Case Else
+
+                    '        Me.ddladchild.Style("display") = "none"
+                    '        Me.lbladult.Style("display") = "none"
+                    'End Select
+                    If IsDBNull(mySqlReader("adultchild")) = False Then
+                        Me.txtMaxPax.Value = mySqlReader("adultchild")
+                    Else
+                        Me.txtMaxPax.Value = ""
+                    End If
+
+                    If IsDBNull(mySqlReader("active")) = False Then
+                        If CType(mySqlReader("active"), String) = "1" Then
+                            ChkActive.Checked = True
+                        ElseIf CType(mySqlReader("active"), String) = "0" Then
+                            ChkActive.Checked = False
+                        End If
+                    End If
+
+
+                    If IsDBNull(mySqlReader("paxcheckreqd")) = False Then
+                        If CType(mySqlReader("paxcheckreqd"), String) = "1" Then
+                            ChkPakReq.Checked = True
+                        ElseIf CType(mySqlReader("paxcheckreqd"), String) = "0" Then
+                            ChkPakReq.Checked = False
+                        End If
+                    End If
+
+                    If IsDBNull(mySqlReader("shuttle")) = False Then
+                        If mySqlReader("shuttle") = 1 Then
+                            chkshuttle.Checked = True
+                        Else
+                            chkshuttle.Checked = False
+                        End If
+
+                    End If
+
+                    If IsDBNull(mySqlReader("cartype")) = False Then
+                        ddlCarType.SelectedValue = CType(mySqlReader("cartype"), String)
+                    Else
+                        ddlCarType.SelectedValue = "-1"
+                    End If
+
+                    If IsDBNull(mySqlReader("allottype")) = False Then
+                        ddlAllotType.SelectedValue = CType(mySqlReader("allottype"), String)
+                    Else
+                        ddlAllotType.SelectedValue = "-1"
+                    End If
+                    'If IsDBNull(mySqlReader("printRemarks")) = False Then
+                    '    If CType(mySqlReader("printRemarks"), String) = "1" Then
+                    '        ChkPrnRemark.Checked = True
+                    '    ElseIf CType(mySqlReader("printRemarks"), String) = "0" Then
+                    '        ChkPrnRemark.Checked = False
+                    '    End If
+                    'End If
+
+
+
+                End If
+            End If
+
+            '' added by abin on 20190523
+            Dim count As Long
+            Dim strPrefered As String = ""
+            Dim strPriorOrder As String = ""
+            Dim txtPrefered As TextBox
+            Dim txtPreferedCode As TextBox
+            Dim txtPriorOrder As TextBox
+
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+            mySqlCmd = New SqlCommand("Select count(*) from othcatmast_prefered_supplier(nolock) Where Othcatcode='" & RefCode & "'", mySqlConn)
+            count = mySqlCmd.ExecuteScalar
+            mySqlCmd.Dispose()
+            mySqlConn.Close()
+            If count > 0 Then
+                fillDategrd(grdsuppdetails, False, count)
+            Else
+                fillDategrd(grdsuppdetails, True, count)
+            End If
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+            mySqlCmd = New SqlCommand("Select s.*,p.partyname from othcatmast_prefered_supplier(nolock) s ,partymast p (nolock) where s.presupplier=p.partycode and s.Othcatcode='" & RefCode & "'", mySqlConn)
+            mySqlReader = mySqlCmd.ExecuteReader(CommandBehavior.CloseConnection)
+            For Each GVRow In grdsuppdetails.Rows
+                If mySqlReader.Read = True Then
+                    If IsDBNull(mySqlReader("Othcatcode")) = False Then
+
+
+                        txtPrefered = GVRow.FindControl("txtPrefered")
+                        txtPriorOrder = GVRow.FindControl("txtPriorOrder")
+                        txtPreferedCode = GVRow.FindControl("txtPreferedCode")
+
+                        txtPrefered.Text = CType(mySqlReader("partyname"), String)
+                        txtPriorOrder.Text = CType(mySqlReader("PriorOrder"), String)
+                        txtPreferedCode.Text = CType(mySqlReader("presupplier"), String)
+                        'select partyname  from  partymast(nolock) where partycode=''
+                    End If
+                End If
+
+
+            Next
+            mySqlCmd.Dispose()
+            mySqlReader.Close()
+            mySqlConn.Close()
+
+
+
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VehicleType.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbCommandClose(mySqlCmd)               'sql command disposed
+            clsDBConnect.dbReaderClose(mySqlReader)             ' sql reader disposed    
+            clsDBConnect.dbConnectionClose(mySqlConn)           'connection close           
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click"
+    Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click
+        'Response.Redirect("OtherServiceCategoriesSearch.aspx", False)
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+    End Sub
+#End Region
+
+#Region "Public Function checkForDuplicate() As Boolean"
+    Public Function checkForDuplicate() As Boolean
+        If ViewState("VTState") = "New" Then
+
+            If objUtils.isDuplicatenew(Session("dbconnectionName"), "othcatmast", "othcatname", txtName.Value.Trim) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This Vehicle Type name is already present.');", True)
+                checkForDuplicate = False
+                Exit Function
+            End If
+        ElseIf ViewState("VTState") = "Edit" Then
+            If objUtils.isDuplicateForModifynew(Session("dbconnectionName"), "othcatmast", "othcatcode", "othcatname", txtName.Value.Trim, CType(txtCode.Value.Trim, String)) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This Vehicle Type name is already present.');", True)
+                checkForDuplicate = False
+                Exit Function
+            End If
+        End If
+        checkForDuplicate = True
+    End Function
+#End Region
+
+#Region "Public Function checkForDeletion() As Boolean"
+    Public Function checkForDeletion() As Boolean
+        checkForDeletion = True
+        If objUtils.GetDBFieldValueExistnew(Session("dbconnectionName"), "partyothtyp", "othtypcode", CType(txtCode.Value.Trim, String)) = True Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This ServiceType is already used for a OtherServicesTypes of suppliers, cannot delete this ServiceTypes');", True)
+            checkForDeletion = False
+            Exit Function
+
+        ElseIf objUtils.GetDBFieldValueExistnew(Session("dbconnectionName"), " oplistdnew", "othtypcode", CType(txtCode.Value.Trim, String)) = True Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This ServiceType is already used for a OtherServicesPriceList, cannot delete this ServiceTypes');", True)
+            checkForDeletion = False
+            Exit Function
+
+        ElseIf objUtils.GetDBFieldValueExistnew(Session("dbconnectionName"), " oplist_costd", "othtypcode", CType(txtCode.Value.Trim, String)) = True Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This ServiceType is already used for a OtherServices CostPriceList, cannot delete this ServiceTypes');", True)
+            checkForDeletion = False
+            Exit Function
+
+        ElseIf objUtils.GetDBFieldValueExistnew(Session("dbconnectionName"), " oplistd", "othtypcode", CType(txtCode.Value.Trim, String)) = True Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This ServiceType is already used for a DetailsofOtherServices CostPriceList, cannot delete this ServiceTypes');", True)
+            checkForDeletion = False
+            Exit Function
+
+        ElseIf objUtils.GetDBFieldValueExistnew(Session("dbconnectionName"), " partyothcat", "othcatcode", CType(txtCode.Value.Trim, String)) = True Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This ServiceType is already used for a Supplier Other category, cannot delete this ServiceTypes');", True)
+            checkForDeletion = False
+            Exit Function
+        End If
+        checkForDeletion = True
+
+    End Function
+#End Region
+
+
+
+    Protected Sub btnhelp_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "window.open('../Help.aspx?hi=VehicleTypes','_blank','status=1,scrollbars=1,top=135,left=760,width=250,height=500');", True)
+    End Sub
+
+
+    Private Sub FillDropDown()
+        ddlCarType.Items.Clear()
+        ddlCarType.Items.Add(New ListItem("[Select]", "-1"))
+        ddlCarType.Items.Add(New ListItem("Car", "0"))
+        ddlCarType.Items.Add(New ListItem("Bus", "1"))
+
+        ddlAllotType.Items.Clear()
+        ddlAllotType.Items.Add(New ListItem("[Select]", "-1"))
+        ddlAllotType.Items.Add(New ListItem("Free Sale", "0"))
+        ddlAllotType.Items.Add(New ListItem("Upon Request", "1"))
+
+    End Sub
+    Protected Sub btnViewimage_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnViewimage.Click
+
+    End Sub
+
+    Protected Sub btnaddrow_Click(sender As Object, e As System.EventArgs) Handles btnaddrow.Click
+
+        Dim count As Integer
+        Dim GVRow As GridViewRow
+        count = grdsuppdetails.Rows.Count + 1
+       Dim Prefered(count) As String
+        Dim PriorOrder(count) As String
+        Dim PreferedCode(count) As String
+
+        Dim txtPrefered As TextBox
+        Dim txtPriorOrder As TextBox
+        Dim txtPreferedCode As TextBox
+
+        Dim n As Integer = 0
+    
+
+        Try
+            For Each GVRow In grdsuppdetails.Rows
+
+
+                txtPrefered = GVRow.FindControl("txtPrefered")
+                txtPriorOrder = GVRow.FindControl("txtPriorOrder")
+                txtPreferedCode = GVRow.FindControl("txtPreferedCode")
+
+                Prefered(n) = CType(txtPrefered.Text, String)
+                PriorOrder(n) = CType(txtPriorOrder.Text, String)
+                PreferedCode(n) = CType(txtPreferedCode.Text, String)
+
+
+                n = n + 1
+            Next
+            fillDategrd(grdsuppdetails, False, grdsuppdetails.Rows.Count + 1)
+            Dim i As Integer = n
+            n = 0
+            For Each GVRow In grdsuppdetails.Rows
+                If n = i Then
+                    Exit For
+                End If
+                 txtPrefered = GVRow.FindControl("txtPrefered")
+                txtPriorOrder = GVRow.FindControl("txtPriorOrder")
+                txtPreferedCode = GVRow.FindControl("txtPreferedCode")
+
+                txtPrefered.Text = Prefered(n)
+                txtPriorOrder.Text = PriorOrder(n)
+                txtPreferedCode.Text = PreferedCode(n)
+
+                n = n + 1
+            Next
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            ' .writerrorlog(Server.MapPath("Errorlog.txt"), ex.ToString, 1, 1)
+        End Try
+    End Sub
+
+    Protected Sub btndelrow_Click(sender As Object, e As System.EventArgs) Handles btndelrow.Click
+
+        'Createdatacolumns("delete")
+        Dim count As Integer
+        Dim GVRow As GridViewRow
+        count = grdsuppdetails.Rows.Count + 1
+        Dim Prefered(count) As String
+        Dim PriorOrder(count) As String
+        Dim PreferedCode(count) As String
+        Dim txtPreferedCode As TextBox
+
+        Dim txtPrefered As TextBox
+        Dim txtPriorOrder As TextBox
+        Dim chkSelect As CheckBox
+
+        Dim n As Integer = 0
+       
+        Dim delrows(count) As String
+        Dim deletedrow As Integer = 0
+        Dim k As Integer = 0
+
+
+
+        Try
+
+            If CheckSuppliers() = False Then
+                Exit Sub
+            End If
+
+            Dim dt As DataTable
+            dt = Session("transfersupplier_deleterow")
+
+
+            For Each GVRow In grdsuppdetails.Rows
+
+
+                txtPrefered = GVRow.FindControl("txtPrefered")
+                txtPriorOrder = GVRow.FindControl("txtPriorOrder")
+                txtPreferedCode = GVRow.FindControl("txtPreferedCode")
+                chkSelect = GVRow.FindControl("chkSelect")
+
+                If chkSelect.Checked = False Then
+                    Prefered(n) = CType(txtPrefered.Text, String)
+                    PriorOrder(n) = CType(txtPriorOrder.Text, String)
+                    PreferedCode(n) = CType(txtPreferedCode.Text, String)
+                    n = n + 1
+                End If
+         
+
+
+
+            Next
+
+            Session("transfersupplier_deleterow") = dt
+
+
+            count = n
+            If count = 0 Then
+                count = 1
+            End If
+            fillDategrd(grdsuppdetails, False, count)
+
+
+
+
+            Dim i As Integer = n
+            n = 0
+            For Each GVRow In grdsuppdetails.Rows
+                If GVRow.RowIndex < count Then
+
+                    txtPrefered = GVRow.FindControl("txtPrefered")
+                    txtPriorOrder = GVRow.FindControl("txtPriorOrder")
+                    txtPreferedCode = GVRow.FindControl("txtPreferedCode")
+
+                    txtPrefered.Text = Prefered(n)
+                    txtPriorOrder.Text = PriorOrder(n)
+                    PreferedCode(n) = CType(txtPreferedCode.Text, String)
+                   
+                    n = n + 1
+                End If
+            Next
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            ' .writerrorlog(Server.MapPath("Errorlog.txt"), ex.ToString, 1, 1)
+        End Try
+    End Sub
+    Function CheckSuppliers() As Boolean
+        CheckSuppliers = True
+        Dim MyAdapter As SqlDataAdapter
+        Dim ds As New DataSet
+        Dim strMsg As String = ""
+        Try
+            'For Each GvRow In grdsuppdetails.Rows
+            '    Dim txtpartycode As TextBox = GvRow.FindControl("txtpartycode")
+            '    Dim chkSelect As CheckBox = GvRow.FindControl("chksectgrps")
+            '    Dim txtoldpartycode As TextBox = GvRow.FindControl("txtoldpartycode")
+
+            '    If txtpartycode.Text <> "" And chkSelect.Checked = True Then
+
+            '        strSqlQry = "select distinct h.eplistcode , 'SectorCost PriceList' Options from exccplist_header h(nolock), exccplist_detail d(nolock)  where h.eplistcode=d.eplistcode and h.partycode='" & txtoldpartycode.Text & "' and d.exccode='" & txtCustomerCode.Value.Trim & "' union all  " _
+            '                    & " select distinct h.eplistcode,' MultiCost Price List' Options from excmulticplist_header h(nolock), excmulticplist_detail d(nolock)  where h.eplistcode=d.eplistcode and d.partycode='" & txtoldpartycode.Text & "' and h.exctypcode='" & txtCustomerCode.Value.Trim & "'"
+
+
+
+
+            '        mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+            '        MyAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+            '        MyAdapter.Fill(ds, "showsectors")
+
+
+            '        If ds.Tables.Count > 0 Then
+            '            If ds.Tables(0).Rows.Count > 0 Then
+            '                If IsDBNull(ds.Tables(0).Rows(0)("eplistcode")) = False Then
+
+            '                    Dim partyname As String = objUtils.GetDBFieldFromStringnew(Session("dbconnectionName"), "partymast", "partyname", "partycode", CType(txtoldpartycode.Text, String))
+
+            '                    strMsg = "For this Supplier " + partyname + "  Excursion Already Entered Cost Price list " + "\n"
+
+            '                    For i = 0 To ds.Tables(0).Rows.Count - 1
+
+            '                        strMsg += " Options -  " + ds.Tables(0).Rows(i)("Options") + " - Tran.ID  " + ds.Tables(0).Rows(i)("eplistcode") + "\n"
+            '                    Next
+
+            '                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & strMsg & "' );", True)
+            '                    CheckSuppliers = False
+            '                    Exit Function
+            '                End If
+            '            End If
+            '        End If
+            '    End If
+
+            'Next
+
+
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("ExcsuppdetailsMaster.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Function
+    Public Sub fillDategrd(ByVal grd As GridView, Optional ByVal blnload As Boolean = False, Optional ByVal count As Integer = 1)
+        Dim lngcnt As Long
+        If blnload = True Then
+            lngcnt = 1
+        Else
+            lngcnt = count
+        End If
+
+        grd.DataSource = CreateDataSource(lngcnt)
+        grd.DataBind()
+        grd.Visible = True
+    End Sub
+
+    Private Function CreateDataSource(ByVal lngcount As Long) As DataView
+        Dim dt As DataTable
+        Dim dr As DataRow
+        Dim i As Integer
+        dt = New DataTable
+        dt.Columns.Add(New DataColumn("SrNo", GetType(Integer)))
+        For i = 1 To lngcount
+            dr = dt.NewRow()
+            dr(0) = i
+            dt.Rows.Add(dr)
+        Next
+        'return a DataView to the DataTable
+        CreateDataSource = New DataView(dt)
+        'End If
+    End Function
+
+    Protected Sub grdsuppdetails_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles grdsuppdetails.RowDataBound
+        If (e.Row.RowType = DataControlRowType.DataRow) Then
+            Dim txtPreferedCode As TextBox
+            txtPreferedCode = e.Row.FindControl("txtPreferedCode")
+            Dim txtPrefered As TextBox
+            txtPreferedCode = e.Row.FindControl("txtPrefered")
+
+            txtPreferedCode = e.Row.FindControl("txtPreferedCode")
+            txtPrefered = e.Row.FindControl("txtPrefered")
+            Dim txtPriorOrder As TextBox = e.Row.FindControl("txtPriorOrder")
+            txtPriorOrder.Attributes.Add("onkeypress", "return  checkNumber(event)")
+            txtPrefered.Attributes.Add("onkeyup", "txtpreferedsuppnameAutoCompleteExtenderKeyUp('" & txtPrefered.ClientID & "','" & txtPreferedCode.ClientID & "');")
+        End If
+    End Sub
+End Class

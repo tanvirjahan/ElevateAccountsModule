@@ -1,0 +1,1883 @@
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Web.Services
+Imports System.IO
+Imports System.Collections.Generic
+Imports ClosedXML.Excel
+Imports System.Linq
+
+Partial Class VisaOnlyBooking
+    Inherits System.Web.UI.Page
+
+#Region "Global Declaration"
+    Dim objUtils As New clsUtils
+    Dim strSqlQry As String
+    Dim mySqlCmd As SqlCommand
+    Dim mySqlReader As SqlDataReader
+    Dim myDataAdapter As SqlDataAdapter
+    Dim sqlConn As SqlConnection
+    Dim sqlTrans As SqlTransaction
+    Dim highlightColor As Drawing.Color = Drawing.Color.FromArgb(243, 247, 205)
+    Dim highlightBorder As Drawing.Color = Drawing.Color.FromArgb(209, 212, 176)
+#End Region
+
+#Region "Web Services"
+
+    <System.Web.Script.Services.ScriptMethod()> _
+    <System.Web.Services.WebMethod()> _
+    Public Shared Function GetAgentsList(ByVal prefixText As String, ByVal count As Integer, ByVal contextKey As String) As List(Of String)
+
+        Dim strSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim Agentnames As New List(Of String)
+        Try
+            If prefixText = " " Then
+                prefixText = ""
+            End If
+            strSqlQry = "select agentcode,agentname  from agentmast(nolock) where active=1 and divcode='" & contextKey.Trim & "' and agentname like  '" & prefixText & "%' order by agentname"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")         'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    Agentnames.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("agentname").ToString(), myDS.Tables(0).Rows(i)("agentcode").ToString()))
+                Next
+            End If
+
+            Return Agentnames
+        Catch ex As Exception
+            Return Agentnames
+        End Try
+
+    End Function
+
+    <System.Web.Script.Services.ScriptMethod()> _
+    <System.Web.Services.WebMethod()> _
+    Public Shared Function GetCountriesList(ByVal prefixText As String, ByVal count As Integer, ByVal contextKey As String) As List(Of String)
+
+        Dim strSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim countryNames As New List(Of String)
+        Try
+            If prefixText = " " Then
+                prefixText = ""
+            End If
+            strSqlQry = "select a.ctrycode,c.ctryname from agentmast_countries(nolock) a,ctrymast(nolock) c where a.ctrycode=c.ctrycode and a.agentcode= '" & contextKey.Trim & "' and ctryname like  '" & prefixText & "%'  order by ctryname"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")       'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    countryNames.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("ctryname").ToString(), myDS.Tables(0).Rows(i)("ctrycode").ToString()))
+                Next
+            End If
+
+            Return countryNames
+        Catch ex As Exception
+            Return countryNames
+        End Try
+
+    End Function
+
+    <System.Web.Script.Services.ScriptMethod()> _
+    <System.Web.Services.WebMethod()> _
+    Public Shared Function GetCountryDetails(ByVal AgentCode As String) As String
+        Dim strSqlQry As String = ""
+        Dim myDS As New DataSet
+        Try
+            strSqlQry = "select a.ctrycode,c.ctryname from agentmast_countries(nolock) a,ctrymast(nolock) c where a.ctrycode=c.ctrycode and a.agentcode= '" & AgentCode.Trim & "'  order by ctryname"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")     'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS, "Countries")
+
+            Return myDS.GetXml()
+        Catch ex As Exception
+            Return Nothing
+        End Try
+    End Function
+
+    <System.Web.Script.Services.ScriptMethod()> _
+    <System.Web.Services.WebMethod()> _
+    Public Shared Function GetVisaList(ByVal prefixText As String) As List(Of String)
+
+        Dim strSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim VisaTypes As New List(Of String)
+        Try
+            If prefixText = " " Then
+                prefixText = ""
+            End If
+            'strSqlQry = "select othtypcode +'|'+ convert(varchar, NonTaxableValue) as othtypcode,othtypname from othtypmast (nolock) where othgrpcode='VISA' and active=1 and othtypcode <> 'V-000007' and othtypname like '%" & prefixText & "%'  order by othtypname"
+            strSqlQry = "select othtypcode +'|'+ convert(varchar, NonTaxableValue) as othtypcode,othtypname from othtypmast (nolock) where othgrpcode='VISA' and active=1  and othtypname like '%" & prefixText & "%'  order by othtypname"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")         'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    VisaTypes.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("othtypname").ToString(), myDS.Tables(0).Rows(i)("othtypcode").ToString()))
+                Next
+            End If
+            Return VisaTypes
+        Catch ex As Exception
+            Return VisaTypes
+        End Try
+
+    End Function
+
+    <System.Web.Script.Services.ScriptMethod()> _
+     <System.Web.Services.WebMethod()> _
+    Public Shared Function GetNationality(ByVal prefixText As String) As List(Of String)
+        Dim bstrSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim CtryName As New List(Of String)
+        Try
+            bstrSqlQry = "select C.CtryCode,C.CtryName from ctrymast c left outer join VisaOnArrivalCountries V on v.CtryCode =c.ctrycode where V.CtryCode is null and c.active=1 and c.ctryName like  '" & Trim(prefixText) & "%' order by ctryName"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            myDataAdapter = New SqlDataAdapter(bstrSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    CtryName.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("ctryName").ToString(), myDS.Tables(0).Rows(i)("Ctrycode").ToString()))
+                Next
+            End If
+            Return CtryName
+        Catch ex As Exception
+            Return CtryName
+        End Try
+    End Function
+
+    <System.Web.Script.Services.ScriptMethod()> _
+     <System.Web.Services.WebMethod()> _
+    Public Shared Function GetTitle(ByVal prefixText As String) As List(Of String)
+        Dim GuestTitle As New List(Of String)
+        Dim dtTitle As New DataTable
+        Dim arrTitle() As String = {"Mr", "Ms", "Mrs", "Child Male", "Child Female"}
+        dtTitle.Columns.Add(New DataColumn("Title", GetType(String)))
+        For i = 0 To arrTitle.GetUpperBound(0)
+            Dim dr As DataRow = dtTitle.NewRow
+            dr("Title") = arrTitle(i)
+            dtTitle.Rows.Add(dr)
+        Next
+        If dtTitle.Rows.Count > 0 Then
+            For i As Integer = 0 To dtTitle.Rows.Count - 1
+                GuestTitle.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(dtTitle.Rows(i)("Title").ToString(), dtTitle.Rows(i)("Title").ToString()))
+            Next
+        End If
+        Return GuestTitle
+    End Function
+
+    <System.Web.Script.Services.ScriptMethod()> _
+    <System.Web.Services.WebMethod()> _
+    Public Shared Function GetSex(ByVal prefixText As String) As List(Of String)
+        Dim GuestSex As New List(Of String)
+        Dim dtSex As New DataTable
+        Dim arrSex() As String = {"M", "F"}
+        dtSex.Columns.Add(New DataColumn("Sex", GetType(String)))
+        For i = 0 To arrSex.GetUpperBound(0)
+            Dim dr As DataRow = dtSex.NewRow
+            dr("Sex") = arrSex(i)
+            dtSex.Rows.Add(dr)
+        Next
+        If dtSex.Rows.Count > 0 Then
+            For i As Integer = 0 To dtSex.Rows.Count - 1
+                GuestSex.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(dtSex.Rows(i)("Sex").ToString(), dtSex.Rows(i)("Sex").ToString()))
+            Next
+        End If
+        Return GuestSex
+    End Function
+
+    <System.Web.Script.Services.ScriptMethod()> _
+<System.Web.Services.WebMethod()> _
+    Public Shared Function GetPaxType(ByVal prefixText As String) As List(Of String)
+        Dim GuestSex As New List(Of String)
+        Dim dtPaxType As New DataTable
+        Dim arrSex() As String = {"Adult", "Child"}
+        dtPaxType.Columns.Add(New DataColumn("PaxType", GetType(String)))
+        For i = 0 To arrSex.GetUpperBound(0)
+            Dim dr As DataRow = dtPaxType.NewRow
+            dr("PaxType") = arrSex(i)
+            dtPaxType.Rows.Add(dr)
+        Next
+        If dtPaxType.Rows.Count > 0 Then
+            For i As Integer = 0 To dtPaxType.Rows.Count - 1
+                GuestSex.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(dtPaxType.Rows(i)("PaxType").ToString(), dtPaxType.Rows(i)("PaxType").ToString()))
+            Next
+        End If
+        Return GuestSex
+    End Function
+
+    <System.Web.Script.Services.ScriptMethod()> _
+    <System.Web.Services.WebMethod()> _
+    Public Shared Function GetCurrList(ByVal AgentCode As String) As String
+
+        Dim strSqlQry As String = ""
+        Dim myDS As New DataSet
+        Try
+            strSqlQry = "select a.currcode,c.currname,c.invconvrate from agentmast a inner join currmast c on c.currcode=a.currcode and a.agentcode='" & AgentCode & "'"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")             'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS, "Currency")
+            Return myDS.GetXml()
+        Catch ex As Exception
+            Return Nothing
+        End Try
+    End Function
+
+#End Region
+
+#Region "Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        If IsPostBack = False Then
+            Try
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+
+                If Convert.ToString(Request.QueryString("State")) = "View" Then
+                    Session("VisaOnlyBookingState") = "View"
+                    Page.Title = "View Visa Only Booking"
+                    lblHeading.Text = "View Visa Only Booking"
+                ElseIf Convert.ToString(Request.QueryString("State")) = "Edit" Then
+                    Session("VisaOnlyBookingState") = "Edit"
+                    Page.Title = "Edit Visa Only Booking"
+                    lblHeading.Text = "Edit Visa Only Booking"
+                ElseIf Convert.ToString(Request.QueryString("State")) = "Delete" Then
+                    Session("VisaOnlyBookingState") = "Delete"
+                    Page.Title = "Delete Visa Only Booking"
+                    lblHeading.Text = "Delete Visa Only Booking"
+                Else
+                    Session("VisaOnlyBookingState") = "New"
+                    Page.Title = "New Visa Only Booking"
+                    lblHeading.Text = "New Visa Only Booking"
+                End If
+
+                txtVatPerc.Attributes.Add("onkeypress", "return validateDecimalOnly(event,this)")
+                txtVatPerc.Attributes.Add("onchange", "ChangeCalculation()")
+                txtNoOfVisas.Attributes.Add("onkeypress", "return validateDigitOnly(event)")
+                txtNoOfVisas.Attributes.Add("onchange", "GetPriceValue()")
+                txtSellPrice.Attributes.Add("onkeypress", "return validateDecimalOnly(event,this)")
+                txtSellPrice.Attributes.Add("onchange", "CalculateTax()")
+                txtCostPrice.Attributes.Add("onkeypress", "return validateDecimalOnly(event,this)")
+                txtCostPrice.Attributes.Add("onchange", "CalculateCostTax()")
+
+
+                txtChildCostPrice.Attributes.Add("onkeypress", "return validateDecimalOnly(event,this)")
+                txtChildCostPrice.Attributes.Add("onchange", "CalculateCostTax()")
+
+                txtChildSellingPrice.Attributes.Add("onkeypress", "return validateDecimalOnly(event,this)")
+                txtChildSellingPrice.Attributes.Add("onchange", "CalculateTax()")
+
+                txtnoOfChild.Attributes.Add("onkeypress", "return validateDigitOnly(event)")
+                txtnoOfChild.Attributes.Add("onchange", "GetPriceValue()")
+
+
+                Dim myDt As New DataTable
+                sqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                strSqlQry = "select division_master_code,division_master_des from division_master order by division_master_code"
+                myDataAdapter = New SqlDataAdapter(strSqlQry, sqlConn)
+                myDataAdapter.Fill(myDt)
+                ddlDivision.DataTextField = "division_master_des"
+                ddlDivision.DataValueField = "division_master_code"
+                ddlDivision.DataSource = myDt
+                ddlDivision.DataBind()
+                myDt.Clear()
+
+                myDt = New DataTable
+                strSqlQry = "select partycode,partyname from partymast where sptypecode like 'VISA'"
+                myDataAdapter = New SqlDataAdapter(strSqlQry, sqlConn)
+                myDataAdapter.Fill(myDt)
+                ddlSponsor.DataTextField = "partyname"
+                ddlSponsor.DataValueField = "Partycode"
+                ddlSponsor.DataSource = myDt
+                ddlSponsor.DataBind()
+                myDt.Dispose()
+                clsDBConnect.dbAdapterClose(myDataAdapter)
+                clsDBConnect.dbConnectionClose(sqlConn)
+
+                Dim dtTitle As New DataTable
+                Dim arrTitle() As String = {"Mr", "Ms", "Mrs", "Child Male", "Child Female"}
+                dtTitle.Columns.Add(New DataColumn("Title", GetType(String)))
+                For i = 0 To arrTitle.GetUpperBound(0)
+                    Dim dr As DataRow = dtTitle.NewRow
+                    dr("Title") = arrTitle(i)
+                    dtTitle.Rows.Add(dr)
+                Next
+                Session("GuestTitle") = dtTitle
+
+                Dim dtSex As New DataTable
+                Dim arrSex() As String = {"M", "F"}
+                dtSex.Columns.Add(New DataColumn("Sex", GetType(String)))
+                For i = 0 To arrSex.GetUpperBound(0)
+                    Dim dr As DataRow = dtSex.NewRow
+                    dr("Sex") = arrSex(i)
+                    dtSex.Rows.Add(dr)
+                Next
+                Session("GuestSex") = dtSex
+
+                Dim dt As New DataTable()
+                dt.Columns.Add(New DataColumn("UniqueId", GetType(Integer)))
+                dt.Columns.Add(New DataColumn("Title", GetType(String)))
+                dt.Columns.Add(New DataColumn("FamilyName", GetType(String)))
+                dt.Columns.Add(New DataColumn("FirstName", GetType(String)))
+                dt.Columns.Add(New DataColumn("MiddleName", GetType(String)))
+                dt.Columns.Add(New DataColumn("Sex", GetType(String)))
+                dt.Columns.Add(New DataColumn("Age", GetType(Decimal)))
+                dt.Columns.Add(New DataColumn("PassportNo", GetType(String)))
+                dt.Columns.Add(New DataColumn("Nationality", GetType(String)))
+                dt.Columns.Add(New DataColumn("ArrivalDate", GetType(String)))
+                dt.Columns.Add(New DataColumn("DepartureDate", GetType(String)))
+                dt.Columns.Add(New DataColumn("NationCode", GetType(String)))
+                '  dt.Columns.Add(New DataColumn("PaxType", GetType(String)))
+                Session("GuestList") = dt
+                Dim dtOriginal As New DataTable
+                dtOriginal = dt.Clone()
+                Session("OriginalGList") = dtOriginal
+                gvGuestList.ShowFooter = True
+                gvGuestList.DataSource = dt
+                gvGuestList.DataBind()
+                lblTotalGuests.Text = dt.Rows.Count
+
+                If Convert.ToString(Session("VisaOnlyBookingState")) = "View" Then
+                    DisableControls()
+                    btnSave.Visible = False
+                    btnReset.Visible = False
+                    Dim RequestId As String = Convert.ToString(Request.QueryString("ID"))
+                    If RequestId <> "" Then
+                        FillToView(RequestId)
+                    End If
+                    gvGuestList.Columns(10).Visible = False
+                ElseIf Convert.ToString(Session("VisaOnlyBookingState")) = "Edit" Then
+                    Dim RequestId As String = Convert.ToString(Request.QueryString("ID"))
+                    If RequestId <> "" Then
+                        FillToView(RequestId)
+                    End If
+                    SelectVisaType(txtVisaCode.Text)
+                    Dim invConvRate As String = objUtils.ExecuteQueryReturnStringValuenew("strDBConnection", "select invconvrate from currmast where currcode='" + txtCurrcode.Text + "'")
+                    txtInvConvRate.Text = invConvRate
+                    btnSave.Attributes.Add("onclick", "return CompleteValidation('Edit')")
+                ElseIf Convert.ToString(Session("VisaOnlyBookingState")) = "Delete" Then
+                    DisableControls()
+                    btnReset.Visible = False
+                    Dim RequestId As String = Convert.ToString(Request.QueryString("ID"))
+                    If RequestId <> "" Then
+                        FillToView(RequestId)
+                    End If
+                    gvGuestList.Columns(10).Visible = False
+                    btnSave.Text = "Delete"
+                    btnSave.Attributes.Add("onclick", "return CompleteValidation('Delete')")
+                    SetFocus(btnSave)
+                Else
+                    txtRequestDt.Text = Now.Date.ToString("dd/MM/yyyy")
+
+                    Dim VatPercentage As String = objUtils.ExecuteQueryReturnStringValuenew("strDBConnection", "select option_selected from reservation_parameters where param_id=2013")
+                    Session("VatPercentage") = VatPercentage
+                    txtVatPerc.Text = VatPercentage
+                    Dim visaType As String = objUtils.ExecuteQueryReturnStringValuenew("strDBConnection", "select option_selected from reservation_parameters where param_id=2014")
+                    Session("DefaultVisaType") = visaType
+                    SelectVisaType(visaType)
+                    btnSave.Attributes.Add("onclick", "return CompleteValidation('New')")
+                End If
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("VisaOnlySearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnUploadFile_Click(sender As Object, e As System.EventArgs) Handles btnUploadFile.Click"
+    Protected Sub btnUploadFile_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnUploadFile.Click
+        Try
+            If FileUploadExcel.HasFile Then
+                Dim FileName As String = Path.GetFileName(FileUploadExcel.PostedFile.FileName)
+                Dim FileExtension As String = Path.GetExtension(FileUploadExcel.PostedFile.FileName)
+                If FileExtension.ToLower.Trim = ".xls" Or FileExtension.ToLower.Trim = ".xlsx" Then
+                    Dim filePath As String = Server.MapPath("~/ExcelTemp/") + FileName
+                    FileUploadExcel.SaveAs(filePath)
+                    Dim dt As New DataTable()
+                    dt.Columns.Add(New DataColumn("UniqueId", GetType(Integer)))
+                    dt.Columns.Add(New DataColumn("Title", GetType(String)))
+                    dt.Columns.Add(New DataColumn("FamilyName", GetType(String)))
+                    dt.Columns.Add(New DataColumn("FirstName", GetType(String)))
+                    dt.Columns.Add(New DataColumn("MiddleName", GetType(String)))
+                    dt.Columns.Add(New DataColumn("Sex", GetType(String)))
+                    dt.Columns.Add(New DataColumn("Age", GetType(Decimal)))
+                    dt.Columns.Add(New DataColumn("PassportNo", GetType(String)))
+                    dt.Columns.Add(New DataColumn("Nationality", GetType(String)))
+                    dt.Columns.Add(New DataColumn("ArrivalDate", GetType(String)))
+                    dt.Columns.Add(New DataColumn("DepartureDate", GetType(String)))
+                    '   dt.Columns.Add(New DataColumn("PaxType", GetType(String)))
+                    'Dim Mergedt As DataTable = CType(Session("GuestList"), DataTable)
+                    Dim cnt As Integer = 0
+                    'If Not Mergedt Is Nothing Then
+                    '    If Mergedt.Rows.Count > 0 Then
+                    '        cnt = Mergedt.Compute("Max(UniqueId)", "") + 1
+                    '    Else
+                    '        cnt = 0
+                    '    End If
+                    'End If
+                    Using workBook As New XLWorkbook(filePath)
+                        Dim sheetcnt As Integer = 1
+                        While workBook.Worksheets.Count >= sheetcnt
+                            Dim workSheet As IXLWorksheet = workBook.Worksheet(sheetcnt)
+                            Dim firstRow As Boolean = True
+                            For Each row As IXLRow In workSheet.Rows()
+                                If firstRow Then
+                                    'For Each cell As IXLCell In row.Cells(usedCellsOnly:=False)
+                                    '    dt.Columns.Add(cell.Value.ToString())
+                                    'Next
+                                    firstRow = False
+                                Else
+                                    dt.Rows.Add()
+                                    cnt = cnt + 1
+                                    dt.Rows(dt.Rows.Count - 1)(0) = cnt
+                                    Dim i As Integer = 1
+                                    For Each cell As IXLCell In row.Cells("1:10")
+                                        If i = 2 Or i = 3 Or i = 4 Or i = 7 Then
+                                            dt.Rows(dt.Rows.Count - 1)(i) = cell.Value.ToString().ToUpper()
+                                        ElseIf i = 6 Then
+                                            If IsNumeric(cell.Value) Then
+                                                dt.Rows(dt.Rows.Count - 1)(i) = Math.Round(Convert.ToDecimal(cell.Value), 2)
+                                            Else
+                                                dt.Rows(dt.Rows.Count - 1)(i) = 0.0
+                                            End If
+                                        Else
+                                            dt.Rows(dt.Rows.Count - 1)(i) = cell.Value.ToString()
+                                        End If
+                                        i += 1
+                                    Next
+                                End If
+                            Next
+                            sheetcnt += 1
+                        End While
+                    End Using
+                    Dim nCode As New DataColumn("NationCode", GetType(String))
+                    dt.Columns.Add(nCode)
+
+               
+
+                    sqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))          'connection open
+                    strSqlQry = "select C.CtryCode from ctrymast c left outer join VisaOnArrivalCountries V on v.CtryCode =c.ctrycode where V.CtryCode is null and c.active=1 and c.ctryName = @Nationality"
+                    For Each dr As DataRow In dt.Rows
+                        If Convert.ToString(dr("Nationality")).Trim <> "" Then
+                            mySqlCmd = New SqlCommand(strSqlQry, sqlConn)
+                            mySqlCmd.CommandType = CommandType.Text
+                            mySqlCmd.Parameters.Add(New SqlParameter("@Nationality", SqlDbType.VarChar)).Value = Convert.ToString(dr("Nationality")).Trim
+                            Dim code As String = Convert.ToString(mySqlCmd.ExecuteScalar())
+                            dr("NationCode") = code
+                        End If
+                    Next
+                    Dim filterRow = (From n In dt.AsEnumerable() Where n.Field(Of String)("Title") = "" And n.Field(Of String)("FirstName") = "" And n.Field(Of String)("FamilyName") = "" And
+                                     n.Field(Of String)("MiddleName") = "" And n.Field(Of String)("Sex") = "" And n.Field(Of Decimal)("Age") = 0.0 And n.Field(Of String)("PassportNo") = "" And
+                                     n.Field(Of String)("Nationality") = "" And n.Field(Of String)("ArrivalDate") = "" And n.Field(Of String)("DepartureDate") = "" And n.Field(Of String)("NationCode") = "" Select n)
+                    If (Not filterRow Is Nothing) AndAlso filterRow.Count > 0 Then
+                        For Each row In filterRow.ToList()
+                            row.Delete()
+                        Next
+                        dt.AcceptChanges()
+                    End If
+
+                    If dt.Rows.Count > 0 Then
+                        For i As Integer = 0 To dt.Rows.Count - 1
+                            If dt.Rows(i)("ArrivalDate").ToString = "" Then
+                                dt.Rows(i)("ArrivalDate") = txtArrivalDt.Text
+                            End If
+                            If dt.Rows(i)("DepartureDate").ToString = "" Then
+                                dt.Rows(i)("DepartureDate") = txtDepartureDt.Text
+                            End If
+                        Next
+                    End If
+
+                    'Mergedt.Merge(dt)
+                    gvGuestList.ShowFooter = False
+                    gvGuestList.DataSource = dt
+                    gvGuestList.DataBind()
+                    Session("GuestList") = dt
+                    lblTotalGuests.Text = dt.Rows.Count
+                Else
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Choose import excel file' );", True)
+                End If
+            Else
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Choose import excel file' );", True)
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlyBooking.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub gvGuestList_PageIndexChanging(sender As Object, e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gvGuestList.PageIndexChanging"
+    Protected Sub gvGuestList_PageIndexChanging(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gvGuestList.PageIndexChanging
+        gvGuestList.PageIndex = e.NewPageIndex
+        Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+        gvGuestList.DataSource = dt
+        gvGuestList.DataBind()
+    End Sub
+#End Region
+
+#Region "Protected Sub gvGuestList_RowCommand(sender As Object, e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gvGuestList.RowCommand"
+    Protected Sub gvGuestList_RowCommand(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gvGuestList.RowCommand
+        If e.CommandName = "Edit" Then
+            Dim rowIndex As Integer = Convert.ToInt32(e.CommandArgument)
+            Dim row As GridViewRow = gvGuestList.Rows(rowIndex)
+            gvGuestList.ShowFooter = False
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub gvGuestList_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvGuestList.RowDataBound"
+    Protected Sub gvGuestList_RowDataBound(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvGuestList.RowDataBound
+        Dim txtage As New TextBox
+        If e.Row.RowType = DataControlRowType.DataRow And e.Row.RowIndex <> gvGuestList.EditIndex Then
+            Dim lblTitle As Label = CType(e.Row.FindControl("lblTitle"), Label)
+            If lblTitle.Text.Trim <> "" Then
+                Dim dtTitle As DataTable = CType(Session("GuestTitle"), DataTable)
+                Dim fliterRow = (From n In dtTitle.AsEnumerable Where n.Field(Of String)("Title") = lblTitle.Text.Trim Select n)
+                If fliterRow.Count = 0 Then
+                    e.Row.Cells(0).BackColor = highlightColor
+                End If
+            End If
+            Dim lblLastName As Label = CType(e.Row.FindControl("lblLastName"), Label)
+            If lblLastName.Text.Trim = "" Then
+                e.Row.Cells(1).BackColor = highlightColor
+            End If
+            Dim lblFirstName As Label = CType(e.Row.FindControl("lblFirstName"), Label)
+            If lblFirstName.Text.Trim = "" Then
+                '  e.Row.Cells(2).BackColor = highlightColor
+            End If
+
+            Dim lblSex As Label = CType(e.Row.FindControl("lblSex"), Label)
+            If lblSex.Text.Trim <> "" Then
+                Dim dtSex As DataTable = CType(Session("GuestSex"), DataTable)
+                Dim fliterRow = (From n In dtSex.AsEnumerable Where n.Field(Of String)("Sex") = lblSex.Text.Trim Select n)
+                If fliterRow.Count = 0 Then
+                    e.Row.Cells(4).BackColor = highlightColor
+                End If
+            Else
+                ' e.Row.Cells(4).BackColor = highlightColor
+            End If
+
+            Dim lblAge As Label = CType(e.Row.FindControl("lblAge"), Label)
+            If lblAge.Text.Trim <> "" Then
+                If Not IsNumeric(lblAge.Text.Trim) Then
+                    e.Row.Cells(5).BackColor = highlightColor
+                ElseIf Not Convert.ToDecimal(lblAge.Text.Trim) > 0 Then
+                    lblAge.Text = ""
+                End If
+            End If
+            Dim passportno As Label = CType(e.Row.FindControl("lblPassportNo"), Label)
+            If passportno.Text.Trim = "" Then
+                e.Row.Cells(6).BackColor = highlightColor
+            End If
+            Dim lblNation As Label = CType(e.Row.FindControl("lblNation"), Label)
+            Dim lblNationCode As Label = CType(e.Row.FindControl("lblNationCode"), Label)
+            'If lblNation.Text.Trim = "" Or lblNationCode.Text.Trim = "" Then
+            '    e.Row.Cells(7).BackColor = highlightColor
+            'End If
+
+            Dim lblArrivalDt As Label = CType(e.Row.FindControl("lblArrivalDt"), Label)
+            Dim lblDepartureDt As Label = CType(e.Row.FindControl("lblDepartureDt"), Label)
+            If lblArrivalDt.Text <> "" Then
+                If Not IsDate(lblArrivalDt.Text) Then
+                    e.Row.Cells(8).BackColor = highlightColor
+                End If
+            End If
+            If lblDepartureDt.Text <> "" Then
+                If Not IsDate(lblDepartureDt.Text) Then
+                    e.Row.Cells(9).BackColor = highlightColor
+                End If
+            End If
+            If IsDate(lblArrivalDt.Text) And IsDate(lblDepartureDt.Text) Then
+                If Convert.ToDateTime(lblArrivalDt.Text) > Convert.ToDateTime(lblDepartureDt.Text) Then
+                    e.Row.Cells(8).BackColor = highlightColor
+                    e.Row.Cells(9).BackColor = highlightColor
+                End If
+            End If
+        End If
+        If e.Row.RowType = DataControlRowType.EmptyDataRow Or e.Row.RowType = DataControlRowType.Footer Or (e.Row.RowType = DataControlRowType.DataRow And e.Row.RowIndex = gvGuestList.EditIndex) Then
+            txtage = CType(e.Row.FindControl("txtAge"), TextBox)
+            txtage.Attributes.Add("onkeypress", "return validateDecimalOnly(event,this)")
+            Dim txtPassportNo As TextBox = CType(e.Row.FindControl("txtPassportNo"), TextBox)
+            txtPassportNo.Attributes.Add("onkeypress", "return validateAlphaNumeric(event,this)")
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Function Validation() As Boolean"
+    Protected Function Validation() As Boolean
+        Try
+            If Not IsDate(txtRequestDt.Text) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Verify Request Date' );", True)
+                Validation = False
+                Exit Function
+            End If
+            If Not IsDate(txtArrivalDt.Text) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Verify Arrival Date' );", True)
+                Validation = False
+                Exit Function
+            End If
+            Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+            If dt Is Nothing AndAlso dt.Rows.Count = 0 Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('There is no guest' );", True)
+                Validation = False
+                Exit Function
+            End If
+            Dim filterRow = (From n In dt.AsEnumerable() Where n.Field(Of String)("FamilyName") = "" Or n.Field(Of String)("PassportNo") = "" Select n)
+            If filterRow.Count > 0 Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Family name, First name and Passport Number can not be empty\n Kindly Correct the \'Yellow\' highlighted cells in guest list' );", True)
+                Validation = False
+                Exit Function
+            End If
+            Dim filterRowTitle = (From n In dt.AsEnumerable() Where n.Field(Of String)("Title") <> "" Select n)
+            If filterRowTitle.Count > 0 Then
+                Dim filterDt As DataTable = filterRowTitle.CopyToDataTable()
+                Dim TitleDt As DataTable = CType(Session("GuestTitle"), DataTable)
+                Dim findTitle = (From n In TitleDt.AsEnumerable() Select n.Field(Of String)("Title"))
+                Dim filterTitle = (From m In filterDt.AsEnumerable() Where findTitle.Contains(m.Field(Of String)("Title")) = False Select m)
+                If filterTitle.Count > 0 Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Title from the list\n Kindly Correct the\'Yellow\' highlighted cells in guest list' );", True)
+                    Validation = False
+                    Exit Function
+                End If
+            End If
+            'Dim filterRowSex = (From n In dt.AsEnumerable() Where n.Field(Of String)("Sex") <> "M" And n.Field(Of String)("Sex") <> "F" Select n)
+            'If filterRowSex.Count > 0 Then
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Sex should be (M/F)\n Kindly Correct the\'Yellow\' highlighted cells in guest list' );", True)
+            '    Validation = False
+            '    Exit Function
+            'End If
+            Dim filterRowDt = (From n In dt.AsEnumerable() Where n.Field(Of String)("ArrivalDate") <> "" And n.Field(Of String)("DepartureDate") <> "" Select n)
+            If filterRowDt.Count > 0 Then
+                Dim filterDt As DataTable = filterRowDt.CopyToDataTable()
+                Dim filterRowDtCheck = (From n In filterDt.AsEnumerable() Where Convert.ToDateTime(n.Field(Of String)("ArrivalDate")) > n.Field(Of String)("DepartureDate") Select n)
+                If filterRowDtCheck.Count > 0 Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Arrival Date is greater than departure date\n Kindly Correct the \'Yellow\' highlighted cells in guest list');", True)
+                    Validation = False
+                    Exit Function
+                End If
+            End If
+            Dim filterPassport = (From n In dt.AsEnumerable() Group n By passNo = n.Field(Of String)("PassportNo") Into grp = Group, cnt = Count() Where cnt > 1 Select New With {passNo, cnt})
+            If filterPassport.Count > 0 Then
+                Dim passNos As String = ""
+                For i = 0 To filterPassport.Count() - 1
+                    If passNos = "" Then
+                        passNos = filterPassport(i).passNo
+                    Else
+                        passNos = passNos + ", " + filterPassport(i).passNo
+                    End If
+                Next
+                If filterPassport.Count = 1 Then
+                    passNos = "Passport number is " + passNos
+                Else
+                    passNos = "Passport numbers are " + passNos
+                End If
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Duplicate Passport number exist\n " + passNos + " ' );", True)
+                Validation = False
+                Exit Function
+            End If
+            If Convert.ToInt32(Val(txtNoOfVisas.Text) + (Val(txtnoOfChild.Text))) <> dt.Rows.Count Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('No of visas should be equal to No. of guests');", True)
+                Validation = False
+                Exit Function
+            End If
+            Validation = True
+        Catch ex As Exception
+            Validation = False
+            Throw New Exception(ex.Message)
+        End Try
+
+    End Function
+#End Region
+
+#Region "Protected Sub btnSave_Click(sender As Object, e As System.EventArgs) Handles btnSave.Click"
+    Protected Sub btnSave_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSave.Click
+        Try
+            If Session("VisaOnlyBookingState") = "Edit" Or Session("VisaOnlyBookingState") = "Delete" Then
+                Dim visapplied As Integer = Convert.ToInt32(objUtils.ExecuteQueryReturnStringValuenew("strDBConnection", "select count(*) from Visa_guest where VisaStatus is not null and VisaStatus <>100 and requestid like '" + txtRequestId.Text.Trim + "'"))
+                If visapplied > 0 Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Visa is applied for guest of this booking. Check visa applied page' );", True)
+                    Exit Sub
+                End If
+            End If
+            fnGetPriceForSave(sender, e)
+            If Session("VisaOnlyBookingState") = "New" Or Session("VisaOnlyBookingState") = "Edit" Then
+                If Validation() = False Then
+                    Exit Sub
+                End If
+                sqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))          'connection open
+                sqlTrans = sqlConn.BeginTransaction
+                Dim RequestID As String = ""
+                If Session("VisaOnlyBookingState") = "New" Then
+                    If ddlDivision.SelectedValue = "01" Then
+                        RequestID = objUtils.GetAutoDocNo("VISAONLYRP", sqlConn, sqlTrans)
+                    ElseIf ddlDivision.SelectedValue = "02" Then
+                        RequestID = objUtils.GetAutoDocNo("VISAONLYRG", sqlConn, sqlTrans)
+                    Else
+                        RequestID = ""
+                    End If
+                    txtRequestId.Text = RequestID
+                End If
+                If txtRequestId.Text.Trim = "" Then
+                    sqlTrans.Rollback()
+                    clsDBConnect.dbSqlTransation(sqlTrans)
+                    clsDBConnect.dbConnectionClose(sqlConn)
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Request ID can not be empty');", True)
+                    Exit Sub
+                End If
+                If Session("VisaOnlyBookingState") = "New" Then
+                    mySqlCmd = New SqlCommand("add_visabooking_header", sqlConn, sqlTrans)
+                ElseIf Session("VisaOnlyBookingState") = "Edit" Then
+                    mySqlCmd = New SqlCommand("mod_visabooking_header", sqlConn, sqlTrans)
+                End If
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@RequestID", SqlDbType.VarChar, 20)).Value = txtRequestId.Text.Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@RequestDate", SqlDbType.VarChar, 10)).Value = Convert.ToDateTime(txtRequestDt.Text).ToString("yyyy/MM/dd")
+                mySqlCmd.Parameters.Add(New SqlParameter("@DivisionCode", SqlDbType.VarChar, 20)).Value = ddlDivision.SelectedValue.Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@ArrivalDate", SqlDbType.VarChar, 10)).Value = Convert.ToDateTime(txtArrivalDt.Text).ToString("yyyy/MM/dd")
+                mySqlCmd.Parameters.Add(New SqlParameter("@AgentCode", SqlDbType.VarChar, 20)).Value = txtAgentCode.Text.Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@SourceCtryCode", SqlDbType.VarChar, 20)).Value = txtCtryCode.Text.Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@VisaTypcode", SqlDbType.VarChar, 20)).Value = txtVisaCode.Text.Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@VATPerc", SqlDbType.Decimal)).Value = Convert.ToDecimal(txtVatPerc.Text)
+                mySqlCmd.Parameters("@VATPerc").Precision = 10
+                mySqlCmd.Parameters("@VATPerc").Scale = 3
+                mySqlCmd.Parameters.Add(New SqlParameter("@NoOfVisas", SqlDbType.Int)).Value = Convert.ToInt32(txtNoOfVisas.Text.Trim)
+                mySqlCmd.Parameters.Add(New SqlParameter("@CurrCode", SqlDbType.VarChar, 20)).Value = txtCurrcode.Text.Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@InvConvRate", SqlDbType.Decimal)).Value = Convert.ToDecimal(txtInvConvRate.Text)
+                mySqlCmd.Parameters("@InvConvRate").Precision = 18
+                mySqlCmd.Parameters("@InvConvRate").Scale = 12
+                mySqlCmd.Parameters.Add(New SqlParameter("@VisaPrice", SqlDbType.Decimal)).Value = Convert.ToDecimal(txtSellPrice.Text)
+                mySqlCmd.Parameters("@VisaPrice").Precision = 18
+                mySqlCmd.Parameters("@VisaPrice").Scale = 3
+                mySqlCmd.Parameters.Add(New SqlParameter("@VisaValue", SqlDbType.Decimal)).Value = Convert.ToDecimal(txtSellValue.Text)
+                mySqlCmd.Parameters("@VisaValue").Precision = 18
+                mySqlCmd.Parameters("@VisaValue").Scale = 3
+                mySqlCmd.Parameters.Add(New SqlParameter("@oplistcode", SqlDbType.VarChar, 20)).Value = hdOpListCode.Value.Trim
+                If IsNumeric(txtSellTax.Text.Trim) Then
+                    mySqlCmd.Parameters.Add(New SqlParameter("@TaxableValue", SqlDbType.Money)).Value = CType(txtSellTax.Text.Trim, Decimal)
+                Else
+                    mySqlCmd.Parameters.Add(New SqlParameter("@TaxableValue", SqlDbType.Money)).Value = 0.0
+                End If
+                If IsNumeric(txtSellNonTax.Text.Trim) Then
+                    mySqlCmd.Parameters.Add(New SqlParameter("@NonTaxableValue", SqlDbType.Money)).Value = CType(txtSellNonTax.Text.Trim, Decimal)
+                Else
+                    mySqlCmd.Parameters.Add(New SqlParameter("@NonTaxableValue", SqlDbType.Money)).Value = 0.0
+                End If
+                If IsNumeric(txtSellVAT.Text.Trim) Then
+                    mySqlCmd.Parameters.Add(New SqlParameter("@VatValue", SqlDbType.Money)).Value = CType(txtSellVAT.Text.Trim, Decimal)
+                Else
+                    mySqlCmd.Parameters.Add(New SqlParameter("@VatValue", SqlDbType.Money)).Value = 0.0
+                End If
+                mySqlCmd.Parameters.Add(New SqlParameter("@VisaCostPrice", SqlDbType.Decimal)).Value = Convert.ToDecimal(txtCostPrice.Text)
+                mySqlCmd.Parameters("@VisaCostPrice").Precision = 18
+                mySqlCmd.Parameters("@VisaCostPrice").Scale = 3
+                mySqlCmd.Parameters.Add(New SqlParameter("@VisaCostValue", SqlDbType.Decimal)).Value = Convert.ToDecimal(txtCostValue.Text)
+                mySqlCmd.Parameters("@VisaCostValue").Precision = 18
+                mySqlCmd.Parameters("@VisaCostValue").Scale = 3
+                mySqlCmd.Parameters.Add(New SqlParameter("@ocplistcode", SqlDbType.VarChar, 20)).Value = hdOcpListCode.Value.Trim
+                If IsNumeric(txtCostTax.Text.Trim) Then
+                    mySqlCmd.Parameters.Add(New SqlParameter("@CostTaxableValue", SqlDbType.Money)).Value = CType(txtCostTax.Text.Trim, Decimal)
+                Else
+                    mySqlCmd.Parameters.Add(New SqlParameter("@costTaxableValue", SqlDbType.Money)).Value = 0.0
+                End If
+                If IsNumeric(txtCostNonTax.Text.Trim) Then
+                    mySqlCmd.Parameters.Add(New SqlParameter("@CostNonTaxableValue", SqlDbType.Money)).Value = CType(txtCostNonTax.Text.Trim, Decimal)
+                Else
+                    mySqlCmd.Parameters.Add(New SqlParameter("@CostNonTaxableValue", SqlDbType.Money)).Value = 0.0
+                End If
+                If IsNumeric(txtCostTax.Text.Trim) Then
+                    mySqlCmd.Parameters.Add(New SqlParameter("@CostVatValue", SqlDbType.Money)).Value = CType(txtCostVat.Text.Trim, Decimal)
+                Else
+                    mySqlCmd.Parameters.Add(New SqlParameter("@CostVatValue", SqlDbType.Money)).Value = 0.0
+                End If
+                mySqlCmd.Parameters.Add(New SqlParameter("@AgentRef", SqlDbType.VarChar, 100)).Value = txtAgencyRef.Text.Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@SponsorId", SqlDbType.VarChar, 20)).Value = ddlSponsor.SelectedValue.Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 100)).Value = CType(Session("GlobalUserName"), String)
+
+                If txtChildSellingPrice.Text = "" Then
+                    txtChildSellingPrice.Text = "0"
+                End If
+                If txtChildCostPrice.Text = "" Then
+                    txtChildCostPrice.Text = "0"
+                End If
+                mySqlCmd.Parameters.Add(New SqlParameter("@VisaPrice_Child", SqlDbType.Decimal)).Value = Convert.ToDecimal(txtChildSellingPrice.Text)
+                mySqlCmd.Parameters("@VisaPrice_Child").Precision = 18
+                mySqlCmd.Parameters("@VisaPrice_Child").Scale = 3
+
+                mySqlCmd.Parameters.Add(New SqlParameter("@VisaCostPrice_Child", SqlDbType.Decimal)).Value = Convert.ToDecimal(txtChildCostPrice.Text)
+                mySqlCmd.Parameters("@VisaCostPrice_Child").Precision = 18
+                mySqlCmd.Parameters("@VisaCostPrice_Child").Scale = 3
+                If txtnoOfChild.Text = "" Then
+                    txtnoOfChild.Text = "0"
+                End If
+
+                mySqlCmd.Parameters.Add(New SqlParameter("@NoOfVisa_Child", SqlDbType.Int)).Value = Convert.ToInt32(txtnoOfChild.Text.Trim)
+
+                mySqlCmd.ExecuteNonQuery()
+                mySqlCmd.Dispose()
+
+                Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+                dt.Columns.Add(New DataColumn("GuestLineNo", GetType(Integer)))
+                Dim seq As Integer = 0
+                For Each dr As DataRow In dt.Rows
+                    seq = seq + 1
+                    dr("GuestLineNo") = seq
+                    If IsDate(dr("ArrivalDate")) Then
+                        dr("ArrivalDate") = Convert.ToDateTime(dr("ArrivalDate")).ToString("yyyy/MM/dd")
+                    End If
+                    If IsDate(dr("DepartureDate")) Then
+                        dr("DepartureDate") = Convert.ToDateTime(dr("DepartureDate")).ToString("yyyy/MM/dd")
+                    End If
+                Next
+                dt.Columns.Remove("UniqueId")
+                dt.Columns.Remove("Nationality")
+                dt.AcceptChanges()
+
+                If Session("VisaOnlyBookingState") = "Edit" Then
+                    mySqlCmd = New SqlCommand("del_visabooking_guest", sqlConn, sqlTrans)
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@RequestID", SqlDbType.VarChar, 20)).Value = CType(txtRequestId.Text.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 100)).Value = CType(Session("GlobalUserName"), String)
+                    mySqlCmd.ExecuteNonQuery()
+                End If
+                mySqlCmd = New SqlCommand("add_visabooking_guest", sqlConn, sqlTrans)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@RequestID", SqlDbType.VarChar, 20)).Value = txtRequestId.Text.Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@tblVisaGuests", SqlDbType.Structured)).Value = dt
+                mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 100)).Value = CType(Session("GlobalUserName"), String)
+                mySqlCmd.ExecuteNonQuery()
+
+
+
+             
+
+            ElseIf Session("VisaOnlyBookingState") = "Delete" Then
+                sqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))          'connection open
+                sqlTrans = sqlConn.BeginTransaction           'SQL  Trans start
+                mySqlCmd = New SqlCommand("del_visaonlybooking", sqlConn, sqlTrans)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@RequestID", SqlDbType.VarChar, 20)).Value = CType(txtRequestId.Text.Trim, String)
+                mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 100)).Value = CType(Session("GlobalUserName"), String)
+                mySqlCmd.ExecuteNonQuery()
+            End If
+            If Session("VisaOnlyBookingState") = "Edit" Or Session("VisaOnlyBookingState") = "Delete" Then
+                mySqlCmd = New SqlCommand("del_visa_guest", sqlConn, sqlTrans)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@RequestID", SqlDbType.VarChar, 20)).Value = CType(txtRequestId.Text.Trim, String)
+                mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 100)).Value = CType(Session("GlobalUserName"), String)
+                mySqlCmd.ExecuteNonQuery()
+            End If
+
+            mySqlCmd = New SqlCommand("sp_move_visaonlybooking", sqlConn, sqlTrans)
+            mySqlCmd.CommandType = CommandType.StoredProcedure
+            mySqlCmd.Parameters.Add(New SqlParameter("@RequestID", SqlDbType.VarChar, 20)).Value = txtRequestId.Text.Trim
+            If Session("VisaOnlyBookingState") = "New" Then
+                mySqlCmd.Parameters.Add(New SqlParameter("@mode", SqlDbType.VarChar, 20)).Value = "New"
+            ElseIf Session("VisaOnlyBookingState") = "Edit" Then
+                mySqlCmd.Parameters.Add(New SqlParameter("@mode", SqlDbType.VarChar, 20)).Value = "Edit"
+            ElseIf Session("VisaOnlyBookingState") = "Delete" Then
+                mySqlCmd.Parameters.Add(New SqlParameter("@mode", SqlDbType.VarChar, 20)).Value = "Delete"
+            End If
+            mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 100)).Value = CType(Session("GlobalUserName"), String)
+            mySqlCmd.ExecuteNonQuery()
+
+
+
+            sqlTrans.Commit()
+            clsDBConnect.dbCommandClose(mySqlCmd)
+            clsDBConnect.dbConnectionClose(sqlConn)
+            Dim msg As String = ""
+            If Session("VisaOnlyBookingState") = "New" Then
+                msg = "Created"
+            ElseIf Session("VisaOnlyBookingState") = "Edit" Then
+                msg = "Updated"
+            ElseIf Session("VisaOnlyBookingState") = "Delete" Then
+                msg = "Deleted"
+            End If
+            msg = "alert('Visa Only Booking " + msg + " Successfully' );"
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", msg, True)
+            Dim strscript As String = ""
+            strscript = "window.opener.__doPostBack('VisaOnlyBookingPostBack', '');window.opener.focus();window.close();"
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+        Catch ex As Exception
+            If Not sqlConn Is Nothing Then
+                If sqlConn.State = ConnectionState.Open Then
+                    sqlTrans.Rollback()
+                    clsDBConnect.dbCommandClose(mySqlCmd)
+                    clsDBConnect.dbConnectionClose(sqlConn)
+                End If
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlyBooking.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub IBtnCancelInsert_Click(sender As Object, e As System.EventArgs)"
+    Protected Sub IBtnCancelInsert_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        gvGuestList.ShowFooter = False
+        Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+        gvGuestList.DataSource = dt
+        gvGuestList.DataBind()
+    End Sub
+#End Region
+
+#Region "Protected Sub IBtnCancelEdit_Click(sender As Object, e As System.EventArgs)"
+    Protected Sub IBtnCancelEdit_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        gvGuestList.EditIndex = -1
+        Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+        gvGuestList.DataSource = dt
+        gvGuestList.DataBind()
+    End Sub
+#End Region
+
+#Region "Protected Sub btnAddRow_Click(sender As Object, e As System.EventArgs)"
+    Protected Sub btnAddRow_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        gvGuestList.EditIndex = -1
+        gvGuestList.ShowFooter = True
+        Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+        gvGuestList.DataSource = dt
+        gvGuestList.DataBind()
+    End Sub
+#End Region
+
+#Region "Protected Sub gvGuestList_RowDeleting(sender As Object, e As System.Web.UI.WebControls.GridViewDeleteEventArgs) Handles gvGuestList.RowDeleting"
+    Protected Sub gvGuestList_RowDeleting(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewDeleteEventArgs) Handles gvGuestList.RowDeleting
+        Dim gvrow As GridViewRow = gvGuestList.Rows(e.RowIndex)
+        Dim id As Integer = CType(gvrow.FindControl("hdUniqueId"), HiddenField).Value
+        Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+        Dim filterRow = (From n In dt.AsEnumerable() Where n.Field(Of Integer)("UniqueId") = id)
+        If filterRow.Count > 1 Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Duplicate row exist!!!' );", True)
+            Exit Sub
+        ElseIf filterRow.Count = 1 Then
+            Dim row As DataRow = filterRow(0)
+            row.Delete()
+            dt.AcceptChanges()
+        Else
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('The guest does not exist' );", True)
+            Exit Sub
+        End If
+        Session("GuestList") = dt
+        gvGuestList.DataSource = dt
+        gvGuestList.DataBind()
+        lblTotalGuests.Text = dt.Rows.Count
+    End Sub
+#End Region
+
+#Region "Protected Sub gvGuestList_RowEditing(sender As Object, e As System.Web.UI.WebControls.GridViewEditEventArgs) Handles gvGuestList.RowEditing"
+    Protected Sub gvGuestList_RowEditing(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewEditEventArgs) Handles gvGuestList.RowEditing
+        gvGuestList.EditIndex = e.NewEditIndex
+        Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+        gvGuestList.DataSource = dt
+        gvGuestList.DataBind()
+    End Sub
+#End Region
+
+#Region "Protected Sub ddlDivision_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlDivision.SelectedIndexChanged"
+    Protected Sub ddlDivision_SelectedIndexChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles ddlDivision.SelectedIndexChanged
+        txtAgent.Text = ""
+        txtAgentCode.Text = ""
+        txtCtryName.Text = ""
+        txtCtryCode.Text = ""
+        txtCurrName.Text = ""
+        txtCurrcode.Text = ""
+        txtInvConvRate.Text = ""
+        txtNoOfVisas.Text = ""
+        txtSellPrice.Text = ""
+        txtSellValue.Text = ""
+        txtSellTax.Text = ""
+        txtSellNonTax.Text = ""
+        txtSellVAT.Text = ""
+        txtCostPrice.Text = ""
+        txtCostValue.Text = ""
+        txtCostTax.Text = ""
+        txtCostNonTax.Text = ""
+        txtCostVat.Text = ""
+
+        If ddlDivision.SelectedValue = "01" Then
+            ddlSponsor.SelectedValue = "VT-000001"
+        ElseIf ddlDivision.SelectedValue = "02" Then
+            ddlSponsor.SelectedValue = "VT-000002"
+        End If
+
+    End Sub
+#End Region
+
+#Region "Protected Sub AddNewGuest(ByVal sender As Object, ByVal e As EventArgs)"
+    Protected Sub AddNewGuest(ByVal sender As Object, ByVal e As EventArgs)
+        Try
+            Dim control As Control = Nothing
+            If (Not (gvGuestList.FooterRow) Is Nothing) Then
+                control = gvGuestList.FooterRow
+            Else
+                control = gvGuestList.Controls(0).Controls(1)
+            End If
+            Dim Title As String = CType(control.FindControl("txtTitle"), TextBox).Text.Trim
+            Dim TitleCode As String = CType(control.FindControl("txtTitleCode"), TextBox).Text.Trim
+            Dim LastName As String = CType(control.FindControl("txtLastName"), TextBox).Text.Trim
+            Dim FirstName As String = CType(control.FindControl("txtFirstName"), TextBox).Text.Trim
+            Dim MiddleName As String = CType(control.FindControl("txtMiddleName"), TextBox).Text.Trim
+            Dim sex As String = CType(control.FindControl("txtSex"), TextBox).Text.Trim
+            Dim sexCode As String = CType(control.FindControl("txtSexCode"), TextBox).Text.Trim
+            Dim Age As String = CType(control.FindControl("txtAge"), TextBox).Text.Trim
+            Dim PassportNo As String = CType(control.FindControl("txtPassportNo"), TextBox).Text.Trim
+            Dim Nation As String = CType(control.FindControl("txtNation"), TextBox).Text.Trim
+            Dim NationCode As String = CType(control.FindControl("txtNationCode"), TextBox).Text.Trim
+            Dim ArrivalDate As String = CType(control.FindControl("txtArrivalDt"), TextBox).Text.Trim
+            Dim DepartureDate As String = CType(control.FindControl("txtDepartureDt"), TextBox).Text.Trim
+            If Title = "" Then TitleCode = ""
+            If LastName = "" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Family name can not be empty' );", True)
+                Exit Sub
+            End If
+            'If FirstName = "" Then
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('First name can not be empty' );", True)
+            '    Exit Sub
+            'End If
+            If PassportNo = "" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Passport number can not be empty' );", True)
+                Exit Sub
+            End If
+            If sex = "" Then sexCode = ""
+            'If sexCode = "" Then
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Sex can not be empty, Select M/F' );", True)
+            '    Exit Sub
+            'Else
+            If sexCode <> "" Then
+                Using dtSex As DataTable = CType(Session("GuestSex"), DataTable)
+                    Dim fliterRow = (From n In dtSex.AsEnumerable Where n.Field(Of String)("Sex") = sexCode Select n)
+                    If fliterRow.Count = 0 Then
+                        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Sex (M/F)');", True)
+                        Exit Sub
+                    End If
+                End Using
+            End If
+            If Age <> "" Then
+                If Not IsNumeric(Age) Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Age should be number' );", True)
+                    Exit Sub
+                End If
+            End If
+            'If NationCode = "" Then
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Nationality can not be empty, Select Nationality' );", True)
+            '    Exit Sub
+            'End If
+            If ArrivalDate <> "" Then
+                If Not IsDate(ArrivalDate) Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Verify arrival date' );", True)
+                    Exit Sub
+                End If
+            End If
+            If DepartureDate <> "" Then
+                If Not IsDate(DepartureDate) Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Verify departure date' );", True)
+                    Exit Sub
+                End If
+            End If
+            Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+            Dim cnt As Integer = 1
+            If Not dt Is Nothing Then
+                If dt.Rows.Count > 0 Then
+                    cnt = dt.Compute("Max(UniqueId)", "") + 1
+                Else
+                    cnt = 1
+                End If
+            End If
+            Dim dr As DataRow = dt.NewRow
+            dr("UniqueId") = cnt
+            dr("Title") = TitleCode
+            dr("FamilyName") = LastName.ToUpper
+            dr("FirstName") = FirstName.ToUpper
+            dr("MiddleName") = MiddleName.ToUpper
+            dr("Sex") = sexCode
+            If IsNumeric(Age) Then
+                dr("Age") = Math.Round(Convert.ToDecimal(Age), 2)
+            Else
+                dr("Age") = 0.0
+            End If
+            dr("PassportNo") = PassportNo
+            dr("Nationality") = objUtils.ExecuteQueryReturnStringValuenew("strDBConnection", "select CtryName from ctrymast where CtryCode ='" + NationCode.Trim + "'")
+            dr("ArrivalDate") = ArrivalDate
+            dr("DepartureDate") = DepartureDate
+            dr("NationCode") = NationCode
+            dt.Rows.Add(dr)
+            Session("GuestList") = dt
+            gvGuestList.DataSource = dt
+            gvGuestList.DataBind()
+            lblTotalGuests.Text = dt.Rows.Count
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlyBooking.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub gvGuestList_RowUpdating(sender As Object, e As System.Web.UI.WebControls.GridViewUpdateEventArgs) Handles gvGuestList.RowUpdating"
+    Protected Sub gvGuestList_RowUpdating(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewUpdateEventArgs) Handles gvGuestList.RowUpdating
+        Try
+            Dim gvrow As GridViewRow = gvGuestList.Rows(e.RowIndex)
+            Dim id As Integer = CType(gvrow.FindControl("hdUniqueId"), HiddenField).Value
+            Dim Title As String = CType(gvrow.FindControl("txtTitle"), TextBox).Text.Trim
+            Dim TitleCode As String = CType(gvrow.FindControl("txtTitleCode"), TextBox).Text.Trim
+            Dim LastName As String = CType(gvrow.FindControl("txtLastName"), TextBox).Text.Trim
+            Dim FirstName As String = CType(gvrow.FindControl("txtFirstName"), TextBox).Text.Trim
+            Dim MiddleName As String = CType(gvrow.FindControl("txtMiddleName"), TextBox).Text.Trim
+            Dim sex As String = CType(gvrow.FindControl("txtSex"), TextBox).Text.Trim
+            Dim sexCode As String = CType(gvrow.FindControl("txtSexCode"), TextBox).Text.Trim
+            Dim Age As String = CType(gvrow.FindControl("txtAge"), TextBox).Text.Trim
+            Dim PassportNo As String = CType(gvrow.FindControl("txtPassportNo"), TextBox).Text.Trim
+            Dim Nation As String = CType(gvrow.FindControl("txtNation"), TextBox).Text.Trim
+            Dim NationCode As String = CType(gvrow.FindControl("txtNationCode"), TextBox).Text.Trim
+            Dim ArrivalDate As String = CType(gvrow.FindControl("txtArrivalDt"), TextBox).Text.Trim
+            Dim DepartureDate As String = CType(gvrow.FindControl("txtDepartureDt"), TextBox).Text.Trim
+            '  Dim PaxType As String = CType(gvrow.FindControl("txtPaxType"), TextBox).Text.Trim
+
+            If Title = "" Then TitleCode = ""
+            If LastName = "" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Family name can not be empty' );", True)
+                Exit Sub
+            End If
+            'If FirstName = "" Then
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('First name can not be empty' );", True)
+            '    Exit Sub
+            'End If
+            If PassportNo = "" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Passport number can not be empty' );", True)
+                Exit Sub
+            End If
+            If sex = "" Then sexCode = ""
+            'If sexCode = "" Then
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Sex can not be empty, Select M/F' );", True)
+            '    Exit Sub
+            'Else
+            If sexCode <> "" Then
+                Using dtSex As DataTable = CType(Session("GuestSex"), DataTable)
+                    Dim fliterRow = (From n In dtSex.AsEnumerable Where n.Field(Of String)("Sex") = sexCode Select n)
+                    If fliterRow.Count = 0 Then
+                        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Sex (M/F)');", True)
+                        Exit Sub
+                    End If
+                End Using
+            End If
+            If Age <> "" Then
+                If Not IsNumeric(Age) Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Age should be number' );", True)
+                    Exit Sub
+                End If
+            End If
+            If Nation = "" Then NationCode = ""
+            'If NationCode = "" Then
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Nationality' );", True)
+            '    Exit Sub
+            'End If
+            If ArrivalDate <> "" Then
+                If Not IsDate(ArrivalDate) Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Verify arrival date' );", True)
+                    Exit Sub
+                End If
+            End If
+            If DepartureDate <> "" Then
+                If Not IsDate(DepartureDate) Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Verify departure date' );", True)
+                    Exit Sub
+                End If
+            End If
+            'If PaxType <> "" Then
+
+            '    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Please enter pax type(Adult/Child)' );", True)
+            '    Exit Sub
+
+            'End If
+
+            Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+            Dim filterRow = (From n In dt.AsEnumerable() Where n.Field(Of Integer)("UniqueId") = id).ToList()
+
+            If filterRow.Count > 1 Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Duplicate row exist!!!' );", True)
+                Exit Sub
+            ElseIf filterRow.Count = 1 Then
+                sqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                Dim row As DataRow = filterRow(0)
+                row("Title") = TitleCode
+                row("FamilyName") = LastName
+                row("FirstName") = FirstName
+                row("MiddleName") = MiddleName
+                row("Sex") = sexCode
+                If IsNumeric(Age) Then
+                    row("Age") = Math.Round(Convert.ToDecimal(Age), 2)
+                Else
+                    row("Age") = 0.0
+                End If
+                row("PassportNo") = PassportNo
+                row("Nationality") = objUtils.ExecuteQueryReturnStringValuenew("strDBConnection", "select CtryName from ctrymast where CtryCode ='" + NationCode.Trim + "'")
+                row("ArrivalDate") = ArrivalDate
+                row("DepartureDate") = DepartureDate
+                row("NationCode") = NationCode
+                dt.AcceptChanges()
+            Else
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('The guest does not exist' );", True)
+                Exit Sub
+            End If
+            gvGuestList.EditIndex = -1
+            Session("GuestList") = dt
+            gvGuestList.DataSource = dt
+            gvGuestList.DataBind()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlyBooking.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnReset_Click(sender As Object, e As System.EventArgs) Handles btnReset.Click"
+    Protected Sub btnReset_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnReset.Click
+        txtRequestId.Text = ""
+        txtRequestDt.Text = Now.Date.ToString("dd/MM/yyyy")
+        txtArrivalDt.Text = ""
+        ddlDivision.SelectedIndex = 0
+        txtAgent.Text = ""
+        txtAgentCode.Text = ""
+        txtCtryName.Text = ""
+        txtCtryCode.Text = ""
+        txtCurrcode.Text = ""
+        txtCurrName.Text = ""
+        txtInvConvRate.Text = ""
+        txtVisaType.Text = ""
+        txtVisaCode.Text = ""
+        txtVisaNonTax.Text = ""
+        SelectVisaType(Convert.ToString(Session("DefaultVisaType")))
+        txtNoOfVisas.Text = ""
+        txtVatPerc.Text = Convert.ToString(Session("VatPercentage"))
+        txtSellPrice.Text = ""
+        txtSellValue.Text = ""
+        txtSellTax.Text = ""
+        txtSellNonTax.Text = ""
+        txtSellVAT.Text = ""
+        txtCostPrice.Text = ""
+        txtCostValue.Text = ""
+        txtCostTax.Text = ""
+        txtCostNonTax.Text = ""
+        txtCostVat.Text = ""
+        txtAgencyRef.Text = ""
+        ddlSponsor.SelectedIndex = 0
+        Dim OriginalGList As DataTable = CType(Session("OriginalGList"), DataTable)
+        Dim dt As New DataTable
+        dt = OriginalGList.Clone
+        Session("GuestList") = dt
+        RowsPerPageCUS.ClearSelection()
+        RowsPerPageCUS.Items.FindByValue("10").Selected = True
+        gvGuestList.PageSize = RowsPerPageCUS.SelectedValue
+        gvGuestList.DataSource = dt
+        gvGuestList.DataBind()
+        lblTotalGuests.Text = dt.Rows.Count
+    End Sub
+#End Region
+
+#Region "Protected Sub btnCancel_Click(sender As Object, e As System.EventArgs) Handles btnCancel.Click"
+    Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+    End Sub
+#End Region
+
+#Region "Protected Sub FillToView(ByVal RequestId As String)"
+    Protected Sub FillToView(ByVal RequestId As String)
+        Try
+            txtRequestId.Text = RequestId
+            sqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            strSqlQry = "select h.*,a.agentname,c.currname,m.ctryname,o.othtypname from visabooking_header h(nolock) inner join agentmast a(nolock) on h.AgentCode=a.agentcode " &
+            "inner join currmast c on h.CurrCode=c.currcode inner join ctrymast m on h.SourceCtryCode=m.ctrycode " &
+            "inner join othtypmast o on h.VisaTypcode=o.othtypcode and o.othgrpcode='VISA' where RequestId =@RequestId"
+            mySqlCmd = New SqlCommand(strSqlQry, sqlConn)
+            mySqlCmd.CommandType = CommandType.Text
+            mySqlCmd.Parameters.Add(New SqlParameter("@RequestId", SqlDbType.VarChar, 20)).Value = RequestId
+            mySqlReader = mySqlCmd.ExecuteReader
+            If mySqlReader.Read() Then
+                If Not IsDBNull(mySqlReader("RequestDate")) Then
+                    txtRequestDt.Text = Convert.ToDateTime(mySqlReader("RequestDate")).ToString("dd/MM/yyyy")
+                Else
+                    txtRequestDt.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("ArrivalDate")) Then
+                    txtArrivalDt.Text = Convert.ToDateTime(mySqlReader("ArrivalDate")).ToString("dd/MM/yyyy")
+                Else
+                    txtArrivalDt.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("DivisionCode")) Then
+                    ddlDivision.ClearSelection()
+                    ddlDivision.Items.FindByValue(mySqlReader("DivisionCode")).Selected = True
+                Else
+                    ddlDivision.SelectedIndex = 0
+                End If
+                If Not IsDBNull(mySqlReader("CurrName")) Then
+                    txtCurrName.Text = mySqlReader("CurrName")
+                Else
+                    txtCurrName.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("CurrCode")) Then
+                    txtCurrcode.Text = mySqlReader("CurrCode")
+                Else
+                    txtCurrcode.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("VatPerc")) Then
+                    txtVatPerc.Text = Math.Round(mySqlReader("VatPerc"), 2)
+                Else
+                    txtVatPerc.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("AgentName")) Then
+                    txtAgent.Text = mySqlReader("AgentName")
+                Else
+                    txtAgent.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("AgentCode")) Then
+                    txtAgentCode.Text = mySqlReader("AgentCode")
+                Else
+                    txtAgentCode.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("CtryName")) Then
+                    txtCtryName.Text = mySqlReader("CtryName")
+                Else
+                    txtCtryName.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("SourceCtryCode")) Then
+                    txtCtryCode.Text = mySqlReader("SourceCtryCode")
+                Else
+                    txtCtryCode.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("othtypname")) Then
+                    txtVisaType.Text = mySqlReader("othtypname")
+                Else
+                    txtVisaType.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("VisaTypCode")) Then
+                    txtVisaCode.Text = mySqlReader("VisaTypCode")
+                Else
+                    txtVisaCode.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("NoOfVisas")) Then
+                    txtNoOfVisas.Text = mySqlReader("NoOfVisas")
+                Else
+                    txtNoOfVisas.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("NoOfVisa_Child")) Then
+                    txtnoOfChild.Text = mySqlReader("NoOfVisa_Child")
+                Else
+                    txtnoOfChild.Text = ""
+                End If
+
+                If Not IsDBNull(mySqlReader("VisaPrice")) Then
+                    txtSellPrice.Text = Math.Round(mySqlReader("VisaPrice"), 2)
+                Else
+                    txtSellPrice.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("VisaPrice_Child")) Then
+                    txtChildSellingPrice.Text = Math.Round(mySqlReader("VisaPrice_Child"), 2)
+                Else
+                    txtChildSellingPrice.Text = ""
+                End If
+
+                If Not IsDBNull(mySqlReader("VisaValue")) Then
+                    txtSellValue.Text = Math.Round(mySqlReader("VisaValue"), 2)
+                Else
+                    txtSellValue.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("oplistcode")) Then
+                    hdOpListCode.Value = mySqlReader("oplistcode")
+                Else
+                    hdOpListCode.Value = ""
+                End If
+                If Not IsDBNull(mySqlReader("TaxableValue")) Then
+                    txtSellTax.Text = Math.Round(mySqlReader("TaxableValue"), 2)
+                Else
+                    txtSellTax.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("NonTaxableValue")) Then
+                    txtSellNonTax.Text = Math.Round(mySqlReader("NonTaxableValue"), 2)
+                Else
+                    txtSellNonTax.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("VatValue")) Then
+                    txtSellVAT.Text = Math.Round(mySqlReader("VatValue"), 2)
+                Else
+                    txtSellVAT.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("VisaCostPrice")) Then
+                    txtCostPrice.Text = Math.Round(mySqlReader("VisaCostPrice"), 2)
+                Else
+                    txtCostPrice.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("VisaCostPrice_Child")) Then
+                    txtChildCostPrice.Text = Math.Round(mySqlReader("VisaCostPrice_Child"), 2)
+                Else
+                    txtChildCostPrice.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("VisaCostValue")) Then
+                    txtCostValue.Text = Math.Round(mySqlReader("VisaCostValue"), 2)
+                Else
+                    txtCostValue.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("ocplistcode")) Then
+                    hdOcpListCode.Value = mySqlReader("ocplistcode")
+                Else
+                    hdOcpListCode.Value = ""
+                End If
+                If Not IsDBNull(mySqlReader("CostTaxableValue")) Then
+                    txtCostTax.Text = Math.Round(mySqlReader("CostTaxableValue"), 2)
+                Else
+                    txtCostTax.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("CostNonTaxableValue")) Then
+                    txtCostNonTax.Text = Math.Round(mySqlReader("CostNonTaxableValue"), 2)
+                Else
+                    txtCostNonTax.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("CostVatValue")) Then
+                    txtCostVat.Text = Math.Round(mySqlReader("CostVatValue"), 2)
+                Else
+                    txtCostVat.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("AgentRef")) Then
+                    txtAgencyRef.Text = mySqlReader("AgentRef")
+                Else
+                    txtAgencyRef.Text = ""
+                End If
+                If Not IsDBNull(mySqlReader("SponsorId")) Then
+                    ddlSponsor.ClearSelection()
+                    ddlSponsor.Items.FindByValue(mySqlReader("SponsorId")).Selected = True
+                Else
+                    ddlSponsor.SelectedIndex = 0
+                End If
+            End If
+            mySqlReader.Close()
+            strSqlQry = "select GuestLineNo as UniqueId, Title,LastName as FamilyName,FirstName,MiddleName,sex,age,PassportNo,c.ctryname as Nationality, " &
+            "convert(varchar,ArrivalDate,103) as ArrivalDate,convert(varchar,DepartureDate,103) as DepartureDate,g.Nationality as NationCode from visabooking_guest g left outer join " &
+            "ctrymast c on g.Nationality=c.ctrycode where RequestId =@RequestId order by GuestLineNo"
+
+            mySqlCmd = New SqlCommand(strSqlQry, sqlConn)
+            mySqlCmd.CommandType = CommandType.Text
+            mySqlCmd.Parameters.Add(New SqlParameter("@RequestId", SqlDbType.VarChar, 20)).Value = RequestId
+            myDataAdapter.SelectCommand = mySqlCmd
+            Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+            myDataAdapter.Fill(dt)
+            gvGuestList.ShowFooter = False
+            gvGuestList.DataSource = dt
+            gvGuestList.DataBind()
+            Session("GuestList") = dt
+            lblTotalGuests.Text = dt.Rows.Count
+            clsDBConnect.dbConnectionClose(sqlConn)
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlyBooking.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub DisableControls()"
+    Protected Sub DisableControls()
+        txtRequestDt.Enabled = False
+        txtArrivalDt.Enabled = False
+        ddlDivision.Enabled = False
+        txtCurrName.Enabled = False
+        txtVatPerc.Enabled = False
+        txtAgent.Enabled = False
+        txtCtryName.Enabled = False
+        txtVisaType.Enabled = False
+        txtNoOfVisas.Enabled = False
+        txtSellPrice.Enabled = False
+        txtSellValue.Enabled = False
+        txtSellTax.Enabled = False
+        txtSellNonTax.Enabled = False
+        txtSellVAT.Enabled = False
+        txtCostPrice.Enabled = False
+        txtCostValue.Enabled = False
+        txtCostTax.Enabled = False
+        txtCostNonTax.Enabled = False
+        txtCostVat.Enabled = False
+        txtAgencyRef.Enabled = False
+        ddlSponsor.Enabled = False
+        lblFileUpload.Visible = False
+        FileUploadExcel.Visible = False
+        btnUploadFile.Visible = False
+    End Sub
+#End Region
+
+#Region "Protected Sub btnGetPrice_Click(sender As Object, e As System.EventArgs) Handles btnGetPrice.Click"
+    Protected Sub btnGetPrice_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnGetPrice.Click
+
+        fnGetPrice(sender, e)
+
+      
+    End Sub
+#End Region
+
+#Region "Protected Sub btnCalculateTax_Click(sender As Object, e As System.EventArgs) Handles btnCalculateTax.Click"
+    Protected Sub btnCalculateTax_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCalculateTax.Click
+        If IsNumeric(txtNoOfVisas.Text) And IsNumeric(txtSellPrice.Text) Then
+            If txtChildSellingPrice.Text = "" Then
+                txtChildSellingPrice.Text = "0"
+            End If
+            txtSellValue.Text = Math.Round((Convert.ToInt32(txtNoOfVisas.Text) * Convert.ToDecimal(txtSellPrice.Text)) + (Convert.ToInt32(Val(txtnoOfChild.Text)) * Convert.ToDecimal(txtChildSellingPrice.Text)), 2)
+            Dim vatPerc As Decimal
+            If IsNumeric(txtVatPerc.Text) Then
+                vatPerc = Convert.ToDecimal(txtVatPerc.Text)
+            Else
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Vat Percentage can not be empty.');", True)
+                Exit Sub
+            End If
+            Dim SellNonTax As Decimal
+            If IsNumeric(txtSellNonTax.Text) Then
+                SellNonTax = Convert.ToDecimal(txtSellNonTax.Text)
+            Else
+                SellNonTax = 0.0
+                txtSellNonTax.Text = 0.0
+            End If
+            Dim cal As Decimal = Convert.ToDecimal(txtSellValue.Text) - Convert.ToDecimal(SellNonTax)
+            Dim TaxAndVat As Decimal = (100 + vatPerc) / 100
+            cal = cal / TaxAndVat
+            txtSellTax.Text = Math.Round(cal, 2)
+            cal = cal * vatPerc / 100
+            txtSellVAT.Text = Math.Round(cal, 2)
+        Else
+            txtSellValue.Text = ""
+            txtSellTax.Text = ""
+            txtSellVAT.Text = ""
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnCalculateCostTax_Click(sender As Object, e As System.EventArgs) Handles btnCalculateCostTax.Click"
+    Protected Sub btnCalculateCostTax_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCalculateCostTax.Click
+        If IsNumeric(txtNoOfVisas.Text) And IsNumeric(txtCostPrice.Text) Then
+            If txtChildCostPrice.Text = "" Then
+                txtChildCostPrice.Text = "0"
+            End If
+
+            txtCostValue.Text = Math.Round((Convert.ToInt32(txtNoOfVisas.Text) * Convert.ToDecimal(txtCostPrice.Text)) + (Convert.ToInt32(Val(txtnoOfChild.Text)) * Convert.ToDecimal(txtChildCostPrice.Text)), 2)
+
+            Dim vatPerc As Decimal
+            If IsNumeric(txtVatPerc.Text) Then
+                vatPerc = Convert.ToDecimal(txtVatPerc.Text)
+            Else
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Vat Percentage can not be empty.');", True)
+                Exit Sub
+            End If
+            Dim CostNonTax As Decimal
+            If IsNumeric(txtCostNonTax.Text) Then
+                CostNonTax = Convert.ToDecimal(txtCostNonTax.Text)
+            Else
+                CostNonTax = 0.0
+                txtCostNonTax.Text = 0.0
+            End If
+            Dim cal As Decimal = Convert.ToDecimal(txtCostValue.Text) - Convert.ToDecimal(CostNonTax)
+            Dim TaxAndVat As Decimal = (100 + vatPerc) / 100
+            cal = cal / TaxAndVat
+            txtCostTax.Text = Math.Round(cal, 2)
+            cal = cal * vatPerc / 100
+            txtCostVat.Text = Math.Round(cal, 2)
+        Else
+            txtCostValue.Text = ""
+            txtCostTax.Text = ""
+            txtCostVat.Text = ""
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnVatChange_Click(sender As Object, e As System.EventArgs) Handles btnVatChange.Click"
+    Protected Sub btnVatChange_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnVatChange.Click
+        btnCalculateTax_Click(sender, e)
+        btnCalculateCostTax_Click(sender, e)
+    End Sub
+#End Region
+
+#Region "Protected Sub RowsPerPageCUS_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles RowsPerPageCUS.SelectedIndexChanged"
+    Protected Sub RowsPerPageCUS_SelectedIndexChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles RowsPerPageCUS.SelectedIndexChanged
+        Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+        gvGuestList.PageSize = RowsPerPageCUS.SelectedValue
+        gvGuestList.DataSource = dt
+        gvGuestList.DataBind()
+    End Sub
+#End Region
+
+#Region "Protected Sub btnExportToExcel_Click(sender As Object, e As System.EventArgs) Handles btnExportToExcel.Click"
+    Protected Sub btnExportToExcel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnExportToExcel.Click
+        Try
+            Dim dt As DataTable = CType(Session("GuestList"), DataTable)
+            If dt.Rows.Count > 0 Then
+
+
+                Using document As New XLWorkbook
+                    Dim ws As IXLWorksheet = document.AddWorksheet("Guest List")
+                    ws.Style.Font.FontName = "Times New Roman"
+                    ws.Cell(1, 1).Value = "Visa Only Booking Guest Details"
+                    ws.Range(1, 1, 1, 11).Merge().Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+                    ws.Range(1, 1, 1, 11).Style.Font.SetFontSize(11).Font.SetBold()
+                    Dim guestRng As IXLRange
+                    guestRng = ws.Cell(3, 1).InsertTable(dt.AsEnumerable).SetShowHeaderRow(False).AsRange()
+                    ws.Columns(12).Delete()
+                    Dim title As String() = {"Guest Line No.", "Title", "Family Name", "First Name", "Middle Name", "Sex", "Age", "Passport No", "Nationality", "Arrival Date", "Departure Date", "Pax Type"}
+                    For i = 0 To title.GetUpperBound(0)
+                        ws.Cell(3, i + 1).Value = title(i)
+                    Next
+                    guestRng.DataType = XLCellValues.Text
+                    For Each rng As IXLCell In guestRng.Columns(7).Cells
+                        If rng.Value = 0 Then
+                            rng.Value = ""
+                        End If
+                    Next
+                    ws.Range(3, 1, 3, 11).Style.Font.SetFontSize(11).Font.SetBold()
+                    ws.Range(3, 1, 3, 11).Style.Border.SetBottomBorder(XLBorderStyleValues.Thin).Border.SetRightBorder(XLBorderStyleValues.Thin).Border.SetLeftBorder(XLBorderStyleValues.Thin).Border.SetTopBorder(XLBorderStyleValues.Thin)
+                    guestRng.Style.Border.SetBottomBorder(XLBorderStyleValues.Thin).Border.SetRightBorder(XLBorderStyleValues.Thin).Border.SetLeftBorder(XLBorderStyleValues.Thin).Border.SetTopBorder(XLBorderStyleValues.Thin)
+                    ws.Columns().AdjustToContents()
+                    Dim FileNameNew As String = "VisaGuestPrint_" & Now.Year & Now.Month & Now.Day & Now.Hour & Now.Minute & Now.Second & Now.Millisecond & ".xlsx"
+                    Using ms As New MemoryStream
+                        document.SaveAs(ms)
+                        document.Dispose()
+                        Response.Clear()
+                        Response.Buffer = True
+                        Response.AddHeader("content-disposition", "attachment;filename=" + FileNameNew)
+                        Response.AddHeader("Content-Length", ms.Length.ToString())
+                        Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        ms.WriteTo(Response.OutputStream)
+                        Response.Flush()
+                        HttpContext.Current.ApplicationInstance.CompleteRequest()
+                    End Using
+                End Using
+            Else
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('There is no guest in this booking');", True)
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlyBooking.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub SelectVisaType(ByVal visaTypeCode As String)"
+    Protected Sub SelectVisaType(ByVal visaTypeCode As String)
+        Try
+            sqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            strSqlQry = "select othtypcode,othtypname, NonTaxableValue from othtypmast (nolock) where othgrpcode='VISA' and active=1 and othtypcode =@visaTypeCode"
+            mySqlCmd = New SqlCommand(strSqlQry, sqlConn)
+            mySqlCmd.CommandType = CommandType.Text
+            mySqlCmd.Parameters.Add(New SqlParameter("@visaTypeCode", SqlDbType.VarChar, 20)).Value = visaTypeCode
+            Dim rs As SqlDataReader = mySqlCmd.ExecuteReader()
+            If rs.Read() Then
+                If Not IsDBNull(rs("othtypcode")) Then
+                    txtVisaCode.Text = rs("othtypcode")
+                Else
+                    txtVisaCode.Text = ""
+                End If
+                If Not IsDBNull(rs("othtypname")) Then
+                    txtVisaType.Text = rs("othtypname")
+                Else
+                    txtVisaType.Text = ""
+                End If
+                If Not IsDBNull(rs("NonTaxableValue")) Then
+                    txtVisaNonTax.Text = rs("NonTaxableValue")
+                Else
+                    txtVisaNonTax.Text = ""
+                End If
+            End If
+            clsDBConnect.dbCommandClose(mySqlCmd)
+            clsDBConnect.dbConnectionClose(sqlConn)
+        Catch ex As Exception
+            If Not sqlConn Is Nothing Then
+                If sqlConn.State = ConnectionState.Open Then
+                    clsDBConnect.dbCommandClose(mySqlCmd)
+                    clsDBConnect.dbConnectionClose(sqlConn)
+                End If
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlyBooking.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+
+    'btnCalculateTax_Click(sender, e)
+    ' btnCalculateCostTax_Click(sender, e)
+
+    Private Sub fnGetPriceForSave(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            If IsNumeric(txtNoOfVisas.Text) Then
+                If Not IsDate(txtArrivalDt.Text) Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Verify Arrival Date' );", True)
+                    txtNoOfVisas.Text = ""
+                    Exit Sub
+                End If
+                'sqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))          'connection open
+                'mySqlCmd = New SqlCommand("sp_VisaType_Price", sqlConn)
+                'mySqlCmd.CommandType = CommandType.StoredProcedure
+                'mySqlCmd.Parameters.Add(New SqlParameter("@visatypecode", SqlDbType.VarChar, 20)).Value = txtVisaCode.Text.Trim
+                'mySqlCmd.Parameters.Add(New SqlParameter("@ArrivalDate", SqlDbType.VarChar, 10)).Value = Convert.ToDateTime(txtArrivalDt.Text).ToString("yyyy/MM/dd")
+                'mySqlCmd.Parameters.Add(New SqlParameter("@AgentCode", SqlDbType.VarChar, 20)).Value = txtAgentCode.Text.Trim
+                'mySqlCmd.Parameters.Add(New SqlParameter("@SourceCtryCode", SqlDbType.VarChar, 20)).Value = txtCtryCode.Text.Trim
+                'mySqlReader = mySqlCmd.ExecuteReader()
+                'If mySqlReader.Read() Then
+                '    If IsNumeric(mySqlReader("visaprice")) Then
+                '        txtSellPrice.Text = mySqlReader("visaprice")
+                '    Else
+                '        txtSellPrice.Text = 0.0
+                '    End If
+                '    If IsNumeric(mySqlReader("visaprice_child")) Then
+                '        txtChildSellingPrice.Text = mySqlReader("visaprice_child")
+                '    Else
+                '        txtChildSellingPrice.Text = 0.0
+                '    End If
+
+                '    If Not IsDBNull(mySqlReader("oplistcode")) Then
+                '        hdOpListCode.Value = mySqlReader("oplistcode")
+                '    Else
+                '        hdOpListCode.Value = ""
+                '    End If
+                '    If IsNumeric(mySqlReader("ocostprice")) Then
+                '        txtCostPrice.Text = mySqlReader("ocostprice")
+                '    Else
+                '        txtCostPrice.Text = 0.0
+                '    End If
+                '    If IsNumeric(mySqlReader("ocostprice_child")) Then
+                '        txtChildCostPrice.Text = mySqlReader("ocostprice_child")
+                '    Else
+                '        txtChildCostPrice.Text = 0.0
+                '    End If
+
+                '    If Not IsDBNull(mySqlReader("ocplistcode")) Then
+                '        hdOcpListCode.Value = mySqlReader("ocplistcode")
+                '    Else
+                '        hdOcpListCode.Value = ""
+                '    End If
+                'End If
+                'mySqlReader.Close()
+                'mySqlCmd.Dispose()
+                Dim visaNonTax As Decimal
+                If IsNumeric(txtVisaNonTax.Text) Then
+                    visaNonTax = Convert.ToDecimal(txtVisaNonTax.Text)
+                Else
+                    visaNonTax = 0.0
+                End If
+                txtSellNonTax.Text = Math.Round((Convert.ToInt32(txtNoOfVisas.Text) + Convert.ToInt32(Val(txtnoOfChild.Text))) * visaNonTax / Convert.ToDecimal(txtInvConvRate.Text), 2)
+                txtCostNonTax.Text = Math.Round((Convert.ToInt32(txtNoOfVisas.Text) + Convert.ToInt32(Val(txtnoOfChild.Text))) * visaNonTax, 2)
+                btnCalculateTax_Click(sender, e)
+                btnCalculateCostTax_Click(sender, e)
+                clsDBConnect.dbCommandClose(mySqlCmd)
+                clsDBConnect.dbConnectionClose(sqlConn)
+            Else
+                txtSellPrice.Text = ""
+                txtSellValue.Text = ""
+                txtSellNonTax.Text = ""
+                txtSellVAT.Text = ""
+                txtCostPrice.Text = ""
+                txtCostValue.Text = ""
+                txtCostNonTax.Text = ""
+                txtCostVat.Text = ""
+            End If
+        Catch ex As Exception
+            If sqlConn.State = ConnectionState.Open Then
+                clsDBConnect.dbCommandClose(mySqlCmd)
+                clsDBConnect.dbConnectionClose(sqlConn)
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlyBooking.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+    Private Sub fnGetPrice(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            If IsNumeric(txtNoOfVisas.Text) Then
+                If Not IsDate(txtArrivalDt.Text) Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Verify Arrival Date' );", True)
+                    txtNoOfVisas.Text = ""
+                    Exit Sub
+                End If
+                sqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))          'connection open
+                mySqlCmd = New SqlCommand("sp_VisaType_Price", sqlConn)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@visatypecode", SqlDbType.VarChar, 20)).Value = txtVisaCode.Text.Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@ArrivalDate", SqlDbType.VarChar, 10)).Value = Convert.ToDateTime(txtArrivalDt.Text).ToString("yyyy/MM/dd")
+                mySqlCmd.Parameters.Add(New SqlParameter("@AgentCode", SqlDbType.VarChar, 20)).Value = txtAgentCode.Text.Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@SourceCtryCode", SqlDbType.VarChar, 20)).Value = txtCtryCode.Text.Trim
+                mySqlReader = mySqlCmd.ExecuteReader()
+                If mySqlReader.Read() Then
+                    If IsNumeric(mySqlReader("visaprice")) Then
+                        txtSellPrice.Text = mySqlReader("visaprice")
+                    Else
+                        txtSellPrice.Text = 0.0
+                    End If
+                    If IsNumeric(mySqlReader("visaprice_child")) Then
+                        txtChildSellingPrice.Text = mySqlReader("visaprice_child")
+                    Else
+                        txtChildSellingPrice.Text = 0.0
+                    End If
+
+                    If Not IsDBNull(mySqlReader("oplistcode")) Then
+                        hdOpListCode.Value = mySqlReader("oplistcode")
+                    Else
+                        hdOpListCode.Value = ""
+                    End If
+                    If IsNumeric(mySqlReader("ocostprice")) Then
+                        txtCostPrice.Text = mySqlReader("ocostprice")
+                    Else
+                        txtCostPrice.Text = 0.0
+                    End If
+                    If IsNumeric(mySqlReader("ocostprice_child")) Then
+                        txtChildCostPrice.Text = mySqlReader("ocostprice_child")
+                    Else
+                        txtChildCostPrice.Text = 0.0
+                    End If
+
+                    If Not IsDBNull(mySqlReader("ocplistcode")) Then
+                        hdOcpListCode.Value = mySqlReader("ocplistcode")
+                    Else
+                        hdOcpListCode.Value = ""
+                    End If
+                End If
+                mySqlReader.Close()
+                mySqlCmd.Dispose()
+                Dim visaNonTax As Decimal
+                If IsNumeric(txtVisaNonTax.Text) Then
+                    visaNonTax = Convert.ToDecimal(txtVisaNonTax.Text)
+                Else
+                    visaNonTax = 0.0
+                End If
+                txtSellNonTax.Text = Math.Round((Convert.ToInt32(txtNoOfVisas.Text) + Convert.ToInt32(Val(txtnoOfChild.Text))) * visaNonTax / Convert.ToDecimal(txtInvConvRate.Text), 2)
+                txtCostNonTax.Text = Math.Round((Convert.ToInt32(txtNoOfVisas.Text) + Convert.ToInt32(Val(txtnoOfChild.Text))) * visaNonTax, 2)
+                btnCalculateTax_Click(sender, e)
+                btnCalculateCostTax_Click(sender, e)
+                clsDBConnect.dbCommandClose(mySqlCmd)
+                clsDBConnect.dbConnectionClose(sqlConn)
+            Else
+                txtSellPrice.Text = ""
+                txtSellValue.Text = ""
+                txtSellNonTax.Text = ""
+                txtSellVAT.Text = ""
+                txtCostPrice.Text = ""
+                txtCostValue.Text = ""
+                txtCostNonTax.Text = ""
+                txtCostVat.Text = ""
+            End If
+        Catch ex As Exception
+            If sqlConn.State = ConnectionState.Open Then
+                clsDBConnect.dbCommandClose(mySqlCmd)
+                clsDBConnect.dbConnectionClose(sqlConn)
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnlyBooking.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+End Class

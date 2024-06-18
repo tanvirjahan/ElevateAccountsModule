@@ -1,0 +1,291 @@
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Partial Class DriverMaster
+    Inherits System.Web.UI.Page
+#Region "Global Declaration"
+    Dim objUtils As New clsUtils
+    Dim strSqlQry As String
+    Dim mySqlCmd As SqlCommand
+    Dim mySqlReader As SqlDataReader
+    Dim mySqlConn As SqlConnection
+    Dim sqlTrans As SqlTransaction
+#End Region
+    Protected Sub btnSave_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSave.Click
+        Try
+            If Page.IsValid = True Then
+                Dim flag As Integer = 0
+                Dim optionval As String
+                If ViewState("State") = "New" Or ViewState("State") = "Edit" Then
+                    If checkForDuplicate() = False Then
+                        Exit Sub
+                    End If
+
+                    mySqlConn = clsDBConnect.dbConnection           'connection open
+                    sqlTrans = mySqlConn.BeginTransaction           'SQL  Trans start
+
+                   
+                    If ViewState("State") = "New" Then
+
+                        optionval = objUtils.GetAutoDocNo("AIRREP", mySqlConn, sqlTrans)
+                        txtCode.Value = optionval.Trim
+                        flag = 0
+
+                    ElseIf ViewState("State") = "Edit" Then
+                        flag = 1
+                    End If
+
+                    mySqlCmd = New SqlCommand("sp_add_mod_Airportrep", mySqlConn, sqlTrans)
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@flag", SqlDbType.Int)).Value = flag
+                    mySqlCmd.Parameters.Add(New SqlParameter("@repcode", SqlDbType.VarChar, 20)).Value = txtCode.Value
+                    mySqlCmd.Parameters.Add(New SqlParameter("@repname", SqlDbType.VarChar, 100)).Value = CType(txtName.Value.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@mobileno", SqlDbType.VarChar, 50)).Value = CType(txtmobile.Value.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@tel", SqlDbType.VarChar, 50)).Value = CType(txttel.Value.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@address", SqlDbType.VarChar, 200)).Value = CType(txtaddress.Text.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@notes", SqlDbType.VarChar, 200)).Value = CType(txtnotes.Text.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@adduser", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                    If chkActive.Checked = True Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@active", SqlDbType.Int)).Value = 1
+                    ElseIf chkActive.Checked = False Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@active", SqlDbType.Int)).Value = 0
+                    End If
+                    'vij
+                    
+                    mySqlCmd.ExecuteNonQuery()
+
+                ElseIf ViewState("State") = "Delete" Then
+                    'If checkForDeletion() = False Then
+                    '    Exit Sub
+                    'End If
+                    mySqlConn = clsDBConnect.dbConnection           'connection open
+                    sqlTrans = mySqlConn.BeginTransaction           'SQL  Trans start
+
+                    mySqlCmd = New SqlCommand("sp_del_Airportrep", mySqlConn, sqlTrans)
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@repcode", SqlDbType.VarChar, 20)).Value = CType(txtCode.Value.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                    mySqlCmd.ExecuteNonQuery()
+                End If
+
+                sqlTrans.Commit()    'SQl Tarn Commit
+                clsDBConnect.dbSqlTransation(sqlTrans)              ' sql Transaction disposed 
+                clsDBConnect.dbCommandClose(mySqlCmd)               'sql command disposed
+                clsDBConnect.dbConnectionClose(mySqlConn)           'connection close
+
+                Dim strscript As String = ""
+                strscript = "window.opener.__doPostBack('DriverMWindowPostBack', '');window.opener.focus();window.close();"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+            End If
+        Catch ex As Exception
+            If mySqlConn.State = ConnectionState.Open Then
+                sqlTrans.Rollback()
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("airportrep.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+    Public Function checkForDuplicate() As Boolean
+        Dim str As String
+        checkForDuplicate = True
+        If ViewState("State") = "New" Then
+            If objUtils.isDuplicatenew(Session("dbconnectionName"), "airportrep", "repcode", CType(txtCode.Value.Trim, String)) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This code is already present.');", True)
+                checkForDuplicate = False
+                Exit Function
+            End If
+            str = "select COUNT(*) from airportrep where repname='" & txtName.Value & "' and  address='" & txtaddress.Text & "'"
+            If objUtils.GetString(Session("dbconnectionName"), str) <> "0" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This Person is already present.');", True)
+                SetFocus(txtName)
+                checkForDuplicate = False
+            End If
+
+        ElseIf ViewState("State") = "Edit" Then
+            str = "select COUNT(*) from airportrep where repname='" & txtName.Value & "' and  address='" & txtaddress.Text & "' and repcode<>'" & txtCode.Value & "'"
+            If objUtils.GetString(Session("dbconnectionName"), str) <> "0" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This Person is already present.');", True)
+                SetFocus(txtName)
+                checkForDuplicate = False
+            End If
+        End If
+
+    End Function
+    Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click
+        Try
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+    Protected Sub btnHelp_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnHelp.Click
+        Try
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "window.open('../Help.aspx?hi=AirRepEntry','_blank','status=1,scrollbars=1,top=135,left=760,width=250,height=500');", True)
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+       
+
+
+        If Page.IsPostBack = False Then
+            Try
+                'Dim iden As String
+                'Dim idencmp As String
+
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+                Dim default_group As String
+                default_group = objUtils.GetDBFieldFromStringnew(Session("dbconnectionName"), "reservation_parameters", "option_selected", "param_id", CType("458", String))
+
+             
+                ViewState.Add("State", Request.QueryString("State"))
+                ViewState.Add("RefCode", Request.QueryString("RefCode"))
+
+                If ViewState("State") = "New" Then
+                    SetFocus(txtName)
+                    lblHeading.Text = "New Airport Representative"
+                    Page.Title = Page.Title + " " + "New Airport Representative Master"
+                    btnSave.Text = "Save"
+
+                             
+                    ViewState.Add("Codeview", txtCode.Value)
+                    btnSave.Attributes.Add("onclick", "return FormValidation('New')")
+
+
+
+                ElseIf ViewState("State") = "Edit" Then
+                    SetFocus(txtName)
+                    lblHeading.Text = "Edit  Airport Representative"
+                    Page.Title = Page.Title + " " + "Edit Airport Representative"
+                    btnSave.Text = "Update"
+                    DisableControl()
+
+                    ShowRecord(CType(ViewState("RefCode"), String))
+
+                    btnSave.Attributes.Add("onclick", "return FormValidation('Edit')")
+                ElseIf ViewState("State") = "View" Then
+                    SetFocus(btnCancel)
+                    lblHeading.Text = "View  Airport Representative"
+                    Page.Title = Page.Title + " " + "ViewAirport Representative"
+                    btnSave.Visible = False
+                    btnCancel.Text = "Return to Search"
+                    DisableControl()
+
+                    ShowRecord(CType(ViewState("RefCode"), String))
+
+                ElseIf ViewState("State") = "Delete" Then
+                    SetFocus(btnSave)
+                    lblHeading.Text = "Delete  Airport Representative"
+                    Page.Title = Page.Title + " " + "Delete Airport Representative"
+                    btnSave.Text = "Delete"
+                    DisableControl()
+
+                    ShowRecord(CType(ViewState("RefCode"), String))
+                    btnSave.Attributes.Add("onclick", "return FormValidation('Delete')")
+
+                End If
+                btnCancel.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to cancel?')==false)return false;")
+                'charcters(txtName)
+
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("airportrep.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+           
+        End If
+    End Sub
+    Public Sub charcters(ByVal txtbox As HtmlInputText)
+        txtbox.Attributes.Add("onkeypress", "return checkCharacter(event)")
+    End Sub
+    Private Sub DisableControl()
+        If ViewState("State") = "View" Or ViewState("State") = "Delete" Then
+
+            txtName.Disabled = True
+            txtmobile.Disabled = True
+            txttel.Disabled = True
+            txtaddress.Enabled = False
+            txtnotes.Enabled = False
+            chkActive.Disabled = True
+        ElseIf ViewState("State") = "Edit" Then
+
+
+        End If
+
+    End Sub
+    Private Sub ShowRecord(ByVal RefCode As String)
+        Try
+            mySqlConn = clsDBConnect.dbConnection           'connection open
+            mySqlCmd = New SqlCommand("Select * from Airportrep Where repcode='" & RefCode & "' ", mySqlConn)
+
+            mySqlReader = mySqlCmd.ExecuteReader(CommandBehavior.CloseConnection)
+            If mySqlReader.HasRows Then
+                If mySqlReader.Read() = True Then
+                    If IsDBNull(mySqlReader("repcode")) = False Then
+                        'Me.txtCode.Value = objUtils.CodeReturn(mySqlReader("drivercode"), 6)
+                        ViewState.Add("Codeview", mySqlReader("repcode"))
+                        txtCode.Value = ViewState("Codeview")
+                        'lblText.Text = "1 " & CType(mySqlReader("currcode") & " = ", String)
+                    Else
+                        Me.txtCode.Value = ""
+                    End If
+                    If IsDBNull(mySqlReader("repname")) = False Then
+                        Me.txtName.Value = CType(mySqlReader("repname"), String)
+                    Else
+                        Me.txtName.Value = ""
+                    End If
+
+                    If IsDBNull(mySqlReader("mobileno")) = False Then
+                        Me.txtmobile.Value = CType(mySqlReader("mobileno"), String)
+                    Else
+                        Me.txtmobile.Value = ""
+                    End If
+
+                    If IsDBNull(mySqlReader("tel")) = False Then
+                        Me.txttel.Value = CType(mySqlReader("tel"), String)
+                    Else
+                        Me.txttel.Value = ""
+                    End If
+
+                    If IsDBNull(mySqlReader("address")) = False Then
+                        Me.txtaddress.Text = CType(mySqlReader("address"), String)
+                    Else
+                        Me.txtnotes.Text = ""
+                    End If
+
+                    If IsDBNull(mySqlReader("notes")) = False Then
+                        Me.txtnotes.Text = CType(mySqlReader("notes"), String)
+                    Else
+                        Me.txtnotes.Text = ""
+                    End If
+
+                  
+
+                   
+
+                    If IsDBNull(mySqlReader("active")) = False Then
+                        If CType(mySqlReader("active"), String) = "1" Then
+                            chkActive.Checked = True
+                        ElseIf CType(mySqlReader("active"), String) = "0" Then
+                            chkActive.Checked = False
+                        End If
+                    End If
+                End If
+            End If
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("airportrep.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbConnectionClose(mySqlConn)           'connection close
+            clsDBConnect.dbCommandClose(mySqlCmd)               'sql command disposed
+            clsDBConnect.dbReaderClose(mySqlReader)             ' sql reader disposed    
+        End Try
+    End Sub
+End Class

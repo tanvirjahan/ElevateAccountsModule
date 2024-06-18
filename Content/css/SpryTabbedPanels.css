@@ -1,0 +1,98 @@
+.TabbedPanels {
+	overflow: hidden;
+	margin: 0px;
+	padding: 0px;
+	clear: none;
+	width: 100%; /* IE Hack to force proper layout when preceded by a paragraph. (hasLayout Bug)*/
+}
+.TabbedPanelsTabGroup {
+	margin: 0px;
+	padding: 0px;
+	overflow:hidden;
+	background-color:#f5f6f7
+}
+.TabbedPanelsTab {
+	position: relative;
+	top: 1px;
+	float: left;
+	padding: 4px 10px;
+	margin: 0px -1px 0px 0px;
+	font-weight:400;
+	background-color: #f5f6f7;
+	list-style: none;
+	border-left: solid 1px #e7ebee;
+	border-bottom: solid 1px #999;
+	border-top: solid 3px #f5f6f7;
+	border-right: solid 1px #e8ebee;
+	-moz-user-select: none;
+	-khtml-user-select: none;
+	cursor: pointer;
+}
+.TabbedPanelsTabHover {
+	background-color: #9aa7af;
+	color:#fff;
+	border-top:3px solid #9aa7af
+}
+.TabbedPanelsTabSelected {
+	background-color: #fff;
+	border-top:3px solid #8b0304;
+	color:#8b0304;
+	border-bottom: 1px solid #fff;
+}
+.TabbedPanelsTab a {
+	color: black;
+	text-decoration: none;
+}
+.TabbedPanelsContentGroup {
+	clear: both;
+	border-top:1px solid #fff;
+	border-bottom:1px solid #e7ebee;
+	border-left:1px solid #e7ebee;
+	border-right:1px solid #e7ebee;
+}
+.TabbedPanelsContent {
+	overflow: hidden;
+	padding:20px 10px;
+}
+.TabbedPanelsContent p {
+	line-height:18px;
+	padding-bottom:15px
+}
+.TabbedPanelsContent p b {
+	display:block;
+	color:#51575b;
+	padding-bottom:10px
+}
+.TabbedPanelsContent p b img {
+	padding-left:5px
+}
+.TabbedPanelsContentVisible {
+}
+.VTabbedPanels {
+	overflow: hidden;
+	zoom: 1;
+}
+
+
+
+/* Styles for Printing */
+@media print {
+.TabbedPanels {
+	overflow: visible !important;
+}
+.TabbedPanelsContentGroup {
+	display: block !important;
+	overflow: visible !important;
+	height: auto !important;
+}
+.TabbedPanelsContent {
+	overflow: visible !important;
+	display: block !important;
+	clear:both !important;
+}
+.TabbedPanelsTab {
+	overflow: visible !important;
+	display: block !important;
+	clear:both !important;
+}
+}

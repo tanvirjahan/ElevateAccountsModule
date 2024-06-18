@@ -1,0 +1,1198 @@
+ContractRoomrates.aspx || 15/09/2019 11:12:20 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 15/10/2019 15:42:28 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 15/10/2019 15:42:43 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 15/10/2019 15:44:32 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 15/10/2019 15:45:51 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+Contractchkinoutpolicy.aspx || 15/10/2019 16:00:20 || Conversion from string "&nbsp;" to type 'Date' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractGeneralPolicy.aspx || 15/10/2019 16:05:50 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractApprove.aspx || 15/10/2019 16:08:16 || Could not find stored procedure 'New_XMLMove_contractEdit'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractSplEventPlist.aspx || 16/10/2019 15:53:27 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 16/10/2019 16:03:56 || Could not find stored procedure 'New_insertrecords_edit_offers'. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 16/10/2019 16:03:56 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 16/10/2019 16:04:42 || Execution Timeout Expired.  The timeout period elapsed prior to completion of the operation or the server is not responding. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractApprove.aspx || 20/10/2019 17:20:40 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_edit_offers_supplement_rmcatcode". The conflict occurred in database "ColumbusRpts", table "dbo.rmcatmast", column 'rmcatcode'.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 20/10/2019 18:04:42 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 20/10/2019 18:09:38 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 20/10/2019 18:12:17 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 20/10/2019 18:13:30 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 20/10/2019 18:15:58 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 20/10/2019 18:17:04 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 20/10/2019 18:22:08 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 20/10/2019 18:24:15 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 20/10/2019 18:32:18 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 20/10/2019 18:33:01 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 20/10/2019 18:33:28 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractCancpolicy.aspx || 20/10/2019 23:24:29 || Could not find stored procedure 'sp_show_copycancel'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 22/10/2019 00:57:42 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'plistcode'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 22/10/2019 11:50:13 || ExecuteReader: CommandText property has not been initialized || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 22/10/2019 18:15:41 || Incorrect syntax near ')'.
+Incorrect syntax near ')'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 22/10/2019 18:19:18 || Incorrect syntax near ')'.
+Incorrect syntax near ')'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 23/10/2019 00:52:39 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 23/10/2019 00:52:53 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 23/10/2019 00:53:04 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 23/10/2019 00:53:21 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 23/10/2019 00:53:33 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 23/10/2019 00:53:54 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 23/10/2019 00:56:51 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 23/10/2019 01:01:58 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 23/10/2019 01:02:31 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 23/10/2019 01:03:16 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 23/10/2019 01:03:31 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 23/10/2019 01:08:21 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 26/10/2019 14:31:52 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 26/10/2019 14:32:20 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 26/10/2019 14:33:55 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 26/10/2019 16:00:38 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 26/10/2019 16:01:05 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 26/10/2019 17:15:03 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 26/10/2019 17:15:08 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 26/10/2019 18:39:07 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 26/10/2019 18:39:19 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 26/10/2019 18:39:22 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 26/10/2019 18:39:31 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 27/10/2019 11:38:58 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 27/10/2019 11:39:23 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 27/10/2019 16:14:57 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 27/10/2019 17:50:02 || Procedure or function 'sp_show_copyroomrates' expects parameter '@partycode', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 27/10/2019 17:50:16 || Procedure or function 'sp_show_copyroomrates' expects parameter '@partycode', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 27/10/2019 17:54:20 || Procedure or function 'sp_show_copyroomrates' expects parameter '@partycode', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 27/10/2019 17:54:33 || Procedure or function 'sp_show_copyroomrates' expects parameter '@partycode', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 27/10/2019 19:20:48 || The source contains no DataRows. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 27/10/2019 19:20:55 || The source contains no DataRows. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 27/10/2019 23:16:43 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 27/10/2019 23:22:52 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 27/10/2019 23:29:07 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 27/10/2019 23:36:45 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 27/10/2019 23:41:21 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 27/10/2019 23:42:11 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 27/10/2019 23:45:12 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 27/10/2019 23:48:51 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 27/10/2019 23:51:58 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractApprove.aspx || 28/10/2019 14:39:58 || Violation of PRIMARY KEY constraint 'pk_offers_rmtype'. Cannot insert duplicate key in object 'dbo.offers_rmtype'. The duplicate key value is (PRM/006646, 000093, 001354).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractApprove.aspx || 28/10/2019 14:43:10 || Violation of PRIMARY KEY constraint 'pk_offers_rmtype'. Cannot insert duplicate key in object 'dbo.offers_rmtype'. The duplicate key value is (PRM/006646, 000093, 001354).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractApprove.aspx || 28/10/2019 14:44:32 || Violation of PRIMARY KEY constraint 'pk_offers_rmtype'. Cannot insert duplicate key in object 'dbo.offers_rmtype'. The duplicate key value is (PRM/006646, 000093, 001354).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 11:52:07 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 14:49:20 || String or binary data would be truncated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 16:07:34 || Incorrect syntax near 'HIGH'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 16:25:43 || Incorrect syntax near 'HIGH'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 16:32:48 || Incorrect syntax near 'LOW'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 16:35:07 || Incorrect syntax near 'HIGH'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 16:45:58 || Conversion from string "" to type 'Decimal' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 16:52:56 || String or binary data would be truncated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 17:04:25 || String or binary data would be truncated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 17:15:59 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 17:52:22 || Incorrect syntax near 'LOW'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 17:54:19 || Incorrect syntax near 'HIGH'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 19:13:08 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'tranid'. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildpolicy.aspx || 29/10/2019 19:44:21 || A connection was successfully established with the server, but then an error occurred during the pre-login handshake. (provider: TCP Provider, error: 0 - The specified network name is no longer available.) || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 20:00:45 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 23:30:47 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 29/10/2019 23:33:58 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 30/10/2019 11:07:15 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 30/10/2019 11:22:24 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 30/10/2019 11:27:44 || Conversion from string "" to type 'Decimal' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 30/10/2019 11:31:36 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 30/10/2019 11:33:32 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 30/10/2019 11:47:16 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 30/10/2019 11:50:24 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 30/10/2019 11:56:32 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 30/10/2019 11:59:31 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 30/10/2019 12:58:17 || Violation of PRIMARY KEY constraint 'pk_editcontracts_seasons'. Cannot insert duplicate key in object 'dbo.edit_contracts_seasons'. The duplicate key value is (CON/001541, BLACKOUT, Jan  3 2020 12:00AM).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 30/10/2019 13:00:24 || Violation of PRIMARY KEY constraint 'pk_editcontracts_seasons'. Cannot insert duplicate key in object 'dbo.edit_contracts_seasons'. The duplicate key value is (CON/001541, BLACKOUT, Jan  3 2020 12:00AM).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 30/10/2019 13:01:28 || Violation of PRIMARY KEY constraint 'pk_editcontracts_seasons'. Cannot insert duplicate key in object 'dbo.edit_contracts_seasons'. The duplicate key value is (CON/001541, BLACKOUT, Jan  3 2020 12:00AM).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 30/10/2019 13:07:25 || Violation of PRIMARY KEY constraint 'pk_editcontracts_seasons'. Cannot insert duplicate key in object 'dbo.edit_contracts_seasons'. The duplicate key value is (CON/001541, BLACKOUT, Jan  3 2020 12:00AM).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 30/10/2019 13:37:26 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 30/10/2019 13:38:36 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 30/10/2019 13:38:38 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 30/10/2019 13:38:51 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 30/10/2019 15:16:17 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 30/10/2019 17:27:13 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 17:47:54 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 17:52:50 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 18:11:01 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 18:16:42 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 18:22:51 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 18:31:12 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 18:32:57 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 18:39:30 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 18:58:51 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 19:10:33 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 19:20:25 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 19:34:01 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 30/10/2019 22:07:04 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 31/10/2019 10:39:02 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 31/10/2019 10:50:46 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 31/10/2019 10:52:16 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 31/10/2019 11:33:27 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 31/10/2019 11:39:02 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 31/10/2019 12:07:24 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 31/10/2019 12:18:54 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 31/10/2019 12:21:19 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx.aspx || 31/10/2019 12:42:58 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 31/10/2019 12:49:54 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 31/10/2019 12:50:34 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 31/10/2019 15:25:20 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 31/10/2019 16:19:21 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 31/10/2019 16:49:51 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 31/10/2019 16:50:32 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 31/10/2019 16:50:45 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 31/10/2019 18:12:13 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 31/10/2019 19:17:22 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 31/10/2019 19:20:01 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 31/10/2019 22:18:49 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 31/10/2019 22:19:01 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 31/10/2019 22:20:17 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 31/10/2019 22:20:21 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 31/10/2019 22:20:32 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 31/10/2019 22:20:52 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 31/10/2019 22:21:16 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 31/10/2019 22:59:23 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 01/11/2019 00:14:09 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 01/11/2019 00:21:09 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 01/11/2019 00:26:06 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 01/11/2019 00:27:36 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 01/11/2019 01:01:20 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 01/11/2019 01:03:09 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 01/11/2019 23:36:56 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 01/11/2019 23:37:06 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 01/11/2019 23:37:10 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 01/11/2019 23:37:31 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 01/11/2019 23:37:34 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 01/11/2019 23:37:40 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 02/11/2019 15:53:01 || Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012504, TH14, TH14_CLUB_DBL_BB, CON/001315, TH14_Manual1, 0.00, 3.99, 1).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 02/11/2019 15:57:22 || Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012504, TH14, TH14_CLUB_DBL_BB, CON/001315, TH14_Manual1, 0.00, 3.99, 1).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 02/11/2019 16:42:55 || Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012504, TH14, TH14_CLUB_DBL_BB, CON/001315, TH14_Manual2, 0.00, 3.99, 2).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMaxocc.aspx || 02/11/2019 18:05:34 || Cannot find table 0. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 02/11/2019 19:26:09 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 02/11/2019 19:33:31 || Error converting data type nvarchar to numeric.
+place 1 - 19:20:50
+place 2 - 19:20:52
+place 3 - 19:22:40
+place 3 a - 19:22:40
+place 4 - 19:22:48 || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 02/11/2019 19:38:15 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 02/11/2019 19:40:32 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 02/11/2019 19:42:31 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 03/11/2019 14:39:08 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 03/11/2019 16:45:54 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 03/11/2019 17:03:55 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 03/11/2019 17:34:42 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractSplEventPlist.aspx || 03/11/2019 18:49:06 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 03/11/2019 19:04:30 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 03/11/2019 19:05:57 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 03/11/2019 19:06:40 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 03/11/2019 22:23:04 || Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 03/11/2019 22:31:36 || Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/11/2019 13:20:04 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/11/2019 13:22:49 || Execution Timeout Expired.  The timeout period elapsed prior to completion of the operation or the server is not responding. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/11/2019 13:37:23 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 14:39:28 || Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 14:44:48 || Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 14:54:08 || Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 14:57:01 || Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 14:59:01 || Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 15:02:23 || A transport-level error has occurred when receiving results from the server. (provider: TCP Provider, error: 0 - The semaphore timeout period has expired.) || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 15:07:29 || Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLASSIC_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001795_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_CLUBROTANA_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_DBL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/012329, 000277, 000277_001312_SGL_BB, CON/001269, 000277_SEASON A, 0.00, 11.99, 1).
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 15:09:12 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 15:10:54 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 15:12:36 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 15:13:46 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 15:36:23 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 04/11/2019 15:39:21 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 15:42:47 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 15:43:30 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 15:44:53 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 15:45:46 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 04/11/2019 15:47:52 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 04/11/2019 15:48:15 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 23:44:24 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 23:46:56 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 04/11/2019 23:48:20 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 04/11/2019 23:49:40 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 04/11/2019 23:50:05 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 04/11/2019 23:57:35 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 05/11/2019 10:35:35 || A transport-level error has occurred when sending the request to the server. (provider: TCP Provider, error: 0 - An existing connection was forcibly closed by the remote host.) || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 11:42:22 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 11:43:37 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 11:45:05 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 11:45:35 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 05/11/2019 15:22:20 || The connection is broken and recovery is not possible.  The connection is marked by the server as unrecoverable.  No attempt was made to restore the connection. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 18:12:06 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 18:12:18 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 18:12:46 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 18:12:54 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 18:12:57 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 18:13:04 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 18:13:07 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 18:13:15 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:29:10 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:29:32 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:29:44 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:30:03 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:30:13 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:30:38 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:30:48 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:30:59 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:31:09 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:31:20 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 18:42:01 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 18:42:40 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 05/11/2019 18:44:03 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:51:57 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:52:21 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 05/11/2019 18:52:52 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 06/11/2019 12:19:08 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 06/11/2019 12:25:03 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 18:19:32 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 18:24:37 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 18:29:43 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 18:34:51 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 18:36:25 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 18:43:08 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 18:43:54 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 18:46:14 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 23:34:51 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 23:35:53 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 23:36:18 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 23:38:50 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 23:47:53 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 23:48:41 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 23:50:51 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 07/11/2019 23:54:43 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 08/11/2019 00:07:34 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 08/11/2019 00:08:43 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 08/11/2019 00:09:22 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 08/11/2019 00:10:05 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:21:49 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:30:07 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:30:58 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:31:19 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:36:49 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:37:53 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:41:46 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:42:18 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:49:02 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:49:34 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:57:13 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:57:56 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:58:14 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:58:58 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 00:59:19 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 01:00:05 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 01:00:24 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 01:14:04 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 01:14:47 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 08/11/2019 01:15:43 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 09/11/2019 13:03:09 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 15:05:51 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 15:06:03 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 09/11/2019 15:08:37 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 09/11/2019 15:09:09 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 09/11/2019 15:09:23 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 15:20:20 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 15:20:46 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 15:22:27 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 09/11/2019 15:23:15 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 09/11/2019 15:26:27 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 09/11/2019 15:48:52 || Conversion from string "" to type 'Decimal' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 09/11/2019 15:50:17 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 09/11/2019 15:55:44 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 15:57:49 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 15:58:08 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 09/11/2019 15:59:53 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 09/11/2019 16:06:32 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 09/11/2019 16:09:46 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 09/11/2019 16:21:36 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 09/11/2019 16:29:38 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 09/11/2019 16:38:55 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 16:41:05 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 16:41:40 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 16:42:09 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 09/11/2019 16:51:07 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 09/11/2019 16:52:00 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 16:58:07 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:30:48 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:31:05 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:31:38 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:31:55 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:32:16 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:35:55 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:36:13 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:43:17 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:43:21 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx.aspx || 09/11/2019 17:47:15 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 09/11/2019 17:48:11 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 09/11/2019 17:49:46 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:52:13 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:52:28 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:52:31 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 09/11/2019 17:53:18 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 10/11/2019 00:15:21 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 10/11/2019 00:15:51 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 10/11/2019 00:19:56 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 10/11/2019 00:21:22 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 10/11/2019 00:21:45 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 10/11/2019 00:22:07 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 10/11/2019 00:22:29 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+DependentOffersSearch.aspx || 10/11/2019 00:36:37 || Conversion from string "" to type 'Integer' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 11/11/2019 11:13:03 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 11/11/2019 11:32:58 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 11/11/2019 11:33:35 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 11/11/2019 13:13:26 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 11/11/2019 13:16:57 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 11/11/2019 13:29:15 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 11/11/2019 13:33:20 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 11/11/2019 13:40:29 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 11/11/2019 13:47:33 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 11/11/2019 13:49:24 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 11/11/2019 13:49:55 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 11/11/2019 13:50:04 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 11/11/2019 17:12:15 || Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/010551, MI07, MI07_DLX R0_DBL_BB, CON/000484, MI07_Manual1, 0.00, 5.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/010551, MI07, MI07_DLX R0_SGL_BB, CON/000484, MI07_Manual1, 0.00, 5.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/010551, MI07, MI07_SUPERIOR_DBL_BB, CON/000484, MI07_Manual1, 0.00, 5.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/010551, MI07, MI07_SUPERIOR_SGL_BB, CON/000484, MI07_Manual1, 0.00, 5.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/010551, MI07, MI07_FAMILY_DBL_BB, CON/000484, MI07_Manual1, 0.00, 5.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/010551, MI07, MI07_FAMILY_SGL_BB, CON/000484, MI07_Manual1, 0.00, 5.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/010551, MI07, MI07_CLUB_DBL_BB, CON/000484, MI07_Manual1, 0.00, 5.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/010551, MI07, MI07_CLUB_SGL_BB, CON/000484, MI07_Manual1, 0.00, 5.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/010551, MI07, MI07_CLUBSUI_DBL_BB, CON/000484, MI07_Manual1, 0.00, 5.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/010551, MI07, MI07_CLUBSUI_SGL_BB, CON/000484, MI07_Manual1, 0.00, 5.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/010551, MI07, MI07_001469_DBL_BB, CON/000484, MI07_Manual1, 0.00, 5.99, 1).
+Violation of PRIMARY KEY constraint 'PK_New_edit_ChildPolicy'. Cannot insert duplicate key in object 'dbo.New_edit_ChildPolicy'. The duplicate key value is (CPO/010551, MI07, MI07_001469_SGL_BB, CON/000484, MI07_Manual1, 0.00, 5.99, 1).
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 11/11/2019 17:44:34 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 11/11/2019 17:52:21 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 11/11/2019 17:54:22 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 11/11/2019 17:56:50 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 12/11/2019 13:43:03 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 12/11/2019 15:55:52 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 12/11/2019 16:10:34 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 12/11/2019 16:16:25 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 12/11/2019 16:16:48 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 12/11/2019 16:30:09 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 12/11/2019 18:58:59 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractSplEventPlist.aspx || 12/11/2019 19:02:03 || Execution Timeout Expired.  The timeout period elapsed prior to completion of the operation or the server is not responding. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 13/11/2019 14:51:16 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 13/11/2019 14:57:24 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 13/11/2019 15:05:25 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 13/11/2019 15:08:09 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 13/11/2019 15:16:12 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 13/11/2019 15:17:10 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 13/11/2019 15:21:42 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 13/11/2019 15:24:16 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 13/11/2019 16:03:32 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+ContractCommission.aspx || 14/11/2019 11:53:51 || Error converting data type nvarchar to numeric. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractCommission.aspx || 14/11/2019 15:27:17 || Error converting data type nvarchar to numeric. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 14/11/2019 17:35:31 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractCommission.aspx || 15/11/2019 23:20:01 || Error converting data type nvarchar to numeric. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 15/11/2019 23:20:29 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMealSupplements.aspx || 15/11/2019 23:24:37 || A transport-level error has occurred when receiving results from the server. (provider: TCP Provider, error: 0 - The semaphore timeout period has expired.) || admin
+--------------------------------------------------------------------------------------------------------------
+ContractSplEventPlist.aspx || 16/11/2019 10:39:56 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractSplEventPlist.aspx || 16/11/2019 10:46:00 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 16/11/2019 10:58:00 || Conversion from string "" to type 'Decimal' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractChildPolicy.aspx || 17/11/2019 12:33:09 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 17/11/2019 12:33:51 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 18/11/2019 11:34:22 || Procedure or function 'sp_insert_new_contracts' expects parameter '@countrylist', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 18/11/2019 11:40:22 || Procedure or function 'sp_insert_new_contracts' expects parameter '@countrylist', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 18/11/2019 11:41:32 || Procedure or function 'sp_insert_new_contracts' expects parameter '@countrylist', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 18/11/2019 11:44:03 || Procedure or function 'sp_insert_new_contracts' expects parameter '@countrylist', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 18/11/2019 11:47:09 || Procedure or function 'sp_insert_new_contracts' expects parameter '@agentlist', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 18/11/2019 15:13:01 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 18/11/2019 22:15:48 || String or binary data would be truncated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 18/11/2019 22:17:40 || String or binary data would be truncated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 18/11/2019 22:23:38 || String or binary data would be truncated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractSplEventPlist.aspx || 20/11/2019 11:16:36 || Execution Timeout Expired.  The timeout period elapsed prior to completion of the operation or the server is not responding. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 25/11/2019 12:27:52 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 25/11/2019 12:31:41 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 25/11/2019 12:34:36 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 25/11/2019 12:37:05 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:39:08 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:39:20 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:39:38 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:39:50 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:40:01 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:40:12 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:40:21 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:40:33 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:40:49 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:41:01 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:41:09 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:41:21 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:41:29 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:41:39 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:41:59 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:42:09 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:42:14 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:42:26 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:44:06 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 21:44:20 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:21:09 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:21:34 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:21:40 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:44:05 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:44:18 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:44:37 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:44:48 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:44:55 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:45:14 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:45:21 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:45:33 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:45:37 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:45:49 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:45:55 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:46:10 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:46:15 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:46:29 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:46:32 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:46:47 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:46:51 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:47:03 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:47:09 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:47:28 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:47:39 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:47:51 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:48:00 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:48:13 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:48:23 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:48:36 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:49:04 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:49:35 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:49:52 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:50:15 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:50:31 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractRoomrates.aspx || 04/12/2019 23:50:45 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 04/01/2020 23:30:32 || marketid || admin
+--------------------------------------------------------------------------------------------------------------
+SupAccts.aspx || 01/06/2020 11:43:42 || Procedure or function sp_updateacc_partymast has too many arguments specified. || admin
+--------------------------------------------------------------------------------------------------------------
+SupAccts.aspx || 01/06/2020 11:43:42 || Procedure or function sp_updateacc_partymast has too many arguments specified. || admin
+--------------------------------------------------------------------------------------------------------------
+ContractMain.aspx || 22/06/2020 11:36:17 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 26/07/2020 10:37:41 || Conversion from type 'DBNull' to type 'String' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:00 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:00 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:01 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:01 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:08 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:08 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:09 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:09 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:10 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:10 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:11 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:11 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:13 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:13 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:14 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:14 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:15 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:15 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:16 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:16 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:24 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 13/02/2021 17:30:24 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_partymast_property". The conflict occurred in database "NewColumbus_ElevateDMC", table "dbo.hotel_propertytype", column 'propertytypecode'.
+The statement has been terminated. || Sorour
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 14/02/2021 18:26:49 || Column name or number of supplied values does not match table definition. || admin
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 14/02/2021 18:28:42 || Column name or number of supplied values does not match table definition. || admin
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 14/02/2021 18:29:13 || Column name or number of supplied values does not match table definition. || admin
+--------------------------------------------------------------------------------------------------------------
+custmaindet.aspx || 16/02/2021 12:51:30 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 16/02/2021 12:51:30 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+custmaindet.aspx || 16/02/2021 13:36:21 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 16/02/2021 13:36:21 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+custmaindet.aspx || 16/02/2021 13:37:10 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 16/02/2021 13:37:10 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+custmaindet.aspx || 16/02/2021 13:56:39 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 16/02/2021 13:56:39 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+custmaindet.aspx || 06/03/2021 17:17:35 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 06/03/2021 17:17:35 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+custmaindet.aspx || 07/03/2021 08:33:38 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 07/03/2021 08:33:38 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+custmaindet.aspx || 17/03/2021 20:12:15 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 17/03/2021 20:12:15 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 18/04/2021 12:09:00 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 31/10/2021 14:56:20 || The INSERT statement conflicted with the FOREIGN KEY constraint "FK_partymast_sector". The conflict occurred in database "NewColumbusDEV", table "dbo.sectormaster", column 'sectorcode'.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 31/10/2021 14:56:20 || The INSERT statement conflicted with the FOREIGN KEY constraint "FK_partymast_sector". The conflict occurred in database "NewColumbusDEV", table "dbo.sectormaster", column 'sectorcode'.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 31/10/2021 14:56:31 || The INSERT statement conflicted with the FOREIGN KEY constraint "FK_partymast_sector". The conflict occurred in database "NewColumbusDEV", table "dbo.sectormaster", column 'sectorcode'.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 31/10/2021 14:56:31 || The INSERT statement conflicted with the FOREIGN KEY constraint "FK_partymast_sector". The conflict occurred in database "NewColumbusDEV", table "dbo.sectormaster", column 'sectorcode'.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 31/10/2021 14:57:23 || The INSERT statement conflicted with the FOREIGN KEY constraint "FK_partymast_sector". The conflict occurred in database "NewColumbusDEV", table "dbo.sectormaster", column 'sectorcode'.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+SupMain.aspx || 31/10/2021 14:57:23 || The INSERT statement conflicted with the FOREIGN KEY constraint "FK_partymast_sector". The conflict occurred in database "NewColumbusDEV", table "dbo.sectormaster", column 'sectorcode'.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 30/11/2021 17:37:59 || Violation of UNIQUE KEY constraint 'UQ__int_agen__245657F37A981931'. Cannot insert duplicate key in object 'dbo.int_agentmast'. The duplicate key value is (321).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 30/11/2021 17:39:01 || Violation of UNIQUE KEY constraint 'UQ__int_agen__245657F37A981931'. Cannot insert duplicate key in object 'dbo.int_agentmast'. The duplicate key value is (321).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+CustMainDet.aspx || 30/11/2021 17:39:41 || Violation of UNIQUE KEY constraint 'UQ__int_agen__245657F37A981931'. Cannot insert duplicate key in object 'dbo.int_agentmast'. The duplicate key value is (321).
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------

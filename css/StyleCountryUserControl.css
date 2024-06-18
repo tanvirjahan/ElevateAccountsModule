@@ -1,0 +1,65 @@
+﻿
+.myTable {
+	border:none;
+	text-align:left;
+	margin-bottom:20px
+}
+.myTable tr th {
+	background-color:#8b0304;
+	font-weight:600;
+	color:#fff;
+	padding:0 10px;
+	font-size:14px;
+	line-height:30px;
+}
+.myTable tr td {
+	padding:20px 0 0 0
+}
+.myTable tr td input[type="submit"] {
+	color:#fff;
+	line-height:20px
+}
+.myTable input {
+	width:99.6%;
+	font-size:10px;
+	color:#95a8b4;
+	margin:0
+}
+
+.myTable big {
+	font-size:14px;
+	display:block;
+	margin-bottom:5px
+}
+
+.coloured tr td {
+	padding:15px 10px
+}
+
+
+.closeiconnew_mhd
+         {
+            display: block;
+            position: absolute;
+            width:15px;
+            height:15px;
+            top: 2px;
+            right: 2px;
+            background: url("../images/CloseiconNew.png");
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+             }   
+             
+.aveRooms {
+	font-size:14px;
+	color:#8b0304;
+	font-weight:600;
+	float:left
+}             
+
+.ModalPopupBG
+{
+    background-color: White;
+    filter: alpha(opacity=50);
+    opacity: 0.5;
+}   

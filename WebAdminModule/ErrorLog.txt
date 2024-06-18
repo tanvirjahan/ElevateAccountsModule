@@ -1,0 +1,4 @@
+ApproveCustomersForWebSearch.aspx || 05/10/2019 17:32:03 || ExecuteNonQuery requires an open and available Connection. The connection's current state is closed. || admin
+--------------------------------------------------------------------------------------------------------------
+ApproveCustomersForWebSearch.aspx || 12/06/2020 08:49:18 || ExecuteNonQuery requires an open and available Connection. The connection's current state is closed. || admin
+--------------------------------------------------------------------------------------------------------------

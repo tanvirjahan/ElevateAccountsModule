@@ -1,0 +1,526 @@
+Imports CrystalDecisions.CrystalReports.Engine
+Imports CrystalDecisions.CrystalReports
+Imports CrystalDecisions.Shared
+Imports CrystalDecisions.Web
+Imports CrystalDecisions.ReportSource
+
+#Region "Namespace"
+Imports System.Data
+Imports System.Data.SqlClient
+#End Region
+
+Partial Class NewclientsSearch
+    Inherits System.Web.UI.Page
+    Dim objectcl As New clsDateTime
+    Dim rep As New ReportDocument
+    Dim rptcompanyname As String
+    Dim rptreportname As String
+    Dim objutils As New clsUtils
+    Dim servicetype As String
+    Dim default_country As String
+    Dim strqry As String
+    Dim seasonfrom As String
+    Dim seasonto As String
+    Dim objUser As New clsUser
+
+
+    Protected Sub Page_Init(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Init
+
+        If Page.IsPostBack = False Then
+            Try
+
+                Dim AppId As HiddenField = CType(Master.FindControl("hdnAppId"), HiddenField)
+                Dim AppName As HiddenField = CType(Master.FindControl("hdnAppName"), HiddenField)
+                Dim strappid As String = ""
+                Dim strappname As String = ""
+                If AppId Is Nothing = False Then
+                    strappid = AppId.Value
+                End If
+                If AppName Is Nothing = False Then
+                    strappname = AppName.Value
+                End If
+
+
+                If CType(Session("GlobalUserName"), String) = Nothing Or CType(Session("Userpwd"), String) = Nothing Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                Else
+                    objUser.CheckUserRight(Session("dbconnectionName"), CType(Session("GlobalUserName"), String), CType(Session("Userpwd"), String), _
+                                                       CType(strappname, String), "TransportModule\rptTransferPricelistSearch.aspx", btnadd, btnexport, BtnPrint, gv_SearchResult)
+
+
+                End If
+
+
+
+                txtconnection.Value = Session("dbconnectionName")
+
+                If txtFromDate.Text = "" Then
+                    txtFromDate.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+                End If
+
+
+                If txtToDate.Text = "" Then
+                    txtToDate.Text = DateAdd(DateInterval.Month, 1, objectcl.GetSystemDateOnly(Session("dbconnectionName")))
+                End If
+
+                chkshift.Checked = False
+
+                objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlsellcode, "trfsellcode", "trfsellname", "select trfsellcode,trfsellname from trfsellmast where active=1 order by trfsellcode", True)
+                objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlsellname, "trfsellname", "trfsellcode", "select trfsellname,trfsellcode from trfsellmast where active=1 order by trfsellname", True)
+
+                objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlairportcode, "airportbordercode", "airportbordername", "select airportbordercode,airportbordername from airportbordersmaster where active=1  order by airportbordercode", True)
+                objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlairportname, "airportbordername", "airportbordercode", "select airportbordername,airportbordercode from airportbordersmaster where active=1  order by airportbordername", True)
+
+                objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlsectorcode, "othtypcode", "othtypname", "select othtypcode,othtypname from othtypmast where active=1  and othgrpcode in (select option_selected from reservation_parameters where param_id ='1001')order by othtypcode", True)
+                objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlsectorname, "othtypname", "othtypcode", "select othtypcode,othtypname from othtypmast where active=1  and othgrpcode in (select option_selected from reservation_parameters where param_id ='1001')order by othtypcode", True)
+
+                
+                default_country = objutils.GetDBFieldFromStringnew(Session("dbconnectionName"), "reservation_parameters", "option_selected", "param_id", CType("459", String))
+                ddlairportname.Value = CType(default_country, String)
+                ddlairportcode.Value = ddlairportname.Items(ddlairportname.SelectedIndex).Text
+
+                ddlsectorcode.Style.Add("display", "none")
+                ddlsectorname.Style.Add("display", "none")
+
+                lblsectorcode.Style.Add("display", "none")
+                lblsectorname.Style.Add("display", "none")
+
+                '' City Filter '''''''''''
+                'strqry = "select citycode,cityname from citymast where active=1 "
+                'If default_country <> "" Then
+                '    strqry = strqry + " and ctrycode='" & default_country & "'"
+                'End If
+                'strqry = strqry + " order by citycode"
+                ''objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlCityCode, "citycode", "cityname", strqry, True)
+
+                'strqry = "select cityname,citycode from citymast where active=1 "
+                'If default_country <> "" Then
+                '    strqry = strqry + " and ctrycode='" & default_country & "'"
+                'End If
+                'strqry = strqry + " order by cityname"
+                ''objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlCityName, "cityname", "citycode", strqry, True)
+                ' '''''''''''''''
+
+                If Request.QueryString("catcode") <> "" Then
+                    ddlsellname.Value = Request.QueryString("catcode")
+                    ddlsellcode.Value = ddlsellname.Items(ddlsellname.SelectedIndex).Text
+                End If
+               
+                If Request.QueryString("ctrycode") <> "" Then
+                    ddlairportname.Value = Request.QueryString("ctrycode")
+                    ddlairportcode.Value = ddlairportname.Items(ddlairportname.SelectedIndex).Text
+                End If
+                
+                If Request.QueryString("fromdate") <> "" Then
+                    txtFromDate.Text = Format("U", CType(Request.QueryString("fromdate"), Date))
+                End If
+                If Request.QueryString("todate") <> "" Then
+                    txtToDate.Text = Format("U", CType(Request.QueryString("todate"), Date))
+                End If
+                
+
+                txtFromDate.Attributes.Add("onchange", "javascript:ChangeDate();")
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objutils.WritErrorLog("rptSupplierpoliciesSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+            End Try
+
+
+
+
+
+
+
+
+
+        End If
+
+        Dim typ As Type
+        typ = GetType(DropDownList)
+
+        If (Page.ClientScript.IsClientScriptIncludeRegistered(typ, "TADDScript.js")) = False Then
+            Page.ClientScript.RegisterClientScriptInclude(typ, "TADDScript.js", "TADDScript.js")
+
+
+            ddlsellcode.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            ddlsellname.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+
+            ddlairportcode.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+            ddlairportname.Attributes.Add("onKeyDown", "TADD_OnKeyDown(this);")
+
+          
+
+        End If
+
+        ClientScript.GetPostBackEventReference(Me, String.Empty)
+        If (Me.IsPostBack And Me.Request("__EVENTTARGET") = "RepNewClientWindowPostBack") Then
+            BtnPrint_Click(sender, e)
+        End If
+
+
+    End Sub
+
+    '#Region "Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+
+
+        If Page.IsPostBack = False Then
+
+            'objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlairportcode, "ctrycode", "ctryname", "select ctrycode,ctryname from ctrymast where active=1  order by ctrycode", True, ddlairportcode.Value)
+            ' objutils.FillDropDownListHTMLNEW(Session("dbconnectionName"), ddlairportname, "ctryname", "ctrycode", "select ctryname,ctrycode from ctrymast where active=1  order by ctryname", True, ddlairportname.Value)
+            If chkshift.Checked = False Then
+                ddlsectorcode.Style.Add("display", "none")
+                ddlsectorname.Style.Add("display", "none")
+
+                lblsectorcode.Style.Add("display", "none")
+                lblsectorname.Style.Add("display", "none")
+            End If
+
+
+            FillGrid()
+
+        Else
+            If chkshift.Checked = True Then
+                ddlairportcode.Style.Add("display", "none")
+                ddlairportname.Style.Add("display", "none")
+                lblairportcode.Style.Add("display", "none")
+                lblairportname.Style.Add("display", "none")
+
+
+                ddlsectorcode.Style.Add("display", "block")
+                ddlsectorname.Style.Add("display", "block")
+                lblsectorcode.Style.Add("display", "block")
+                lblsectorname.Style.Add("display", "block")
+            Else
+                ddlairportcode.Style.Add("display", "block")
+                ddlairportname.Style.Add("display", "block")
+                lblairportcode.Style.Add("display", "block")
+                lblairportname.Style.Add("display", "block")
+
+
+                ddlsectorcode.Style.Add("display", "none")
+                ddlsectorname.Style.Add("display", "none")
+                lblsectorcode.Style.Add("display", "none")
+                lblsectorname.Style.Add("display", "none")
+            End If
+
+
+
+
+
+
+        End If
+
+
+
+    End Sub
+
+    Protected Sub BtnClear_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles BtnClear.Click
+        ddlsellcode.Value = "[Select]"
+        ddlsellname.Value = "[Select]"
+        ddlairportcode.Value = "[Select]"
+        ddlairportname.Value = "[Select]"
+       
+        txtFromDate.Text = objectcl.GetSystemDateOnly(Session("dbconnectionName"))
+        txtFromDate.Text = DateAdd(DateInterval.Month, 1, objectcl.GetSystemDateOnly(Session("dbconnectionName")))
+
+    End Sub
+
+#Region " Validate Page"
+    Public Function ValidatePage() As Boolean
+        'Dim frmdate, todate As Date
+        Dim objDateTime As New clsDateTime
+        Try
+
+            If txtFromDate.Text = "" Then
+
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('From date field can not be blank.');", True)
+
+                SetFocus(txtFromDate)
+                ValidatePage = False
+                Exit Function
+            End If
+            If txtToDate.Text = "" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('As on  date field can not be blank.');", True)
+
+                SetFocus(txtToDate)
+                ValidatePage = False
+                Exit Function
+            End If
+
+            
+
+            If CType(objectcl.ConvertDateromTextBoxToDatabase(txtfromdate.Text), Date) > CType(objectcl.ConvertDateromTextBoxToDatabase(txttodate.Text), Date) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('To date should not less than from date.');", True)
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "FocusScr", "WebForm_AutoFocus('" + txttodate.ClientID + "');", True)
+                'SetFocus(txtToDate)
+                ValidatePage = False
+                Exit Function
+            End If
+
+
+            If ddlairportcode.Value = "[Select]" And ddlsectorcode.Value = "[Select]" Then
+
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('AirportCode Should be Selected.');", True)
+                ValidatePage = False
+                Exit Function
+
+            End If
+
+
+            If ddlsellcode.Value = "[Select]" Then
+
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('SellingCode Should be Selected.');", True)
+                ValidatePage = False
+                Exit Function
+
+            End If
+
+            Dim p As Integer
+
+            For Each gvrow As GridViewRow In gv_SearchResult.Rows
+                Dim chk As New HtmlInputCheckBox
+                chk = gvrow.FindControl("chkdays")
+                If Not chk Is Nothing Then
+                    If chk.Checked = True Then
+
+                        P = P + 1
+                    End If
+                End If
+
+            Next
+            If p > 10 Then
+                ValidatePage = False
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Maximum of 10 Vehicle Type can be Selected.');", True)
+                Exit Function
+            End If
+
+
+
+            ValidatePage = True
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Function
+#End Region
+
+    Protected Sub BtnPrint_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            If ValidatePage() = True Then
+                'Session.Add("Pageame", "Newclient")
+                'Session.Add("BackPageName", "NewclientSearch.aspx")
+                'Session("ColReportParams") = Nothing
+
+                Dim strReportTitle As String = ""
+                Dim param1 As String = ""
+                Dim param2 As String = ""
+                Dim param3 As String = ""
+                Dim param4 As String = ""
+                Dim param5 As String = ""
+                Dim param6 As String = ""
+                Dim param7 As String = ""
+                Dim param8 As String = ""
+                Dim param9 As String = ""
+                Dim param10 As String = ""
+
+                Dim strfromdate As String = ""
+                Dim strtodate As String = ""
+                Dim strShift As Boolean = False
+
+                Dim strsellcode As String = ""
+                Dim strairportcode As String = ""
+
+                Dim strrepfilter As String = ""
+                Dim strreportoption As String = ""
+                Dim strsectorcode As String = ""
+                Dim strarr(10) As String
+                Dim k As Integer
+                Dim P As Integer
+                strsellcode = IIf(UCase(ddlsellcode.Items(ddlsellcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlsellcode.Items(ddlsellcode.SelectedIndex).Text, "")
+                strairportcode = IIf(UCase(ddlairportcode.Items(ddlairportcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlairportcode.Items(ddlairportcode.SelectedIndex).Text, "")
+                strsectorcode = IIf(UCase(ddlsectorcode.Items(ddlsectorcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlsectorcode.Items(ddlsectorcode.SelectedIndex).Text, "")
+                strfromdate = Mid(Format(CType(txtfromdate.Text, Date), "u"), 1, 10)
+                strtodate = Mid(Format(CType(txttodate.Text, Date), "u"), 1, 10)
+                strShift = chkshift.Checked
+
+                For Each gvrow As GridViewRow In gv_SearchResult.Rows
+                    Dim chk As New HtmlInputCheckBox
+                    chk = gvrow.FindControl("chkdays")
+                    If Not chk Is Nothing Then
+                        If chk.Checked = True Then
+                            strarr(P) = gvrow.Cells(2).Text
+                            P = P + 1
+                        End If
+                    End If
+
+                Next
+
+                strReportTitle = " Transfer Pricelist"
+                'strrepfilter = "Order By : " + IIf(rbcode.Checked, "Client Code", "Client Name")
+                'strorderby = IIf(rbcode.Checked, 0, 1)
+                param1 = objutils.GetDBFieldFromStringnew(Session("dbconnectionName"), "othcatmast", "othcatcode", "othcatname", strarr(0))
+                param2 = objutils.GetDBFieldFromStringnew(Session("dbconnectionName"), "othcatmast", "othcatcode", "othcatname", strarr(1))
+                param3 = objutils.GetDBFieldFromStringnew(Session("dbconnectionName"), "othcatmast", "othcatcode", "othcatname", strarr(2))
+                param4 = objutils.GetDBFieldFromStringnew(Session("dbconnectionName"), "othcatmast", "othcatcode", "othcatname", strarr(3))
+                param5 = objutils.GetDBFieldFromStringnew(Session("dbconnectionName"), "othcatmast", "othcatcode", "othcatname", strarr(4))
+                param6 = objutils.GetDBFieldFromStringnew(Session("dbconnectionName"), "othcatmast", "othcatcode", "othcatname", strarr(5))
+                param7 = objutils.GetDBFieldFromStringnew(Session("dbconnectionName"), "othcatmast", "othcatcode", "othcatname", strarr(6))
+                param8 = objutils.GetDBFieldFromStringnew(Session("dbconnectionName"), "othcatmast", "othcatcode", "othcatname", strarr(7))
+                param9 = objutils.GetDBFieldFromStringnew(Session("dbconnectionName"), "othcatmast", "othcatcode", "othcatname", strarr(8))
+                param10 = objutils.GetDBFieldFromStringnew(Session("dbconnectionName"), "othcatmast", "othcatcode", "othcatname", strarr(9))
+                Dim strpop As String = ""
+                If ddlairportcode.Value = "[Select]" Then
+                    '    strpop = "window.open('rptTransferPricelistReport.aspx?Pageame=TranferPricelist&BackPageName=rptTransferPricelistReport.aspx&sellcode=" & strsellcode & "&airportcode=" & strsectorcode _
+                    '& "&chksft=" & strShift & "&fromdate=" & strfromdate & "&todate=" & strtodate _
+                    '& "&param1=" & param1 & "&param2=" & param2 & "&param3=" & param3 & "&param4=" & param4 _
+                    '& "&param5=" & param5 & "&param6=" & param6 & "&param7=" & param7 & "&param8=" & param8 _
+                    '& "&param9=" & param9 & "&param10=" & param10 _
+                    '& "&repfilter=" & strrepfilter & "&reportoption=" & strreportoption & "&reporttitle=" & strReportTitle & "','RepNewClient','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes' );"
+
+                    strpop = "window.open('rptTransferPricelistReport.aspx?Pageame=TranferPricelist&BackPageName=rptTransferPricelistReport.aspx&sellcode=" & strsellcode & "&airportcode=" & strsectorcode _
+                     & "&chksft=" & strShift & "&fromdate=" & strfromdate & "&todate=" & strtodate _
+                     & "&param1=" & param1 & "&param2=" & param2 & "&param3=" & param3 & "&param4=" & param4 _
+                     & "&param5=" & param5 & "&param6=" & param6 & "&param7=" & param7 & "&param8=" & param8 _
+                     & "&param9=" & param9 & "&param10=" & param10 _
+                     & "&repfilter=" & strrepfilter & "&reportoption=" & strreportoption & "&reporttitle=" & strReportTitle & "','RepNewClient');"
+
+
+
+
+
+
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+                ElseIf ddlsectorcode.Value = "[Select]" Then
+
+                    '    strpop = "window.open('rptTransferPricelistReport.aspx?Pageame=TranferPricelist&BackPageName=rptTransferPricelistReport.aspx&sellcode=" & strsellcode & "&airportcode=" & strairportcode _
+                    '& "&chksft=" & strShift & "&fromdate=" & strfromdate & "&todate=" & strtodate _
+                    '& "&param1=" & param1 & "&param2=" & param2 & "&param3=" & param3 & "&param4=" & param4 _
+                    '& "&param5=" & param5 & "&param6=" & param6 & "&param7=" & param7 & "&param8=" & param8 _
+                    '& "&param9=" & param9 & "&param10=" & param10 _
+                    '& "&repfilter=" & strrepfilter & "&reportoption=" & strreportoption & "&reporttitle=" & strReportTitle & "','RepNewClient','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes' );"
+
+                    strpop = "window.open('rptTransferPricelistReport.aspx?Pageame=TranferPricelist&BackPageName=rptTransferPricelistReport.aspx&sellcode=" & strsellcode & "&airportcode=" & strairportcode _
+                                    & "&chksft=" & strShift & "&fromdate=" & strfromdate & "&todate=" & strtodate _
+                                    & "&param1=" & param1 & "&param2=" & param2 & "&param3=" & param3 & "&param4=" & param4 _
+                                    & "&param5=" & param5 & "&param6=" & param6 & "&param7=" & param7 & "&param8=" & param8 _
+                                    & "&param9=" & param9 & "&param10=" & param10 _
+                                    & "&repfilter=" & strrepfilter & "&reportoption=" & strreportoption & "&reporttitle=" & strReportTitle & "','RepNewClient');"
+
+
+
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+                End If
+
+
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objutils.WritErrorLog("NewclientsSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+        End Try
+    End Sub
+
+#Region "Private Sub FillGrid(ByVal strorderby As String, Optional ByVal strsortorder As String = 'ASC')"
+    Private Sub FillGrid()
+        Dim myDS As New DataSet
+        Dim MyCommand As SqlCommand
+        Dim SqlConn1 As SqlConnection
+        Dim myDataAdapter As SqlDataAdapter
+        Dim ObjDate As New clsDateTime
+        Dim strSqlQry As String
+        gv_SearchResult.Visible = True
+        lblMsg.Visible = False
+
+        If gv_SearchResult.PageIndex < 0 Then
+            gv_SearchResult.PageIndex = 0
+        End If
+
+        Try
+
+
+            'SqlConn1 = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+            'sqlTrans = SqlConn.BeginTransaction           'SQL  Trans start
+
+            'MyCommand = New SqlCommand("sp_rep_newclient", SqlConn1)
+            'MyCommand.CommandType = CommandType.StoredProcedure
+
+            'MyCommand.Parameters.Add(New SqlParameter("@catcode", SqlDbType.VarChar, 20)).Value = IIf(UCase(ddlsellcode.Items(ddlsellcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlsellcode.Items(ddlsellcode.SelectedIndex).Text, "") 'CType(ddlCCode.Items(ddlCCode.SelectedIndex).Text, String)
+            'MyCommand.Parameters.Add(New SqlParameter("@ctrycode", SqlDbType.VarChar, 20)).Value = IIf(UCase(ddlairportcode.Items(ddlairportcode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlairportcode.Items(ddlairportcode.SelectedIndex).Text, "") 'CType(ddlContCode.Items(ddlContCode.SelectedIndex).Text, String)
+            ''MyCommand.Parameters.Add(New SqlParameter("@citycode", SqlDbType.VarChar, 20)).Value = IIf(UCase(ddlCityCode.Items(ddlCityCode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlCityCode.Items(ddlCityCode.SelectedIndex).Text, "") 'CType(ddlCityCode.Items(ddlCityCode.SelectedIndex).Text, String)
+            ''MyCommand.Parameters.Add(New SqlParameter("@sectorcode", SqlDbType.VarChar, 20)).Value = IIf(UCase(ddlSectorCode.Items(ddlSectorCode.SelectedIndex).Text) <> Trim(UCase("[Select]")), ddlSectorCode.Items(ddlSectorCode.SelectedIndex).Text, "") 'CType(ddlSectorCode.Items(ddlSectorCode.SelectedIndex).Text, String)
+            'MyCommand.Parameters.Add(New SqlParameter("@frmdate", SqlDbType.DateTime)).Value = Mid(Format(CType(txtFromDate.Text, Date), "u"), 1, 10) 'ObjDate.ConvertDateromTextBoxToDatabase(dtpFromDate.txtDate.Text)
+            'MyCommand.Parameters.Add(New SqlParameter("@todate", SqlDbType.DateTime)).Value = Mid(Format(CType(txtToDate.Text, Date), "u"), 1, 10) 'ObjDate.ConvertDateromTextBoxToDatabase(dtptodate.txtDate.Text)
+
+            strSqlQry = "select othcatcode,othcatname from othcatmast where othgrpcode='TRFS' "
+
+
+            SqlConn1 = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                            'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn1)
+            myDataAdapter.Fill(myDS)
+            gv_SearchResult.DataSource = myDS
+
+            If myDS.Tables(0).Rows.Count > 0 Then
+                gv_SearchResult.DataBind()
+            Else
+                gv_SearchResult.PageIndex = 0
+                gv_SearchResult.DataBind()
+                lblMsg.Visible = True
+                lblMsg.Text = "Records not found, Please redefine search criteria."
+            End If
+
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objutils.WritErrorLog("NewclientsSearch.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            'clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            'clsDBConnect.dbConnectionClose(SqlConn)                          'Close connection
+        End Try
+
+    End Sub
+#End Region
+
+    Protected Sub btndisplay_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btndisplay.Click
+
+    End Sub
+
+
+    Protected Sub gv_SearchResult_PageIndexChanging(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewPageEventArgs) Handles gv_SearchResult.PageIndexChanging
+        gv_SearchResult.PageIndex = e.NewPageIndex
+
+    End Sub
+
+#Region " Protected Sub gv_SearchResult_Sorting(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewSortEventArgs) Handles gv_SearchResult.Sorting"
+    Protected Sub gv_SearchResult_Sorting(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewSortEventArgs) Handles gv_SearchResult.Sorting
+        'FillGrid(e.SortExpression, e.SortDirection)
+        Session.Add("strsortexpression", e.SortExpression)
+        SortGridColoumn_click()
+    End Sub
+#End Region
+
+#Region "Public Sub SortGridColoumn_click()"
+    Public Sub SortGridColoumn_click()
+        Dim DataTable As DataTable
+        Dim myDS As New DataSet
+
+
+        myDS = gv_SearchResult.DataSource
+        DataTable = myDS.Tables(0)
+        If IsDBNull(DataTable) = False Then
+            Dim dataView As DataView = DataTable.DefaultView
+            Session.Add("strsortdirection", objutils.SwapSortDirection(Session("strsortdirection")))
+            dataView.Sort = Session("strsortexpression") & " " & objutils.ConvertSortDirectionToSql(Session("strsortdirection"))
+            gv_SearchResult.DataSource = dataView
+            gv_SearchResult.DataBind()
+        End If
+    End Sub
+#End Region
+
+    Protected Sub btnhelp_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "window.open('../Help.aspx?hi=NewclientsSearch','_blank','status=1,scrollbars=1,top=135,left=760,width=250,height=500');", True)
+    End Sub
+
+   
+End Class

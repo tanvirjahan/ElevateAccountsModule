@@ -1,0 +1,104 @@
+﻿#Region "Namespace"
+Imports System.Data
+Imports System.Data.SqlClient
+#End Region
+
+Partial Class TransportModule_PrintPopUp
+    Inherits System.Web.UI.Page
+
+
+#Region "Global Declarations"
+    Dim objUtils As New clsUtils
+    Dim objUser As New clsUser
+    Dim objDateTime As New clsDateTime
+    Dim strSqlQry As String
+    Dim strWhereCond As String
+    Dim SqlConn As SqlConnection
+    Dim myCommand As SqlCommand
+    Dim myDataAdapter As SqlDataAdapter
+
+
+#End Region
+
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        If IsPostBack = False Then
+            ViewState.Add("TransfersState", Request.QueryString("TransferType"))
+            ViewState.Add("Refcode", Request.QueryString("RefCode"))
+            If ViewState("TransfersState") = "Arrival" Then
+                rdnbdeparture.Checked = False
+                rdnbdeparture.Disabled = True
+
+            Else
+                rdnbdeparture.Checked = True
+                rdnarrival.Checked = False
+
+
+
+            End If
+        Else
+
+
+            'checkrb_status()
+
+        End If
+
+
+
+    End Sub
+
+
+
+    Public Sub checkrb_status()
+
+        If rdnarrival.Checked = True Then
+
+            rdnbdeparture.Checked = False
+
+        Else
+
+            If rdnbdeparture.Checked = True Then
+
+                rdnarrival.Checked = False
+            End If
+        End If
+
+    End Sub
+
+    Protected Sub btnReport_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnReport.Click
+        Try
+            Dim transfertype As Integer
+            'If ViewState("TransfersState") = "Arrival" Then
+            '    transfertype = 0
+            'Else
+
+            '    transfertype = 1
+            'End If
+
+            If rdnarrival.Checked = True Then
+                transfertype = 0
+            Else
+                transfertype = 1
+
+            End If
+
+            Dim strpop As String = ""
+
+            strpop = "window.open('rptReportNew.aspx?Pageame=TransferVoucher&BackPageName=PrintPopUp.aspx&transfertype=" & transfertype & "&Refcode=" & ViewState("Refcode") & "','RepPrint','width=1000,height=620 left=20,top=20 status=yes,toolbar=no,menubar=no,resizable=yes,scrollbars=yes');"
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strpop, True)
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("PrintPopUp.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+
+        End Try
+
+
+
+    End Sub
+
+    Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+    End Sub
+End Class
+
+

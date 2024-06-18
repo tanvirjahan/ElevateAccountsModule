@@ -1,0 +1,48 @@
+@charset "UTF-8";
+/* CSS Document */
+
+div#container{
+	background:url(../images/grid.gif);
+}
+
+#logoTitle{
+	background:url(../images/logoTitle.gif) center center no-repeat;
+}
+
+.loginBtn input{
+	background:url(../images/loginBtn.gif) no-repeat;
+}
+
+#logo{
+	background:url(../images/logo.gif) no-repeat;
+}
+
+.jordanNetwork{
+	background:url(../images/jordan_network.gif) center center no-repeat;
+}
+
+.uaeNetwork{
+	background:url(../images/uae_network.gif) center center no-repeat;
+}
+
+a.jordanPointer{
+	background:url(../images/jordan_pointer.gif) no-repeat;
+}
+a.uaePointer{
+	background:url(../images/uae_pointer.gif) no-repeat;
+}
+a.visitIt{
+	background:url(../images/visitWeb.gif) no-repeat;
+}
+#loginBlock input.field_input_agent{
+	width:221px;
+	height:20px;
+	background:url(../images/fieldBG.gif) center center no-repeat;
+	border:none;
+	text-indent:5px;
+	margin:5px 0;
+	padding:7px 4px 3px 6px;
+}
+#loginBlock{
+	bottom:-40px;
+}

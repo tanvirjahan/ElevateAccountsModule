@@ -1,0 +1,621 @@
+UpdateSupplierBookingSearch.aspx || 23/09/2018 15:16:34 || Multiple controls with the same ID 'lblLastModified' were found. FindControl requires that controls have unique IDs. || admin
+--------------------------------------------------------------------------------------------------------------
+UpdateSupplierBookingSearch.aspx || 23/09/2018 16:16:17 || Index was out of range. Must be non-negative and less than the size of the collection.
+Parameter name: index || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 30/07/2019 14:23:41 || Could not find stored procedure 'sp_getbookingtray_detail'. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 08/08/2019 10:27:23 || String or binary data would be truncated.
+String or binary data would be truncated.
+The statement has been terminated.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+The statement has been terminated.
+Warning: Null value is eliminated by an aggregate or other SET operation. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 08/08/2019 10:27:34 || String or binary data would be truncated.
+String or binary data would be truncated.
+The statement has been terminated.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+The statement has been terminated.
+Warning: Null value is eliminated by an aggregate or other SET operation. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 08/08/2019 10:29:51 || String or binary data would be truncated.
+String or binary data would be truncated.
+The statement has been terminated.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+The statement has been terminated.
+Warning: Null value is eliminated by an aggregate or other SET operation. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 08/08/2019 10:31:35 || String or binary data would be truncated.
+String or binary data would be truncated.
+The statement has been terminated.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+The statement has been terminated.
+Warning: Null value is eliminated by an aggregate or other SET operation. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 08/08/2019 10:34:33 || String or binary data would be truncated.
+String or binary data would be truncated.
+The statement has been terminated.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+The statement has been terminated.
+Warning: Null value is eliminated by an aggregate or other SET operation. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 08/08/2019 10:40:27 || String or binary data would be truncated.
+String or binary data would be truncated.
+The statement has been terminated.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+The statement has been terminated.
+Warning: Null value is eliminated by an aggregate or other SET operation. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 09/08/2019 16:36:12 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'sequenceNo'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 09/08/2019 16:43:41 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'salevaluebase'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 09/08/2019 16:47:54 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'sequenceNo'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 10/08/2019 10:14:57 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'salevaluebase'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 10/08/2019 10:21:21 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'salevaluebase'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 10/08/2019 10:34:07 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'Invoiceno'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx::LoadReport || 10/08/2019 11:49:07 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx::LoadReport || 10/08/2019 11:56:27 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx::LoadReport || 10/08/2019 11:57:20 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+Rptprodcomparision.aspx || 14/08/2019 15:40:24 || String or binary data would be truncated.
+String or binary data would be truncated.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+The statement has been terminated.
+                
+insert into #comparisonreport                      
+select '','',vh.partycode,vh.partyname,vh.agentcode,vh.agentname,0,                
+vh.requestid,vh.rlineno,vh.roomno,vh.requestdate,                
+case when vh.cancelled=1 then 'Cancelled' else                
+case when vh.hotelconfno<>'' then 'Confirmed' else 'Pending' end end bookingstatus,                
+'',                
+vh.prices_rmtypname+' '+vh.prices_rmcatcode+' '+vh.prices_mealcode,                
+vh.checkin,vh.checkout,vh.roomdetails_adults,vh.roomdetails_child,                
+vh.roomdetails_adults+vh.roomdetails_child,                
+'Hotel',vh.salecurrcode,                
+case  when isnull(vh.comp_cust,0)=0 and   isnull(vh.cancelled,0)=0   then vh.prices_salevalue else 0 end,                
+case when isnull(vh.comp_cust,0)=0 and isnull(vh.cancelled,0)=0    then vh.prices_salevaluebase else 0 end,                
+case when  isnull(vh.comp_cust,0)=0 and isnull(vh.cancelled,0)=0   then vh.prices_salenontaxablevaluebase+vh.prices_saletaxablevaluebase else 0 end ,                    
+case when isnull(vh.comp_supp,0)=0 and isnull(vh.cancelled,0) =0   then vh.prices_costvalue else 0 end      
+,vh.shiftto,1 noofrooms, DATEDIFF(DAY, convert(varchar(10),vh.checkin,111) , convert(varchar(10),vh.checkout,111)) as nights 
+,1*datediff(day,vh.checkin,vh.checkout) roomnights        
+,sourcectrycode        
+,c.ctryname sourcectryname        
+,p.catcode        
+,cat.catname,p.citycode,cm.cityname        
+,vh.adduser salescode        
+,u.username salesname        
+,'' invoiceno,0 as commissionvalue       
+from view_common_booking_hotel_detail vh(nolock)                
+inner join #requests vc(nolock) on vh.requestid=vc.requestid                
+inner join partymast p(nolock) on vh.partycode=p.partycode                
+inner join agentmast a(nolock) on vh.agentcode=a.agentcode                
+inner join ctrymast c(nolock) on vh.sourcectrycode=c.ctrycode      
+inner join citymast cm(nolock) on p.ctrycode=cm.ctrycode and p.citycode=cm.citycode        
+inner join catmast cat(nolock) on p.catcode=cat.catcode        
+inner join usermaster u(nolock) on vh.adduser=u.usercode        
+where isnull(vh.cancelled,0)=0
+The statement has been terminated.
+Aug 14 2019  3:40PM || admin
+--------------------------------------------------------------------------------------------------------------
+Rptprodcomparision.aspx || 14/08/2019 15:41:00 || String or binary data would be truncated.
+String or binary data would be truncated.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+The statement has been terminated.
+                
+insert into #comparisonreport                      
+select '','',vh.partycode,vh.partyname,vh.agentcode,vh.agentname,0,                
+vh.requestid,vh.rlineno,vh.roomno,vh.requestdate,                
+case when vh.cancelled=1 then 'Cancelled' else                
+case when vh.hotelconfno<>'' then 'Confirmed' else 'Pending' end end bookingstatus,                
+'',                
+vh.prices_rmtypname+' '+vh.prices_rmcatcode+' '+vh.prices_mealcode,                
+vh.checkin,vh.checkout,vh.roomdetails_adults,vh.roomdetails_child,                
+vh.roomdetails_adults+vh.roomdetails_child,                
+'Hotel',vh.salecurrcode,                
+case  when isnull(vh.comp_cust,0)=0 and   isnull(vh.cancelled,0)=0   then vh.prices_salevalue else 0 end,                
+case when isnull(vh.comp_cust,0)=0 and isnull(vh.cancelled,0)=0    then vh.prices_salevaluebase else 0 end,                
+case when  isnull(vh.comp_cust,0)=0 and isnull(vh.cancelled,0)=0   then vh.prices_salenontaxablevaluebase+vh.prices_saletaxablevaluebase else 0 end ,                    
+case when isnull(vh.comp_supp,0)=0 and isnull(vh.cancelled,0) =0   then vh.prices_costvalue else 0 end      
+,vh.shiftto,1 noofrooms, DATEDIFF(DAY, convert(varchar(10),vh.checkin,111) , convert(varchar(10),vh.checkout,111)) as nights 
+,1*datediff(day,vh.checkin,vh.checkout) roomnights        
+,sourcectrycode        
+,c.ctryname sourcectryname        
+,p.catcode        
+,cat.catname,p.citycode,cm.cityname        
+,vh.adduser salescode        
+,u.username salesname        
+,'' invoiceno,0 as commissionvalue       
+from view_common_booking_hotel_detail vh(nolock)                
+inner join #requests vc(nolock) on vh.requestid=vc.requestid                
+inner join partymast p(nolock) on vh.partycode=p.partycode                
+inner join agentmast a(nolock) on vh.agentcode=a.agentcode                
+inner join ctrymast c(nolock) on vh.sourcectrycode=c.ctrycode      
+inner join citymast cm(nolock) on p.ctrycode=cm.ctrycode and p.citycode=cm.citycode        
+inner join catmast cat(nolock) on p.catcode=cat.catcode        
+inner join usermaster u(nolock) on vh.adduser=u.usercode        
+where isnull(vh.cancelled,0)=0
+The statement has been terminated.
+Aug 14 2019  3:41PM || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 15/08/2019 15:05:00 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'collectedamt'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 15/08/2019 15:05:40 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'collectedamt'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 15/08/2019 15:09:04 || Invalid object name 'view_booking_collectedamount'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 15/08/2019 15:10:26 || Invalid object name 'contracts_specialevents_detail'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 15/08/2019 15:11:01 || Invalid object name 'contracts_specialevents_detail'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 15/08/2019 15:11:38 || Invalid object name 'contracts_specialevents_detail'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 15/08/2019 15:12:12 || Invalid object name 'contracts_specialevents_detail'. || admin
+--------------------------------------------------------------------------------------------------------------
+rptProfitability.aspx || 15/08/2019 15:21:40 || Could not find stored procedure 'sp_rep_profitability'. || admin
+--------------------------------------------------------------------------------------------------------------
+RptPendingToConfirm.aspx || 15/08/2019 15:22:46 ||    at RptPendingToConfirm.UpdateSupplierAndCost() in D:\ColumbusRPTS_New\ReservationModule\RptPendingToConfirm.aspx.vb:line 367
+   at RptPendingToConfirm.btnLoadReport_Click(Object sender, EventArgs e) in D:\ColumbusRPTS_New\ReservationModule\RptPendingToConfirm.aspx.vb:line 86 || admin
+--------------------------------------------------------------------------------------------------------------
+Rptprodcomparision.aspx || 15/08/2019 15:24:51 || Could not find stored procedure 'sp_rep_production_comparison_new'. || admin
+--------------------------------------------------------------------------------------------------------------
+Rptprodcomparision.aspx || 15/08/2019 15:26:07 || Invalid object name 'TB_Booking_Domainfolder'.
+Invalid object name 'TB_Booking_Domainfolder'.
+Invalid column name 'HotelCommissionValueTotal'.
+Invalid column name 'HotelCommissionValueTotal'.
+Cannot drop the table 'comparisonreportest', because it does not exist or you do not have permission.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+                  
+insert into #comparisonreport                        
+select '','',vh.partycode,vh.partyname,vh.agentcode,vh.agentname,0,                  
+vh.requestid,vh.rlineno,vh.roomno,vh.requestdate,                  
+case when vh.cancelled=1 then 'Cancelled' else                  
+case when vh.hotelconfno<>'' then 'Confirmed' else 'Pending' end end bookingstatus,                  
+'',                  
+vh.prices_rmtypname+' '+vh.prices_rmcatcode+' '+vh.prices_mealcode,                  
+vh.checkin,vh.checkout,vh.roomdetails_adults,vh.roomdetails_child,                  
+vh.roomdetails_adults+vh.roomdetails_child,                  
+'Hotel',vh.salecurrcode,                  
+case  when isnull(vh.comp_cust,0)=0 and   isnull(vh.cancelled,0)=0   then vh.prices_salevalue else 0 end,                  
+case when isnull(vh.comp_cust,0)=0 and isnull(vh.cancelled,0)=0    then vh.prices_salevaluebase else 0 end,                  
+case when  isnull(vh.comp_cust,0)=0 and isnull(vh.cancelled,0)=0   then vh.prices_salenontaxablevaluebase+vh.prices_saletaxablevaluebase else 0 end ,                      
+case when isnull(vh.comp_supp,0)=0 and isnull(vh.cancelled,0) =0   then vh.prices_costvalue else 0 end        
+,vh.shiftto,1 noofrooms, DATEDIFF(DAY, convert(varchar(10),vh.checkin,111) , convert(varchar(10),vh.checkout,111)) as nights   
+,1*datediff(day,vh.checkin,vh.checkout) roomnights          
+,sourcectrycode          
+,c.ctryname sourcectryname          
+,p.catcode          
+,cat.catname,p.citycode,cm.cityname          
+,vh.adduser salescode          
+,u.username salesname          
+,'' invoiceno,HotelCommissionValueTotal as commissionvalue         
+from view_common_booking_hotel_detail vh(nolock)                  
+inner join #requests vc(nolock) on vh.requestid=vc.requestid                  
+inner join partymast p(nolock) on vh.partycode=p.partycode                  
+inner join agentmast a(nolock) on vh.agentcode=a.agentcode                  
+inner join ctrymast c(nolock) on vh.sourcectrycode=c.ctrycode        
+inner join citymast cm(nolock) on p.ctrycode=cm.ctrycode and p.citycode=cm.citycode          
+inner join catmast cat(nolock) on p.catcode=cat.catcode          
+inner join usermaster u(nolock) on vh.adduser=u.usercode          
+where isnull(vh.cancelled,0)=0
+Aug 15 2019  3:26PM || admin
+--------------------------------------------------------------------------------------------------------------
+Rptprodcomparision.aspx || 15/08/2019 15:26:16 || Invalid object name 'TB_Booking_Domainfolder'.
+Invalid object name 'TB_Booking_Domainfolder'.
+Invalid column name 'HotelCommissionValueTotal'.
+Invalid column name 'HotelCommissionValueTotal'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+                  
+insert into #comparisonreport                        
+select '','',vh.partycode,vh.partyname,vh.agentcode,vh.agentname,0,                  
+vh.requestid,vh.rlineno,vh.roomno,vh.requestdate,                  
+case when vh.cancelled=1 then 'Cancelled' else                  
+case when vh.hotelconfno<>'' then 'Confirmed' else 'Pending' end end bookingstatus,                  
+'',                  
+vh.prices_rmtypname+' '+vh.prices_rmcatcode+' '+vh.prices_mealcode,                  
+vh.checkin,vh.checkout,vh.roomdetails_adults,vh.roomdetails_child,                  
+vh.roomdetails_adults+vh.roomdetails_child,                  
+'Hotel',vh.salecurrcode,                  
+case  when isnull(vh.comp_cust,0)=0 and   isnull(vh.cancelled,0)=0   then vh.prices_salevalue else 0 end,                  
+case when isnull(vh.comp_cust,0)=0 and isnull(vh.cancelled,0)=0    then vh.prices_salevaluebase else 0 end,                  
+case when  isnull(vh.comp_cust,0)=0 and isnull(vh.cancelled,0)=0   then vh.prices_salenontaxablevaluebase+vh.prices_saletaxablevaluebase else 0 end ,                      
+case when isnull(vh.comp_supp,0)=0 and isnull(vh.cancelled,0) =0   then vh.prices_costvalue else 0 end        
+,vh.shiftto,1 noofrooms, DATEDIFF(DAY, convert(varchar(10),vh.checkin,111) , convert(varchar(10),vh.checkout,111)) as nights   
+,1*datediff(day,vh.checkin,vh.checkout) roomnights          
+,sourcectrycode          
+,c.ctryname sourcectryname          
+,p.catcode          
+,cat.catname,p.citycode,cm.cityname          
+,vh.adduser salescode          
+,u.username salesname          
+,'' invoiceno,HotelCommissionValueTotal as commissionvalue         
+from view_common_booking_hotel_detail vh(nolock)                  
+inner join #requests vc(nolock) on vh.requestid=vc.requestid                  
+inner join partymast p(nolock) on vh.partycode=p.partycode                  
+inner join agentmast a(nolock) on vh.agentcode=a.agentcode                  
+inner join ctrymast c(nolock) on vh.sourcectrycode=c.ctrycode        
+inner join citymast cm(nolock) on p.ctrycode=cm.ctrycode and p.citycode=cm.citycode          
+inner join catmast cat(nolock) on p.catcode=cat.catcode          
+inner join usermaster u(nolock) on vh.adduser=u.usercode          
+where isnull(vh.cancelled,0)=0
+Aug 15 2019  3:26PM || admin
+--------------------------------------------------------------------------------------------------------------
+Rptprodcomparision.aspx || 15/08/2019 15:33:45 || String or binary data would be truncated.
+String or binary data would be truncated.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+The statement has been terminated.
+                  
+insert into #comparisonreport                        
+select '','',vh.partycode,vh.partyname,vh.agentcode,vh.agentname,0,                  
+vh.requestid,vh.rlineno,vh.roomno,vh.requestdate,                  
+case when vh.cancelled=1 then 'Cancelled' else                  
+case when vh.hotelconfno<>'' then 'Confirmed' else 'Pending' end end bookingstatus,                  
+'',                  
+vh.prices_rmtypname+' '+vh.prices_rmcatcode+' '+vh.prices_mealcode,                  
+vh.checkin,vh.checkout,vh.roomdetails_adults,vh.roomdetails_child,                  
+vh.roomdetails_adults+vh.roomdetails_child,                  
+'Hotel',vh.salecurrcode,                  
+case  when isnull(vh.comp_cust,0)=0 and   isnull(vh.cancelled,0)=0   then vh.prices_salevalue else 0 end,                  
+case when isnull(vh.comp_cust,0)=0 and isnull(vh.cancelled,0)=0    then vh.prices_salevaluebase else 0 end,                  
+case when  isnull(vh.comp_cust,0)=0 and isnull(vh.cancelled,0)=0   then vh.prices_salenontaxablevaluebase+vh.prices_saletaxablevaluebase else 0 end ,                      
+case when isnull(vh.comp_supp,0)=0 and isnull(vh.cancelled,0) =0   then vh.prices_costvalue else 0 end        
+,vh.shiftto,1 noofrooms, DATEDIFF(DAY, convert(varchar(10),vh.checkin,111) , convert(varchar(10),vh.checkout,111)) as nights   
+,1*datediff(day,vh.checkin,vh.checkout) roomnights          
+,sourcectrycode          
+,c.ctryname sourcectryname          
+,p.catcode          
+,cat.catname,p.citycode,cm.cityname          
+,vh.adduser salescode          
+,u.username salesname          
+,'' invoiceno,0.0000 as commissionvalue         
+from view_common_booking_hotel_detail vh(nolock)                  
+inner join #requests vc(nolock) on vh.requestid=vc.requestid                  
+inner join partymast p(nolock) on vh.partycode=p.partycode                  
+inner join agentmast a(nolock) on vh.agentcode=a.agentcode                  
+inner join ctrymast c(nolock) on vh.sourcectrycode=c.ctrycode        
+inner join citymast cm(nolock) on p.ctrycode=cm.ctrycode and p.citycode=cm.citycode          
+inner join catmast cat(nolock) on p.catcode=cat.catcode          
+inner join usermaster u(nolock) on vh.adduser=u.usercode          
+where isnull(vh.cancelled,0)=0
+The statement has been terminated.
+Aug 15 2019  3:33PM || admin
+--------------------------------------------------------------------------------------------------------------
+Rptprodcomparision.aspx || 15/08/2019 15:33:52 || String or binary data would be truncated.
+String or binary data would be truncated.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+The statement has been terminated.
+                  
+insert into #comparisonreport                        
+select '','',vh.partycode,vh.partyname,vh.agentcode,vh.agentname,0,                  
+vh.requestid,vh.rlineno,vh.roomno,vh.requestdate,                  
+case when vh.cancelled=1 then 'Cancelled' else                  
+case when vh.hotelconfno<>'' then 'Confirmed' else 'Pending' end end bookingstatus,                  
+'',                  
+vh.prices_rmtypname+' '+vh.prices_rmcatcode+' '+vh.prices_mealcode,                  
+vh.checkin,vh.checkout,vh.roomdetails_adults,vh.roomdetails_child,                  
+vh.roomdetails_adults+vh.roomdetails_child,                  
+'Hotel',vh.salecurrcode,                  
+case  when isnull(vh.comp_cust,0)=0 and   isnull(vh.cancelled,0)=0   then vh.prices_salevalue else 0 end,                  
+case when isnull(vh.comp_cust,0)=0 and isnull(vh.cancelled,0)=0    then vh.prices_salevaluebase else 0 end,                  
+case when  isnull(vh.comp_cust,0)=0 and isnull(vh.cancelled,0)=0   then vh.prices_salenontaxablevaluebase+vh.prices_saletaxablevaluebase else 0 end ,                      
+case when isnull(vh.comp_supp,0)=0 and isnull(vh.cancelled,0) =0   then vh.prices_costvalue else 0 end        
+,vh.shiftto,1 noofrooms, DATEDIFF(DAY, convert(varchar(10),vh.checkin,111) , convert(varchar(10),vh.checkout,111)) as nights   
+,1*datediff(day,vh.checkin,vh.checkout) roomnights          
+,sourcectrycode          
+,c.ctryname sourcectryname          
+,p.catcode          
+,cat.catname,p.citycode,cm.cityname          
+,vh.adduser salescode          
+,u.username salesname          
+,'' invoiceno,0.0000 as commissionvalue         
+from view_common_booking_hotel_detail vh(nolock)                  
+inner join #requests vc(nolock) on vh.requestid=vc.requestid                  
+inner join partymast p(nolock) on vh.partycode=p.partycode                  
+inner join agentmast a(nolock) on vh.agentcode=a.agentcode                  
+inner join ctrymast c(nolock) on vh.sourcectrycode=c.ctrycode        
+inner join citymast cm(nolock) on p.ctrycode=cm.ctrycode and p.citycode=cm.citycode          
+inner join catmast cat(nolock) on p.catcode=cat.catcode          
+inner join usermaster u(nolock) on vh.adduser=u.usercode          
+where isnull(vh.cancelled,0)=0
+The statement has been terminated.
+Aug 15 2019  3:33PM || admin
+--------------------------------------------------------------------------------------------------------------
+Rptprodcomparision.aspx || 15/08/2019 16:06:32 || Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'.
+Invalid column name 'partycode'. || admin
+--------------------------------------------------------------------------------------------------------------
+RptInhouse.aspx || 15/08/2019 16:12:52 ||    at RptEmailLog.EmailLogReport() in D:\ColumbusRPTS_New\ReservationModule\RptEmailLog.aspx.vb:line 171
+   at RptEmailLog.btnLoadReport_Click(Object sender, EventArgs e) in D:\ColumbusRPTS_New\ReservationModule\RptEmailLog.aspx.vb:line 107 || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 15/08/2019 16:13:31 || String or binary data would be truncated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 15/08/2019 16:13:40 || String or binary data would be truncated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+rptOperationReport.aspx || 15/08/2019 16:15:18 || Invalid column name 'DropOff'.
+Invalid column name 'DropOff'. || admin
+--------------------------------------------------------------------------------------------------------------
+rptOperationReport.aspx || 15/08/2019 16:15:27 || Invalid column name 'DropOff'.
+Invalid column name 'DropOff'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 27/08/2019 13:40:55 || Error converting data type varchar to numeric. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 27/08/2019 13:45:15 || Error converting data type varchar to numeric. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 27/08/2019 13:45:18 || Error converting data type varchar to numeric. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 27/08/2019 13:45:25 || Error converting data type varchar to numeric. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 27/08/2019 13:45:32 || Error converting data type varchar to numeric. || admin
+--------------------------------------------------------------------------------------------------------------
+OthMAcostPriceList1.aspx || 27/08/2019 15:30:06 || Conversion from string "" to type 'Date' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+OthMAcostPriceList1.aspx || 27/08/2019 15:30:09 || Conversion from string "" to type 'Date' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+OthMAcostPriceList1.aspx || 27/08/2019 15:30:23 || Procedure or function 'sp_UpdateServiceConfirmation' expects parameter '@loggeduser', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 27/08/2019 17:34:38 || Error converting data type varchar to numeric. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 28/08/2019 16:29:58 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 28/08/2019 17:30:22 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 28/08/2019 17:33:30 || Failed to convert parameter value from a String to a Int32. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 28/08/2019 17:33:30 || Failed to convert parameter value from a String to a Int32. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 28/08/2019 17:34:19 || Failed to convert parameter value from a String to a Int32. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 28/08/2019 17:34:20 || Failed to convert parameter value from a String to a Int32. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 28/08/2019 17:35:20 || Could not find stored procedure 'sp_UpdateGuestDetails'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 28/08/2019 17:35:21 || Could not find stored procedure 'sp_UpdateGuestDetails'. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 29/08/2019 16:35:03 || Error converting data type varchar to numeric. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 01/09/2019 12:44:15 || Could not find stored procedure 'sp_journal_print'. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 01/09/2019 16:00:58 || Cannot find column 11. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 01/09/2019 16:30:22 || Wrong number of columns. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 01/09/2019 16:31:06 || Wrong number of columns. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 01/09/2019 16:32:03 || Wrong number of columns. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 01/09/2019 16:32:26 || Wrong number of columns. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 01/09/2019 16:34:37 || Wrong number of columns. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 01/09/2019 16:39:13 || Wrong number of columns. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 01/09/2019 16:39:52 || Wrong number of columns. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 01/09/2019 17:12:53 || Index was outside the bounds of the array. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 01/09/2019 17:14:02 || Index was outside the bounds of the array. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 16/09/2019 13:41:12 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 16/09/2019 13:41:58 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 16/09/2019 13:42:08 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 16/09/2019 13:42:59 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 16/09/2019 13:43:21 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 16/09/2019 13:49:08 || Could not find a part of the path 'D:\ColumbusRPTS_New\img\AtlantisEvening.jpg'. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 16/09/2019 14:01:18 || Could not find file 'D:\ColumbusRPTS_New\images\Logo.png'. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 16/09/2019 14:05:29 || Could not find file 'D:\ColumbusRPTS_New\images\Logo.jpg'. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 16/09/2019 14:09:26 || Could not find a part of the path 'D:\ColumbusRPTS_New\img\CustomerHelpdesk.jpg'. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 16/09/2019 18:12:43 || String or binary data would be truncated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 16/09/2019 18:13:05 || String or binary data would be truncated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 16/09/2019 18:13:21 || String or binary data would be truncated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 16/09/2019 18:14:53 || Invalid object name 'ColumbusEliteOmanLog.dbo.booking_header_log'. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 16/09/2019 18:15:04 || Invalid object name 'ColumbusEliteOmanLog.dbo.booking_header_log'. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 16/09/2019 18:15:33 || String or binary data would be truncated.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 25/09/2019 18:10:04 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 25/09/2019 18:10:04 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 25/09/2019 18:11:32 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 25/09/2019 18:11:33 || Object reference not set to an instance of an object. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 15/12/2019 16:34:21 || The INSERT statement conflicted with the FOREIGN KEY constraint "fk_booking_hotel_detail_remarkstemp_header". The conflict occurred in database "NewColumbus", table "dbo.booking_headertemp", column 'requestid'.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 15:37:08 || Conversion from string "select file_attachment from New_" to type 'Double' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 15:37:31 || Conversion from string "select file_attachment from New_" to type 'Double' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 15:37:41 || Conversion from string "select file_attachment from New_" to type 'Double' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 15:37:54 || Conversion from string "select file_attachment from New_" to type 'Double' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 15:40:37 || Conversion from string "select file_attachment from New_" to type 'Double' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 15:41:32 || Conversion from string "select file_attachment from New_" to type 'Double' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 15:42:16 || Conversion from string "select file_attachment from New_" to type 'Double' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 15:43:57 || Conversion from string "select file_attachment from New_" to type 'Double' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 15:45:09 || Conversion from string "select file_attachment from New_" to type 'Double' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 15:46:16 || Conversion from string "select file_attachment from New_" to type 'Double' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 15:47:01 || Conversion from string "select file_attachment from New_" to type 'Double' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 15:58:29 || Conversion from string "select file_attachment from New_" to type 'Double' is not valid. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 16:01:14 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 16:01:29 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 16:01:38 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 17/12/2019 16:06:48 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 17/12/2019 17:02:55 || Procedure or function 'sp_booking_listnew' expects parameter '@divcode', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 17/12/2019 17:03:01 || Procedure or function 'sp_booking_listnew' expects parameter '@divcode', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 17/12/2019 17:03:12 || Procedure or function 'sp_booking_listnew' expects parameter '@divcode', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 17/12/2019 17:03:32 || Procedure or function 'sp_booking_listnew' expects parameter '@divcode', which was not supplied. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 17/12/2019 17:05:21 || Invalid object name 'ColumbusEliteOmanLog.dbo.booking_header_log'. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 17/12/2019 17:05:54 || Invalid object name 'ColumbusEliteOmanLog.dbo.booking_header_log'. || admin
+--------------------------------------------------------------------------------------------------------------
+RptBookingList.aspx || 17/12/2019 17:15:45 || Invalid object name 'ColumbusEliteOmanLog.dbo.booking_header_log'. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 18/12/2019 16:12:23 || Could not find a part of the path 'D:\ColumbusRPTS_New\imgages\RGT-Bank.png'. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 18/12/2019 16:12:55 || Could not find a part of the path 'D:\ColumbusRPTS_New\imgages\RGT-Bank.png'. || admin
+--------------------------------------------------------------------------------------------------------------
+rptProfitability.aspx || 19/12/2019 15:42:18 || Arithmetic overflow error converting numeric to data type numeric.
+The statement has been terminated. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 29/01/2020 13:00:51 || Column 'BankImage' does not belong to table Table. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 29/01/2020 13:01:42 || Could not find a part of the path 'D:\ColumbusRPTS_New\img\RP_MashreqBank.jpg'. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 13/02/2020 16:06:52 || Column 'ContactPerson' does not belong to table Table13. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 07/03/2020 18:25:02 || There is no rows in header table || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 07/03/2020 18:35:48 || There is no rows in header table || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 07/03/2020 18:36:16 || There is no rows in header table || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 07/03/2020 18:37:17 || There is no rows in header table || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 07/03/2020 18:37:40 || There is no rows in header table || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 07/03/2020 18:49:46 || There is no rows in header table || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 10/03/2020 12:28:29 || Cannot find table 14. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 10/03/2020 12:28:47 || Cannot find table 14. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 10/03/2020 12:46:53 || Could not find file 'D:\ColumbusRPTS_New\Logos\MakeMyTrip_Logo.jpg'. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 10/03/2020 12:48:12 || Could not find a part of the path 'D:\ColumbusRPTS_New\img\CustomerHelpdesk.jpg'. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 10/03/2020 12:56:02 || Could not find a part of the path 'D:\ColumbusRPTS_New\img\AtlantisEvening.jpg'. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 10/03/2020 13:02:13 || Could not find a part of the path 'D:\ColumbusRPTS_New\imgages\AtlantisEvening.jpg'. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 15/03/2020 12:30:56 || Thread was being aborted. || admin
+--------------------------------------------------------------------------------------------------------------
+PrintReport.aspx || 15/03/2020 13:16:52 || Could not find file 'D:\Abin\New\71220191514283400011.pdf'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 15/03/2020 15:41:29 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'flighttime'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 23/03/2020 16:43:24 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'airportbordercode'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 26/04/2020 15:34:24 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'airportbordercode'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 26/04/2020 15:34:26 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'airportbordercode'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 26/04/2020 15:34:37 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'airportbordercode'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 30/04/2020 11:39:23 || Object reference not set to an instance of an object. || 
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 30/04/2020 12:22:44 || DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'flight_tranid'. || admin
+--------------------------------------------------------------------------------------------------------------
+BookingTray.aspx || 02/05/2020 11:18:11 || Unable to cast object of type 'System.Web.UI.WebControls.Button' to type 'System.Web.UI.WebControls.LinkButton'. || admin
+--------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,2269 @@
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Web.Services
+Imports System.Collections.Generic
+Imports System.IO
+Imports System.Linq
+Partial Class VisaApplied
+    Inherits System.Web.UI.Page
+
+#Region "Global Declaration"
+    Dim objUtils As New clsUtils
+    Dim objUser As New clsUser
+    Dim strSqlQry As String
+    Dim strWhereCond As String
+    Dim SqlConn As SqlConnection
+    Dim myCommand As SqlCommand
+    Dim myReader As SqlDataReader
+    Dim myDataAdapter As SqlDataAdapter
+    Dim sqlTrans As SqlTransaction
+#End Region
+
+#Region "Web Service Methods"
+    <System.Web.Script.Services.ScriptMethod()> _
+     <System.Web.Services.WebMethod()> _
+    Public Shared Function GetCountriesList(ByVal prefixText As String) As List(Of String)
+        Dim bstrSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim CtryName As New List(Of String)
+        Try
+            bstrSqlQry = "select C.CtryCode,C.CtryName from ctrymast c left outer join VisaOnArrivalCountries V on v.CtryCode =c.ctrycode where V.CtryCode is null and c.active=1 and c.ctryName like  '" & Trim(prefixText) & "%' order by ctryName"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            myDataAdapter = New SqlDataAdapter(bstrSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    CtryName.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("ctryName").ToString(), myDS.Tables(0).Rows(i)("Ctrycode").ToString()))
+                Next
+            End If
+            Return CtryName
+        Catch ex As Exception
+            Return CtryName
+        End Try
+    End Function
+#End Region
+
+#Region "Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load
+        If IsPostBack = False Then
+            Try
+
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+                Page.Title = Page.Title + " " + "Visa Applied"
+                divYellowBox.Style("background-color") = "#fdfacc"
+                divGreenBox.Style("background-color") = " #9efaa0"
+                divRedBox.Style("background-color") = "#fc8562"
+                Session("DtVisaDynamic") = Nothing
+                Dim dtDynamic = New DataTable()
+                Dim dcCode = New DataColumn("Code", GetType(String))
+                Dim dcValue = New DataColumn("Value", GetType(String))
+                Dim dcCodeAndValue = New DataColumn("CodeAndValue", GetType(String))
+                dtDynamic.Columns.Add(dcCode)
+                dtDynamic.Columns.Add(dcValue)
+                dtDynamic.Columns.Add(dcCodeAndValue)
+                Session("DtVisaDynamic") = dtDynamic
+
+                ddlSortBy.Items.Add(New ListItem("Apply", "Apply"))
+                ddlSortBy.Items.Add(New ListItem("Request ID", "RequestId"))
+                ddlSortBy.Items.Add(New ListItem("Family Name", "FamilyName"))
+                ddlSortBy.Items.Add(New ListItem("First Name", "FirstName"))
+                ddlSortBy.Items.Add(New ListItem("Status", "VisaStatus"))
+                ddlSortBy.Items.Add(New ListItem("Apply Date", "ApplyDate"))
+                ddlSortBy.Items.Add(New ListItem("Confirm Date", "ConfirmDate"))
+                ddlSortBy.Items.Add(New ListItem("Check In", "CheckIn"))
+                ddlSortBy.Items.Add(New ListItem("Check Out", "CheckOut"))
+                ddlSortBy.Items.Add(New ListItem("Agency", "Agency"))
+                ddlSortBy.Items.Add(New ListItem("Net Amount", "NetAmount"))
+                ddlSortBy.Items.Add(New ListItem("Sponsor", "Sponsor"))
+                ddlSortBy.Items.Add(New ListItem("Agency Ref No", "AgencyRefNo"))
+
+                ddlStatus.Items.Add(New ListItem("Any Status", "Any Status"))
+                ddlStatus.Items.Add(New ListItem("100: NA", "100"))
+                ddlStatus.Items.Add(New ListItem("101: VA", "101"))
+                ddlStatus.Items.Add(New ListItem("102: VC", "102"))
+                ddlStatus.Items.Add(New ListItem("104: RA", "104"))
+
+                ddlAllOrPending.Items.Add(New ListItem("All", "All"))
+                ddlAllOrPending.Items.Add(New ListItem("Pending Visas To Confirm", "Pending Visas To Confirm"))
+
+                ddlTitle.Items.Add(New ListItem("[Select]", ""))
+                ddlTitle.Items.Add(New ListItem("Mr", "Mr"))
+                ddlTitle.Items.Add(New ListItem("Ms", "Ms"))
+                ddlTitle.Items.Add(New ListItem("Mrs", "Mrs"))
+                ddlTitle.Items.Add(New ListItem("Child Male", "Child Male"))
+                ddlTitle.Items.Add(New ListItem("Child Female", "Child Female"))
+
+                ddlVisa.Items.Add(New ListItem("Required", "Required"))
+                ddlVisa.Items.Add(New ListItem("Not Required", "Not Required"))
+                ddlVisa.Items.Add(New ListItem("Endorsed in Mothers Visa", "Endorsed in Mothers Visa"))
+                ddlVisa.Items.Add(New ListItem("Endorsed in Fathers Visa", "Endorsed in Fathers Visa"))
+
+                ddlCategory.Items.Add(New ListItem("Normal", "Normal"))
+
+                ddlBlackList.Items.Add(New ListItem("No", False))
+                ddlBlackList.Items.Add(New ListItem("Yes", True))
+
+                ddlSortBy.SelectedIndex = 2
+                RowsPerPageCUS.SelectedIndex = 8
+                txtFromDate.Text = Date.Now.ToString("dd/MM/yyyy")
+                txtToDate.Text = Date.Now.AddDays(14).ToString("dd/MM/yyyy")
+                ddlAllOrPending.SelectedIndex = 0
+                ddlStatus.SelectedIndex = 0
+
+                GetGuestsPageWise(0, CType(RowsPerPageCUS.SelectedValue, Integer))
+                Session("pageIndexNo") = 0
+
+                Dim myDt As DataTable = New DataTable()
+                strSqlQry = "select partyCode, PartyName from partymast where sptypecode='VISA'"
+                SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+                myDataAdapter.Fill(myDt)
+                ddlSponsor.DataTextField = "PartyName"
+                ddlSponsor.DataValueField = "PartyCode"
+                ddlSponsor.DataSource = myDt
+                ddlSponsor.DataBind()
+                ddlSponsor.Items.Insert(0, New ListItem("All", "All"))
+                ddlVisaSponsor.DataTextField = "PartyName"
+                ddlVisaSponsor.DataValueField = "PartyCode"
+                ddlVisaSponsor.DataSource = myDt
+                ddlVisaSponsor.DataBind()
+                clsDBConnect.dbAdapterClose(myDataAdapter)
+                clsDBConnect.dbConnectionClose(SqlConn)
+
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnvsprocess_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnvsprocess.Click"
+    Protected Sub btnvsprocess_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnvsprocess.Click
+        Try
+            FilterGrid()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Private Sub FilterGrid()"
+    Private Sub FilterGrid()
+        Dim lsSearchTxt As String = ""
+        lsSearchTxt = txtvsprocesssplit.Text
+        Dim lsProcessVisa As String = ""
+        Dim lsProcessAll As String = ""
+
+        Dim lsMainArr As String()
+        lsMainArr = objUtils.splitWithWords(lsSearchTxt, "|~,")
+        For i = 0 To lsMainArr.GetUpperBound(0)
+            Select Case lsMainArr(i).Split(":")(0).ToString.ToUpper.Trim
+                Case "REQUEST ID"
+                    lsProcessVisa = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("REQUEST ID", lsProcessVisa, "REQUEST ID")
+                Case "FAMILY NAME"
+                    lsProcessVisa = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("FAMILY NAME", lsProcessVisa, "FAMILY NAME")
+                Case "FIRST NAME"
+                    lsProcessVisa = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("FIRST NAME", lsProcessVisa, "FIRST NAME")
+                Case "PASSPORT NO"
+                    lsProcessVisa = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("PASSPORT NO", lsProcessVisa, "PASSPORT NO")
+                Case "AGENT"
+                    lsProcessVisa = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("AGENT", lsProcessVisa, "AGENT")
+                Case "SPONSOR"
+                    lsProcessVisa = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("SPONSOR", lsProcessVisa, "SPONSOR")
+                Case "TEXT"
+                    lsProcessAll = lsMainArr(i).Split(":")(1)
+                    sbAddToDataTable("TEXT", lsProcessAll, "TEXT")
+            End Select
+        Next
+
+        Dim dtt As DataTable
+        dtt = Session("DtVisaDynamic")
+        dlList.DataSource = dtt
+        dlList.DataBind()
+        GetGuestsPageWiseForFilter(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer)) 'Bind Gird based selection 
+    End Sub
+#End Region
+
+#Region " Function sbAddToDataTable(ByVal lsName As String, ByVal lsValue As String, ByVal lsShortCode As String) As Boolean"
+    Function sbAddToDataTable(ByVal lsName As String, ByVal lsValue As String, ByVal lsShortCode As String) As Boolean
+        Dim iFlag As Integer = 0
+        Dim dtt As DataTable
+        dtt = Session("DtVisaDynamic")
+        If dtt.Rows.Count >= 0 Then
+            For i = 0 To dtt.Rows.Count - 1
+                If dtt.Rows(i)("Code").ToString.Trim.ToUpper = lsName.Trim.ToUpper And dtt.Rows(i)("Value").ToString.Trim.ToUpper = lsValue.Trim.ToUpper Then
+                    iFlag = 1
+                End If
+            Next
+            If iFlag = 0 Then
+                dtt.NewRow()
+                dtt.Rows.Add(lsName.Trim.ToUpper, lsValue.Trim.ToUpper, lsShortCode.Trim.ToUpper & ": " & lsValue.Trim)
+                Session("DtVisaDynamic") = dtt
+            End If
+        End If
+        Return True
+    End Function
+#End Region
+
+#Region "Protected Sub btnResetSelection_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnResetSelection.Click"
+    Protected Sub btnResetSelection_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnResetSelection.Click
+        Dim dtt As DataTable
+        dtt = Session("DtVisaDynamic")
+        If dtt.Rows.Count > 0 Then
+            dtt.Clear()
+        End If
+        Session("DtVisaDynamic") = dtt
+        dlList.DataSource = dtt
+        dlList.DataBind()
+
+        'gvVisaApplied.DataSource = Nothing
+        'gvVisaApplied.DataBind()
+        GetGuestsPageWiseForFilter(0, CType(RowsPerPageCUS.SelectedValue, Integer))
+        Session("pageIndexNo") = 0
+    End Sub
+#End Region
+
+#Region "Protected Sub lbClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)"
+    Protected Sub lbClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            Dim myButton As Button = CType(sender, Button)
+            Dim dlItem As DataListItem = CType((CType(sender, Button)).NamingContainer, DataListItem)
+            Dim lnkcode As Button = CType(dlItem.FindControl("lnkcode"), Button)
+            Dim lnkvalue As Button = CType(dlItem.FindControl("lnkvalue"), Button)
+            Dim dtDynamics As New DataTable
+            dtDynamics = Session("DtVisaDynamic")
+            If dtDynamics.Rows.Count > 0 Then
+                Dim j As Integer
+                For j = dtDynamics.Rows.Count - 1 To 0 Step j - 1
+                    If lnkcode.Text.Trim.ToUpper = dtDynamics.Rows(j)("code").ToString.Trim.ToUpper And lnkvalue.Text.Trim.ToUpper = dtDynamics.Rows(j)("Value").ToString.Trim.ToUpper Then
+                        dtDynamics.Rows.Remove(dtDynamics.Rows(j))
+                    End If
+                Next
+            End If
+            Session("DtVisaDynamic") = dtDynamics
+            dlList.DataSource = dtDynamics
+            dlList.DataBind()
+            GetGuestsPageWiseForFilter(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer)) 'Bind Gird based selection 
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+        End Try
+    End Sub
+#End Region
+
+#Region "Private Function BuildConditionNew() As String"
+    Private Function BuildConditionNew() As String
+        Dim dtt As DataTable
+        dtt = Session("DtVisaDynamic")
+        Dim strRequestIdValue As String = ""
+        Dim strFamilyNameValue As String = ""
+        Dim strFirstNameValue As String = ""
+        Dim strPassportNoValue As String = ""
+        Dim strAgentValue As String = ""
+        Dim strSponsorValue As String = ""
+        Dim strTextValue As String = ""
+        Try
+            If dtt.Rows.Count > 0 Then
+                For i As Integer = 0 To dtt.Rows.Count - 1
+                    If dtt.Rows(i)("Code").ToString = "REQUEST ID" Then
+                        If strRequestIdValue <> "" Then
+                            strRequestIdValue = strRequestIdValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strRequestIdValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "FAMILY NAME" Then
+                        If strFamilyNameValue <> "" Then
+                            strFamilyNameValue = strFamilyNameValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strFamilyNameValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "FIRST NAME" Then
+                        If strFirstNameValue <> "" Then
+                            strFirstNameValue = strFirstNameValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strFirstNameValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "PASSPORT NO" Then
+                        If strPassportNoValue <> "" Then
+                            strPassportNoValue = strPassportNoValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strPassportNoValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "AGENT" Then
+                        If strAgentValue <> "" Then
+                            strAgentValue = strAgentValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strAgentValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "SPONSOR" Then
+                        If strSponsorValue <> "" Then
+                            strSponsorValue = strSponsorValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strSponsorValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "TEXT" Then
+                        If strTextValue <> "" Then
+                            strTextValue = strTextValue + "," + dtt.Rows(i)("Value").ToString
+                        Else
+                            strTextValue = dtt.Rows(i)("Value").ToString
+                        End If
+                    End If
+                Next
+            End If
+            strWhereCond = ""
+            If strRequestIdValue.Trim <> "" Then
+                strWhereCond = "RequestId IN (" & Trim(strRequestIdValue.Trim.ToUpper) & ")"
+            End If
+            If strFamilyNameValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "FamilyName IN (" & Trim(strFamilyNameValue.Trim) & ")"
+                Else
+                    strWhereCond = strWhereCond & "and FamilyName in (" & Trim(strFamilyNameValue.Trim) & ")"
+                End If
+            End If
+            If strFirstNameValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "FirstName IN (" & Trim(strFirstNameValue.Trim) & ")"
+                Else
+                    strWhereCond = strWhereCond & "and FirstName in (" & Trim(strFirstNameValue.Trim) & ")"
+                End If
+            End If
+            If strPassportNoValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "passportNo IN (" & Trim(strPassportNoValue.Trim) & ")"
+                Else
+                    strWhereCond = strWhereCond & "and passportNo in (" & Trim(strPassportNoValue.Trim) & ")"
+                End If
+            End If
+            If strAgentValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "AgentCode in (select agentCode from AgentMast where ltrim(RTRIM(agentname)) in (" & Trim(strAgentValue.Trim.ToUpper) & "))"
+                Else
+                    strWhereCond = strWhereCond & "and AgentCode in (select agentCode from AgentMast where ltrim(RTRIM(agentname)) in (" & Trim(strAgentValue.Trim.ToUpper) & "))"
+                End If
+            End If
+            If strSponsorValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "SponsorId in (select partycode as SponsorId from partyMast where sptypecode='VISA' and ltrim(RTRIM(partyName)) in (" & Trim(strSponsorValue.Trim.ToUpper) & "))"
+                Else
+                    strWhereCond = strWhereCond & "and SponsorId in (select partycode as SponsorId from partyMast where sptypecode='VISA' and ltrim(RTRIM(PartyName)) in (" & Trim(strSponsorValue.Trim.ToUpper) & "))"
+                End If
+            End If
+            If strTextValue <> "" Then
+                Dim lsMainArr As String()
+                Dim strValue As String = ""
+                Dim strWhereCond1 As String = ""
+                lsMainArr = objUtils.splitWithWords(strTextValue, ",")
+                For i = 0 To lsMainArr.GetUpperBound(0)
+                    strValue = ""
+                    strValue = lsMainArr(i)
+                    If strValue <> "" Then
+                        If Trim(strWhereCond1) = "" Then
+                            strWhereCond1 = "FamilyName like '%" & Trim(strValue.Trim.ToUpper) & "%' or FirstName like '%" & Trim(strValue.Trim.ToUpper) & "%' or AgentCode in (select agentCode from AgentMast where ltrim(RTRIM(agentname)) like '%" & Trim(strValue.Trim.ToUpper) & "%') or " &
+                            "SponsorId in (select partycode as SponsorId from partyMast where sptypecode='VISA' and ltrim(RTRIM(PartyName)) like '%" & Trim(strValue.Trim.ToUpper) & "%') or AgencyRefNo like '%" & Trim(strValue.Trim.ToUpper) & "%' or passportNo like '%" & Trim(strValue.Trim.ToUpper) & "%'"
+                        Else
+                            strWhereCond1 = strWhereCond1 & " or FamilyName like '%" & Trim(strValue.Trim.ToUpper) & "%' or FirstName like '%" & Trim(strValue.Trim.ToUpper) & "%' or AgentCode in (select agentCode from AgentMast where ltrim(RTRIM(agentname)) like '%" & Trim(strValue.Trim.ToUpper) & "%') or " &
+                            "SponsorId in (select partycode as SponsorId from partyMast where sptypecode='VISA' and ltrim(RTRIM(PartyName)) like '%" & Trim(strValue.Trim.ToUpper) & "%') or AgencyRefNo like '%" & Trim(strValue.Trim.ToUpper) & "%' or passportNo like '%" & Trim(strValue.Trim.ToUpper) & "%'"
+                        End If
+                    End If
+                Next
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = "(" & strWhereCond1 & ")"
+                Else
+                    strWhereCond = strWhereCond & " AND (" & strWhereCond1 & ")"
+                End If
+            End If
+            If txtApplyFromDt.Text.Trim <> "" And txtApplyToDt.Text <> "" Then
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = "ApplyDate between CONVERT(datetime, '" + txtApplyFromDt.Text + "',103) and CONVERT(datetime, '" + txtApplyToDt.Text + "',103)"
+                Else
+                    strWhereCond = strWhereCond & "  and ApplyDate between CONVERT(datetime, '" + txtApplyFromDt.Text + "',103) and CONVERT(datetime, '" + txtApplyToDt.Text + "',103)"
+                End If
+            End If
+            If ddlAllOrPending.SelectedIndex = 1 Then
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = "VisaStatus=101"
+                Else
+                    strWhereCond = strWhereCond & "  and VisaStatus=101"
+                End If
+            End If
+            If ddlStatus.SelectedIndex > 1 Then
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = "VisaStatus=" + ddlStatus.SelectedValue
+                Else
+                    strWhereCond = strWhereCond & "  and VisaStatus=" + ddlStatus.SelectedValue
+                End If
+            ElseIf ddlStatus.SelectedIndex = 1 Then
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = "isnull(VisaStatus,'') ='' or VisaStatus=100"
+                Else
+                    strWhereCond = strWhereCond & "  and (isnull(VisaStatus,'') ='' or VisaStatus=100)"
+                End If
+            End If
+            If ddlSortBy.SelectedIndex = 0 Then
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = "ApplyDate is null"
+                Else
+                    strWhereCond = strWhereCond & "  and ApplyDate is null"
+                End If
+            End If
+            If chkVisaNotIssue.Checked Then
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = "datediff(DAY,StatusDate,convert(date,getdate())) > 5 and StatusDate is not null and (ConfirmDate is null or ltrim(rtrim(ConfirmDate))='')"
+                Else
+                    strWhereCond = strWhereCond & "  and datediff(DAY,StatusDate,convert(date,getdate())) > 5 and StatusDate is not null and (ConfirmDate is null or ltrim(rtrim(ConfirmDate))='')"
+                End If
+            End If
+            BuildConditionNew = strWhereCond
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            BuildConditionNew = ""
+        End Try
+    End Function
+#End Region
+
+#Region "Protected Sub gvVisaApplied_RowCommand(sender As Object, e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gvVisaApplied.RowCommand"
+    Protected Sub gvVisaApplied_RowCommand(sender As Object, e As System.Web.UI.WebControls.GridViewCommandEventArgs) Handles gvVisaApplied.RowCommand
+        If e.CommandName = "HotelConf" Then
+            Dim rowIndex As Integer = Convert.ToInt32(e.CommandArgument)
+            Dim row As GridViewRow = gvVisaApplied.Rows(rowIndex)
+            hdProcessType.Value = "GuestDetails"
+            hdRequestId.Value = CType(row.FindControl("lblRequestNo"), Label).Text
+            hdGuestLineNo.Value = CType(row.FindControl("lblGuestLineNo"), Label).Text
+            hdRLineNo.Value = CType(row.FindControl("lblRLineNo"), Label).Text
+            hdRoomNo.Value = CType(row.FindControl("lblRoomNo"), Label).Text
+            hdPartyCode.Value = CType(row.FindControl("lblPartyCode"), Label).Text
+            hdCheckInDt.Value = CType(row.FindControl("lblCheckIn"), Label).Text
+            btnVisaProcess_Click(sender, e)
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub gvVisaApplied_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvVisaApplied.RowDataBound"
+    Protected Sub gvVisaApplied_RowDataBound(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvVisaApplied.RowDataBound
+        e.Row.Cells(9).BorderWidth = "0"
+        e.Row.Cells(10).BorderWidth = "0"
+        If (e.Row.RowType = DataControlRowType.DataRow And e.Row.RowIndex <> gvVisaApplied.EditIndex) Then
+            Dim lblStatus As Label
+            lblStatus = CType(e.Row.FindControl("lblStatus"), Label)
+            If lblStatus.Text.Trim = "101" Then
+                lblStatus.Text = "VA"
+                e.Row.BackColor = Drawing.Color.FromArgb(250, 240, 149)
+                Dim lbtnApply As LinkButton = CType(e.Row.FindControl("lbtnApply"), LinkButton)
+                lbtnApply.Enabled = False
+                lbtnApply.OnClientClick = Nothing
+                lbtnApply.ForeColor = Drawing.Color.Black
+                e.Row.Attributes.Add("class", "grdRowstyle applyRow")
+            ElseIf lblStatus.Text.Trim = "102" Then
+                lblStatus.Text = "VC"
+                e.Row.BackColor = Drawing.Color.FromArgb(158, 250, 160)
+                Dim lbtnApply As LinkButton = CType(e.Row.FindControl("lbtnApply"), LinkButton)
+                lbtnApply.Enabled = False
+                lbtnApply.OnClientClick = Nothing
+                lbtnApply.ForeColor = Drawing.Color.Black
+                Dim IBtnEdit As ImageButton = CType(e.Row.FindControl("IBtnEdit"), ImageButton)
+                IBtnEdit.Visible = False
+                e.Row.Attributes.Add("class", "grdRowstyle confirmRow")
+            ElseIf lblStatus.Text.Trim = "104" Then
+                lblStatus.Text = "RA"
+                e.Row.BackColor = Drawing.Color.FromArgb(252, 133, 98)
+                Dim lbtnApply As LinkButton = CType(e.Row.FindControl("lbtnApply"), LinkButton)
+                lbtnApply.Enabled = False
+                lbtnApply.OnClientClick = Nothing
+                lbtnApply.ForeColor = Drawing.Color.Black
+                e.Row.Attributes.Add("class", "grdRowstyle requestRow")
+            ElseIf lblStatus.Text.Trim = "100" Then
+                lblStatus.Text = "NA"
+                e.Row.Attributes.Add("class", "grdRowstyle requestRow")
+            ElseIf lblStatus.Text.Trim = "" Or lblStatus.Text.Trim = "100" Then
+                e.Row.Attributes.Add("class", "grdRowstyle requestRow")
+            End If
+            Dim applyDate As String = Convert.ToString(CType(e.Row.FindControl("lblApplyDate"), Label).Text)
+            Dim confirmDate As String = Convert.ToString(CType(e.Row.FindControl("lblConfirmDate"), Label).Text)
+            Dim statusDate As String = CType(e.Row.FindControl("lblStatusDate"), Label).Text
+            If IsDate(applyDate) = True And IsDate(confirmDate) = False And IsDate(statusDate) = True Then
+                If DateDiff(DateInterval.Day, Convert.ToDateTime(statusDate), Date.Now.Date) >= 5 Then
+                    e.Row.BackColor = Drawing.Color.FromArgb(175, 206, 255)
+                End If
+            End If
+        ElseIf (e.Row.RowType = DataControlRowType.DataRow And e.Row.RowIndex = gvVisaApplied.EditIndex) Then
+            e.Row.Cells(9).BorderWidth = "0"
+            e.Row.Cells(10).BorderWidth = "0"
+            e.Row.BackColor = Drawing.Color.FromArgb(229, 228, 226)
+            Dim txtPassportNo As TextBox = CType(e.Row.FindControl("txtPassportNo"), TextBox)
+            txtPassportNo.Attributes.Add("onkeypress", "return validateAlphaNumeric(event,this)")
+        End If
+    End Sub
+    #End Region
+
+#Region "Public Sub GetGuestsPageWise(pageIndex As Integer, pageSize As Integer)"
+    Public Sub GetGuestsPageWise(pageIndex As Integer, pageSize As Integer)
+        Try
+            Dim strBindCondition As String = ""
+            strBindCondition = BuildConditionNew()
+            lblMsg.Visible = False
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            myCommand = New SqlCommand("GetVisaGuestList_New")
+            myCommand.CommandType = CommandType.StoredProcedure
+            myCommand.Parameters.Add(New SqlParameter("@PageIndex", SqlDbType.Int, 4)).Value = pageIndex
+            myCommand.Parameters.Add(New SqlParameter("@PageSize", SqlDbType.Int, 4)).Value = pageSize
+            myCommand.Parameters.Add(New SqlParameter("@bindCond", SqlDbType.VarChar)).Value = strBindCondition
+            myCommand.Parameters.Add(New SqlParameter("@sortBy", SqlDbType.VarChar, 100)).Value = Convert.ToString(ddlSortBy.SelectedValue.Trim)
+
+            If chkExcludeDateForSearch.Checked = True Or txtSearchRequestId.Text.Trim <> "" Then
+                myCommand.Parameters.Add(New SqlParameter("@FromChkInDt", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime("01/01/1900").ToString("yyyy/MM/dd"))
+                myCommand.Parameters.Add(New SqlParameter("@ToChkInDt", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime("01/01/9900").ToString("yyyy/MM/dd"))
+            Else
+                myCommand.Parameters.Add(New SqlParameter("@FromChkInDt", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtFromDate.Text).ToString("yyyy/MM/dd"))
+                myCommand.Parameters.Add(New SqlParameter("@ToChkInDt", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtToDate.Text).ToString("yyyy/MM/dd"))
+            End If
+            myCommand.Parameters.Add(New SqlParameter("@RequestId", SqlDbType.VarChar, 20)).Value = Convert.ToString(txtSearchRequestId.Text.Trim)
+
+            myCommand.Parameters.Add("@PageCount", SqlDbType.Int, 4).Direction = ParameterDirection.Output
+            myCommand.Connection = SqlConn
+            Using myDataAdapter As New SqlDataAdapter(myCommand)
+                Using ds As New DataSet()
+                    myDataAdapter.Fill(ds, "Guests")
+                    '  Dim pageCount As Integer = myCommand.Parameters("@PageCount").Value
+                    Session("sDsGuestsList") = ds
+                    'Session("spageCount") = pageCount
+                    'If pageCount < pageIndex Then
+                    '    pageIndex = pageCount
+                    '    Session("pageIndexNo") = pageIndex
+                    'End If
+                    If ds.Tables("Guests").Rows.Count > 0 Then
+
+                        'ds.Tables("Guests").Columns.Add("rowIndex")
+                        'For i As Integer = 0 To ds.Tables("Guests").Rows.Count - 1
+                        '    ds.Tables("Guests").Rows(i)("rowIndex") = (i + 1).ToString
+                        'Next
+
+                        'Session("sDsGuestsList") = ds
+
+                        Dim dt As New DataTable
+                        dt = ds.Tables("Guests")
+                        Dim dv As DataView = dt.DefaultView
+                        If dt.Rows.Count > 0 Then
+
+                            Dim iPageIndex As Integer = 1
+                            ' Dim iPageSize As Integer = 0
+                            Dim iRowNoFrom As Integer = 0
+                            Dim iRowNoTo As Integer = 0
+                            If Not Session("sMailBoxPageIndex") Is Nothing Then
+                                iPageIndex = Session("sMailBoxPageIndex")
+                            End If
+
+                            iRowNoFrom = (iPageIndex - 1) * pageSize + 1
+                            iRowNoTo = (((iPageIndex - 1) * pageSize + 1) + pageSize) - 1
+                            dv.Table.Columns.Add("rowIndex")
+                            For i As Integer = 0 To dv.Count - 1
+                                dv.Item(i)("rowIndex") = (i + 1).ToString
+                            Next
+
+
+                            dv.RowFilter = "rowIndex >= " & iRowNoFrom & " AND  rowIndex <=" & iRowNoTo
+
+
+
+
+                            gvVisaApplied.DataSource = dv
+                            gvVisaApplied.DataBind()
+
+                            Dim recordCount As Integer = dt.Rows.Count
+                            Me.PopulatePager(recordCount)
+
+
+
+                            'gvVisaApplied.DataSource = ds.Tables("Guests")
+                            'gvVisaApplied.DataBind()
+                        Else
+                            gvVisaApplied.DataSource = Nothing
+                            gvVisaApplied.DataBind()
+                            lblMsg.Visible = True
+                            lblMsg.Text = "Records not found, Please redefine search criteria."
+                        End If
+                    Else
+                        gvVisaApplied.DataSource = Nothing
+                        gvVisaApplied.DataBind()
+                        lblMsg.Visible = True
+                        lblMsg.Text = "Records not found, Please redefine search criteria."
+
+                    End If
+
+                    '   generatePager(pageCount, pageSize, pageIndex)
+                End Using
+            End Using
+            clsDBConnect.dbCommandClose(myCommand)
+            clsDBConnect.dbConnectionClose(SqlConn)
+        Catch ex As Exception
+            If SqlConn.State = ConnectionState.Open Then
+                clsDBConnect.dbCommandClose(myCommand)
+                clsDBConnect.dbConnectionClose(SqlConn)
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+    Protected Sub Page_Changed(ByVal sender As Object, ByVal e As EventArgs)
+        Try
+            Dim pageIndex As Integer = Integer.Parse(TryCast(sender, LinkButton).CommandArgument)
+            Session("sMailBoxPageIndex") = pageIndex.ToString
+            GetGuestsPageWise(pageIndex, RowsPerPageCUS.SelectedValue)
+
+        Catch ex As Exception
+         ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+    Private Sub PopulatePager(ByVal recordCount As Integer)
+
+        Dim currentPage As Integer = 1
+        If Not Session("sMailBoxPageIndex") Is Nothing Then
+            currentPage = Session("sMailBoxPageIndex")
+        End If
+
+        Dim PageSize As Integer = RowsPerPageCUS.SelectedValue
+        Dim dblPageCount As Double = CDbl(CDec(recordCount) / Convert.ToDecimal(PageSize))
+        Dim pageCount As Integer = CInt(Math.Ceiling(dblPageCount))
+        Dim pages As New List(Of ListItem)()
+        If pageCount > 0 Then
+            For i As Integer = 1 To pageCount
+                pages.Add(New ListItem(i.ToString(), i.ToString(), i <> currentPage))
+            Next
+        End If
+
+        rptPager.DataSource = pages
+        rptPager.DataBind()
+    End Sub
+
+#Region "Public Sub GetGuestsPageWisefromSession(pageIndex As Integer, pageSize As Integer)"
+    Public Sub GetGuestsPageWisefromSession(pageIndex As Integer, pageSize As Integer)
+        Try
+
+
+            If Session("sDsGuestsList") Is Nothing Then
+
+
+                Dim strBindCondition As String = ""
+                strBindCondition = BuildConditionNew()
+                lblMsg.Visible = False
+                SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                myCommand = New SqlCommand("GetVisaGuestList")
+                myCommand.CommandType = CommandType.StoredProcedure
+                myCommand.Parameters.Add(New SqlParameter("@PageIndex", SqlDbType.Int, 4)).Value = pageIndex
+                myCommand.Parameters.Add(New SqlParameter("@PageSize", SqlDbType.Int, 4)).Value = pageSize
+                myCommand.Parameters.Add(New SqlParameter("@bindCond", SqlDbType.VarChar)).Value = strBindCondition
+                myCommand.Parameters.Add(New SqlParameter("@sortBy", SqlDbType.VarChar, 100)).Value = Convert.ToString(ddlSortBy.SelectedValue.Trim)
+
+                If chkExcludeDateForSearch.Checked = True Then
+                    myCommand.Parameters.Add(New SqlParameter("@FromChkInDt", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime("01/01/1900").ToString("yyyy/MM/dd"))
+                    myCommand.Parameters.Add(New SqlParameter("@ToChkInDt", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime("01/01/9900").ToString("yyyy/MM/dd"))
+                Else
+                    myCommand.Parameters.Add(New SqlParameter("@FromChkInDt", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtFromDate.Text).ToString("yyyy/MM/dd"))
+                    myCommand.Parameters.Add(New SqlParameter("@ToChkInDt", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtToDate.Text).ToString("yyyy/MM/dd"))
+                End If
+
+
+                myCommand.Parameters.Add("@PageCount", SqlDbType.Int, 4).Direction = ParameterDirection.Output
+                myCommand.Connection = SqlConn
+                Using myDataAdapter As New SqlDataAdapter(myCommand)
+                    Using ds As New DataSet()
+                        myDataAdapter.Fill(ds, "Guests")
+
+                        'Dim pageCount As Integer = myCommand.Parameters("@PageCount").Value
+                        'Session("sDsGuestsList") = ds
+                        'Session("spageCount") = pageCount
+                        'If pageCount < pageIndex Then
+                        '    pageIndex = pageCount
+                        '    Session("pageIndexNo") = pageIndex
+                        'End If
+                        'If ds.Tables("Guests").Rows.Count > 0 Then
+                        '    gvVisaApplied.DataSource = ds.Tables("Guests")
+                        '    gvVisaApplied.DataBind()
+                        'Else
+                        '    gvVisaApplied.DataSource = Nothing
+                        '    gvVisaApplied.DataBind()
+                        '    lblMsg.Visible = True
+                        '    lblMsg.Text = "Records not found, Please redefine search criteria."
+                        'End If
+                        'generatePager(pageCount, pageSize, pageIndex)
+
+                        Dim dt As New DataTable
+                        dt = ds.Tables("Guests")
+                        Dim dv As DataView = dt.DefaultView
+                        If dt.Rows.Count > 0 Then
+
+                            Dim iPageIndex As Integer = 1
+                            ' Dim iPageSize As Integer = 0
+                            Dim iRowNoFrom As Integer = 0
+                            Dim iRowNoTo As Integer = 0
+                            If Not Session("sMailBoxPageIndex") Is Nothing Then
+                                iPageIndex = Session("sMailBoxPageIndex")
+                            End If
+
+                            iRowNoFrom = (iPageIndex - 1) * pageSize + 1
+                            iRowNoTo = (((iPageIndex - 1) * pageSize + 1) + pageSize) - 1
+                            dv.Table.Columns.Add("rowIndex")
+                            For i As Integer = 0 To dv.Count - 1
+                                dv.Item(i)("rowIndex") = (i + 1).ToString
+                            Next
+
+
+                            dv.RowFilter = "rowIndex >= " & iRowNoFrom & " AND  rowIndex <=" & iRowNoTo
+
+
+
+
+                            gvVisaApplied.DataSource = dv
+                            gvVisaApplied.DataBind()
+
+                            Dim recordCount As Integer = dt.Rows.Count
+                            Me.PopulatePager(recordCount)
+                        End If
+
+                    End Using
+                End Using
+                clsDBConnect.dbCommandClose(myCommand)
+                clsDBConnect.dbConnectionClose(SqlConn)
+            Else
+                Dim ds As New DataSet
+                ds = Session("sDsGuestsList")
+                Dim pageCount As Integer = 1
+
+                If Not Session("spageCount") Is Nothing Then
+                    pageCount = Session("spageCount")
+                End If
+
+
+                If pageCount < pageIndex Then
+                    pageIndex = pageCount
+                    Session("pageIndexNo") = pageIndex
+                End If
+
+
+
+
+
+                If ds.Tables("Guests").Rows.Count > 0 Then
+                    gvVisaApplied.DataSource = ds.Tables("Guests")
+                    gvVisaApplied.DataBind()
+                Else
+                    gvVisaApplied.DataSource = Nothing
+                    gvVisaApplied.DataBind()
+                    lblMsg.Visible = True
+                    lblMsg.Text = "Records not found, Please redefine search criteria."
+                End If
+                '  generatePager(pageCount, pageSize, pageIndex)
+            End If
+        Catch ex As Exception
+            If SqlConn.State = ConnectionState.Open Then
+                clsDBConnect.dbCommandClose(myCommand)
+                clsDBConnect.dbConnectionClose(SqlConn)
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Public Sub GetGuestsPageWiseForFilter(pageIndex As Integer, pageSize As Integer)"
+    Public Sub GetGuestsPageWiseForFilter(pageIndex As Integer, pageSize As Integer)
+        Try
+
+
+            If Session("sDsGuestsList") Is Nothing Or txtSearchRequestId.Text.Trim <> "" Then
+
+
+                Dim strBindCondition As String = ""
+                strBindCondition = BuildConditionNew()
+                lblMsg.Visible = False
+                SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                myCommand = New SqlCommand("GetVisaGuestList_New")
+                myCommand.CommandType = CommandType.StoredProcedure
+                myCommand.Parameters.Add(New SqlParameter("@PageIndex", SqlDbType.Int, 4)).Value = pageIndex
+                myCommand.Parameters.Add(New SqlParameter("@PageSize", SqlDbType.Int, 4)).Value = pageSize
+                myCommand.Parameters.Add(New SqlParameter("@bindCond", SqlDbType.VarChar)).Value = strBindCondition
+                myCommand.Parameters.Add(New SqlParameter("@sortBy", SqlDbType.VarChar, 100)).Value = Convert.ToString(ddlSortBy.SelectedValue.Trim)
+
+                If chkExcludeDateForSearch.Checked = True Or txtSearchRequestId.Text.Trim <> "" Then
+                    myCommand.Parameters.Add(New SqlParameter("@FromChkInDt", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime("01/01/1900").ToString("yyyy/MM/dd"))
+                    myCommand.Parameters.Add(New SqlParameter("@ToChkInDt", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime("01/01/9900").ToString("yyyy/MM/dd"))
+                Else
+                    myCommand.Parameters.Add(New SqlParameter("@FromChkInDt", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtFromDate.Text).ToString("yyyy/MM/dd"))
+                    myCommand.Parameters.Add(New SqlParameter("@ToChkInDt", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtToDate.Text).ToString("yyyy/MM/dd"))
+                End If
+
+                myCommand.Parameters.Add(New SqlParameter("@RequestId", SqlDbType.VarChar, 20)).Value = Convert.ToString(txtSearchRequestId.Text.Trim)
+                myCommand.Parameters.Add("@PageCount", SqlDbType.Int, 4).Direction = ParameterDirection.Output
+                myCommand.Connection = SqlConn
+                Using myDataAdapter As New SqlDataAdapter(myCommand)
+                    Using ds As New DataSet()
+                        myDataAdapter.Fill(ds, "Guests")
+
+                        Dim dt As New DataTable
+                        dt = ds.Tables("Guests")
+                        Dim dv As DataView = dt.DefaultView
+                        If dt.Rows.Count > 0 Then
+
+                            Dim iPageIndex As Integer = 1
+                            ' Dim iPageSize As Integer = 0
+                            Dim iRowNoFrom As Integer = 0
+                            Dim iRowNoTo As Integer = 0
+                            If Not Session("sMailBoxPageIndex") Is Nothing Then
+                                iPageIndex = Session("sMailBoxPageIndex")
+                            End If
+
+                            iRowNoFrom = (iPageIndex - 1) * pageSize + 1
+                            iRowNoTo = (((iPageIndex - 1) * pageSize + 1) + pageSize) - 1
+                            dv.Table.Columns.Add("rowIndex")
+                            For i As Integer = 0 To dv.Count - 1
+                                dv.Item(i)("rowIndex") = (i + 1).ToString
+                            Next
+
+
+                            dv.RowFilter = "rowIndex >= " & iRowNoFrom & " AND  rowIndex <=" & iRowNoTo
+
+
+
+
+                            gvVisaApplied.DataSource = dv
+                            gvVisaApplied.DataBind()
+
+                            Dim recordCount As Integer = dt.Rows.Count
+                            Me.PopulatePager(recordCount)
+
+                        Else
+
+                        End If
+                        'Dim pageCount As Integer = myCommand.Parameters("@PageCount").Value
+                        'Session("sDsGuestsList") = ds
+                        'Session("spageCount") = pageCount
+                        'If pageCount > RowsPerPageCUS.SelectedValue Then
+                        '    pageIndex = Val(pageCount / RowsPerPageCUS.SelectedValue)
+                        'Else
+                        '    pageIndex = 0
+                        'End If
+
+                        'If pageCount < pageIndex Then
+                        '    pageIndex = pageCount
+                        '    Session("pageIndexNo") = pageIndex
+                        'End If
+                        'If ds.Tables("Guests").Rows.Count > 0 Then
+                        '    gvVisaApplied.DataSource = ds.Tables("Guests")
+                        '    gvVisaApplied.DataBind()
+                        'Else
+                        '    gvVisaApplied.DataSource = Nothing
+                        '    gvVisaApplied.DataBind()
+                        '    lblMsg.Visible = True
+                        '    lblMsg.Text = "Records not found, Please redefine search criteria."
+                        'End If
+                        'generatePager(pageCount, pageSize, pageIndex)
+
+
+
+
+                    End Using
+                End Using
+                clsDBConnect.dbCommandClose(myCommand)
+                clsDBConnect.dbConnectionClose(SqlConn)
+            Else
+                Dim ds As New DataSet
+                ds = Session("sDsGuestsList")
+                Dim pageCount As Integer = 1
+
+                If Not Session("spageCount") Is Nothing Then
+                    pageCount = Session("spageCount")
+                End If
+
+
+                If pageCount < pageIndex Then
+                    pageIndex = pageCount
+                    Session("pageIndexNo") = pageIndex
+                End If
+
+                If ds.Tables("Guests").Rows.Count > 0 Then
+
+                    Dim dtt As DataTable
+                    dtt = Session("DtVisaDynamic")
+                    If dtt.Rows.Count > 0 Then
+                        Dim strBindCondition As String = ""
+                        strBindCondition = BuildConditionNewForFilter()
+                        Dim dvAll As DataView = New DataView(ds.Tables("Guests"))
+                        dvAll.RowFilter = strBindCondition
+
+
+
+                        If dvAll.Count > 0 Then
+                            Dim recordCount As Integer = dvAll.Count
+                            Dim iPageIndex As Integer = 1
+                            ' Dim iPageSize As Integer = 0
+                            Dim iRowNoFrom As Integer = 0
+                            Dim iRowNoTo As Integer = 0
+                            If Not Session("sMailBoxPageIndex") Is Nothing Then
+                                iPageIndex = Session("sMailBoxPageIndex")
+                            End If
+
+                            iRowNoFrom = (iPageIndex - 1) * pageSize + 1
+                            iRowNoTo = (((iPageIndex - 1) * pageSize + 1) + pageSize) - 1
+                            If Not dvAll.Table.Columns.Contains("rowIndex") Then
+                                dvAll.Table.Columns.Add("rowIndex")
+                                For i As Integer = 0 To dvAll.Count - 1
+                                    dvAll.Item(i)("rowIndex") = (i + 1).ToString
+                                Next
+                            Else
+                                For i As Integer = 0 To dvAll.Count - 1
+                                    dvAll.Item(i)("rowIndex") = (i + 1).ToString
+                                Next
+                            End If
+
+                            Dim dtFilter As DataTable
+                            dtFilter = dvAll.ToTable
+                            Dim dv As DataView = New DataView(dtFilter)
+                            dv.RowFilter = "rowIndex >= " & iRowNoFrom & " AND  rowIndex <=" & iRowNoTo
+
+
+
+
+                            gvVisaApplied.DataSource = dv
+                            gvVisaApplied.DataBind()
+
+
+                            Me.PopulatePager(recordCount)
+
+                            'End If
+
+
+                            'If dv.ToTable.Rows.Count > 0 Then
+
+                            '    pageCount = dv.ToTable.Rows.Count
+                            '    Session("spageCount") = pageCount
+
+                            '    Dim iRowNoFrom As Integer = 0
+                            '    Dim iRowNoTo As Integer = 0
+                            '    Dim iPageIndex As Integer = 0
+                            '    If Not Session("pageIndexNo") Is Nothing Then
+                            '        iPageIndex = Session("pageIndexNo")
+                            '    End If
+                            '    If iPageIndex = 0 Then
+                            '        iPageIndex = 1
+                            '    End If
+                            '    If pageCount > pageSize Then
+                            '        iRowNoFrom = (iPageIndex - 1) * pageSize + 1
+                            '        iRowNoTo = (((iPageIndex - 1) * pageSize + 1) + pageSize) - 1
+                            '    Else
+                            '        iRowNoFrom = 1
+                            '        iRowNoTo = pageSize
+                            '    End If
+                            '    dv.Table.Columns.Add("rowIndex")
+                            '    For i As Integer = 0 To dv.Count - 1
+                            '        dv.Item(i)("rowIndex") = (i + 1).ToString
+                            '    Next
+
+
+                            '    dv.RowFilter = "rowIndex >= " & iRowNoFrom & " AND  rowIndex <=" & iRowNoTo
+
+
+                            '    gvVisaApplied.DataSource = dv.ToTable
+                            '    gvVisaApplied.DataBind()
+
+
+                        Else
+                            gvVisaApplied.DataSource = Nothing
+                            gvVisaApplied.DataBind()
+                            lblMsg.Visible = True
+                            lblMsg.Text = "Records not found, Please redefine search criteria."
+                        End If
+                    Else
+                        Dim dv As DataView = New DataView(ds.Tables("Guests"))
+                        pageCount = dv.ToTable.Rows.Count
+                        Session("spageCount") = pageCount
+
+                        Dim iRowNoFrom As Integer = 0
+                        Dim iRowNoTo As Integer = 0
+                        Dim iPageIndex As Integer = 0
+                        If Not Session("pageIndexNo") Is Nothing Then
+                            iPageIndex = Session("pageIndexNo")
+                        End If
+                        If iPageIndex = 0 Then
+                            iPageIndex = 1
+                        End If
+
+                        If pageCount > pageSize Then
+                            iRowNoFrom = (iPageIndex - 1) * pageSize + 1
+                            iRowNoTo = (((iPageIndex - 1) * pageSize + 1) + pageSize) - 1
+                        Else
+                            iRowNoFrom = 1
+                            iRowNoTo = pageSize
+                        End If
+
+                        If Not dv.Table.Columns.Contains("rowIndex") Then
+                            dv.Table.Columns.Add("rowIndex")
+                            For i As Integer = 0 To dv.Count - 1
+                                dv.Item(i)("rowIndex") = (i + 1).ToString
+                            Next
+                        Else
+                            For i As Integer = 0 To dv.Count - 1
+                                dv.Item(i)("rowIndex") = (i + 1).ToString
+                            Next
+                        End If
+
+
+
+                        dv.RowFilter = "rowIndex >= " & iRowNoFrom & " AND  rowIndex <=" & iRowNoTo
+
+
+                        gvVisaApplied.DataSource = dv.ToTable
+                        gvVisaApplied.DataBind()
+                        Me.PopulatePager(pageCount)
+                    End If
+
+
+
+                Else
+                    gvVisaApplied.DataSource = Nothing
+                    gvVisaApplied.DataBind()
+                    lblMsg.Visible = True
+                    lblMsg.Text = "Records not found, Please redefine search criteria."
+                End If
+                '  generatePager(pageCount, pageSize, pageIndex)
+            End If
+        Catch ex As Exception
+            If SqlConn.State = ConnectionState.Open Then
+                clsDBConnect.dbCommandClose(myCommand)
+                clsDBConnect.dbConnectionClose(SqlConn)
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+    Private Function BuildConditionNewForFilter() As String
+        Dim dtt As DataTable
+        dtt = Session("DtVisaDynamic")
+        Dim strRequestIdValue As String = ""
+        Dim strFamilyNameValue As String = ""
+        Dim strFirstNameValue As String = ""
+        Dim strPassportNoValue As String = ""
+        Dim strAgentValue As String = ""
+        Dim strSponsorValue As String = ""
+        Dim strTextValue As String = ""
+        Try
+            If dtt.Rows.Count > 0 Then
+                For i As Integer = 0 To dtt.Rows.Count - 1
+                    If dtt.Rows(i)("Code").ToString = "REQUEST ID" Then
+                        If strRequestIdValue <> "" Then
+                            strRequestIdValue = strRequestIdValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strRequestIdValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "FAMILY NAME" Then
+                        If strFamilyNameValue <> "" Then
+                            strFamilyNameValue = strFamilyNameValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strFamilyNameValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "FIRST NAME" Then
+                        If strFirstNameValue <> "" Then
+                            strFirstNameValue = strFirstNameValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strFirstNameValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "PASSPORT NO" Then
+                        If strPassportNoValue <> "" Then
+                            strPassportNoValue = strPassportNoValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strPassportNoValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "AGENT" Then
+                        If strAgentValue <> "" Then
+                            strAgentValue = strAgentValue + ",'" + dtt.Rows(i)("Value").ToString + "'"
+                        Else
+                            strAgentValue = "'" + dtt.Rows(i)("Value").ToString + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "SPONSOR" Then
+                        Dim strSponsor As String = objUtils.ExecuteQueryReturnStringValue("select ltrim(rtrim(PartyCode)) as SponsorName from partymast(nolock) where sptypecode='VISA'  and ltrim(RTRIM(PartyName)) = '" & dtt.Rows(i)("Value").ToString & "'  ")
+
+                        If strSponsorValue <> "" Then
+                            strSponsorValue = strSponsorValue + ",'" + strSponsor + "'"
+                        Else
+                            strSponsorValue = "'" + strSponsor + "'"
+                        End If
+                    End If
+                    If dtt.Rows(i)("Code").ToString = "TEXT" Then
+                        If strTextValue <> "" Then
+                            strTextValue = strTextValue + "," + dtt.Rows(i)("Value").ToString
+                        Else
+                            strTextValue = dtt.Rows(i)("Value").ToString
+                        End If
+                    End If
+                Next
+            End If
+
+
+            strWhereCond = ""
+            If strRequestIdValue.Trim <> "" Then
+                strWhereCond = "RequestId IN (" & Trim(strRequestIdValue.Trim.ToUpper) & ")"
+            End If
+            If strFamilyNameValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "FamilyName IN (" & Trim(strFamilyNameValue.Trim) & ")"
+                Else
+                    strWhereCond = strWhereCond & " and FamilyName in (" & Trim(strFamilyNameValue.Trim) & ")"
+                End If
+            End If
+            If strFirstNameValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "FirstName IN (" & Trim(strFirstNameValue.Trim) & ")"
+                Else
+                    strWhereCond = strWhereCond & " and FirstName in (" & Trim(strFirstNameValue.Trim) & ")"
+                End If
+            End If
+            If strPassportNoValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "passportNo IN (" & Trim(strPassportNoValue.Trim) & ")"
+                Else
+                    strWhereCond = strWhereCond & " and passportNo in (" & Trim(strPassportNoValue.Trim) & ")"
+                End If
+            End If
+            If strAgentValue.Trim <> "" Then
+                If strWhereCond = "" Then
+                    strWhereCond = "Agency IN (" & Trim(strAgentValue.Trim) & ")"
+                Else
+                    strWhereCond = strWhereCond & " and Agency in (" & Trim(strAgentValue.Trim) & ")"
+                End If
+
+
+            End If
+            If strSponsorValue.Trim <> "" Then
+
+                If strWhereCond = "" Then
+
+                    strWhereCond = "SponsorId in (" & Trim(strSponsorValue.Trim.ToUpper) & ")"
+                Else
+                    strWhereCond = strWhereCond & " and SponsorId in (" & Trim(strSponsorValue.Trim.ToUpper) & ")"
+                End If
+            End If
+
+            If strTextValue <> "" Then
+                Dim lsMainArr As String()
+                Dim strValue As String = ""
+                Dim strWhereCond1 As String = ""
+                lsMainArr = objUtils.splitWithWords(strTextValue, ",")
+                For i = 0 To lsMainArr.GetUpperBound(0)
+                    strValue = ""
+                    strValue = lsMainArr(i)
+                    If strValue <> "" Then
+                        If Trim(strWhereCond1) = "" Then
+                            strWhereCond1 = " RequestId  like '%" & Trim(strValue.Trim.ToUpper) & "%' or  FamilyName like '%" & Trim(strValue.Trim.ToUpper) & "%' or FirstName like '%" & Trim(strValue.Trim.ToUpper) & "%' or Agency like '%" & Trim(strValue.Trim.ToUpper) & "%' or " &
+                            " SponsorId  like '%" & Trim(strValue.Trim.ToUpper) & "%' or AgencyRefNo like '%" & Trim(strValue.Trim.ToUpper) & "%' or passportNo like '%" & Trim(strValue.Trim.ToUpper) & "%' "
+                        Else
+                            strWhereCond1 = strWhereCond1 & "   RequestId  like '%" & Trim(strValue.Trim.ToUpper) & "%' or  FamilyName like '%" & Trim(strValue.Trim.ToUpper) & "%' or FirstName like '%" & Trim(strValue.Trim.ToUpper) & "%' or Agency like '%" & Trim(strValue.Trim.ToUpper) & "%'  or " &
+                            " SponsorId  like '%" & Trim(strValue.Trim.ToUpper) & "%' or AgencyRefNo like '%" & Trim(strValue.Trim.ToUpper) & "%' or passportNo like '%" & Trim(strValue.Trim.ToUpper) & "%'"
+                        End If
+                    End If
+                Next
+
+                If Trim(strWhereCond) = "" Then
+                    strWhereCond = "(" & strWhereCond1 & ")"
+                Else
+                    strWhereCond = strWhereCond & " AND (" & strWhereCond1 & ")"
+                End If
+            End If
+            'If txtApplyFromDt.Text.Trim <> "" And txtApplyToDt.Text <> "" Then
+            '    If Trim(strWhereCond) = "" Then
+            '        strWhereCond = "ApplyDate between CONVERT(datetime, '" + txtApplyFromDt.Text + "',103) and CONVERT(datetime, '" + txtApplyToDt.Text + "',103)"
+            '    Else
+            '        strWhereCond = strWhereCond & "  and ApplyDate between CONVERT(datetime, '" + txtApplyFromDt.Text + "',103) and CONVERT(datetime, '" + txtApplyToDt.Text + "',103)"
+            '    End If
+            'End If
+            'If ddlAllOrPending.SelectedIndex = 1 Then
+            '    If Trim(strWhereCond) = "" Then
+            '        strWhereCond = "VisaStatus=101"
+            '    Else
+            '        strWhereCond = strWhereCond & "  and VisaStatus=101"
+            '    End If
+            'End If
+            'If ddlStatus.SelectedIndex > 1 Then
+            '    If Trim(strWhereCond) = "" Then
+            '        strWhereCond = "VisaStatus=" + ddlStatus.SelectedValue
+            '    Else
+            '        strWhereCond = strWhereCond & "  and VisaStatus=" + ddlStatus.SelectedValue
+            '    End If
+            'ElseIf ddlStatus.SelectedIndex = 1 Then
+            '    If Trim(strWhereCond) = "" Then
+            '        strWhereCond = "isnull(VisaStatus,'') ='' or VisaStatus=100"
+            '    Else
+            '        strWhereCond = strWhereCond & "  and (isnull(VisaStatus,'') ='' or VisaStatus=100)"
+            '    End If
+            'End If
+            'If ddlSortBy.SelectedIndex = 0 Then
+            '    If Trim(strWhereCond) = "" Then
+            '        strWhereCond = "ApplyDate is null"
+            '    Else
+            '        strWhereCond = strWhereCond & "  and ApplyDate is null"
+            '    End If
+            'End If
+            'If chkVisaNotIssue.Checked Then
+            '    If Trim(strWhereCond) = "" Then
+            '        strWhereCond = "datediff(DAY,StatusDate,convert(date,getdate())) > 5 and StatusDate is not null and (ConfirmDate is null or ltrim(rtrim(ConfirmDate))='')"
+            '    Else
+            '        strWhereCond = strWhereCond & "  and datediff(DAY,StatusDate,convert(date,getdate())) > 5 and StatusDate is not null and (ConfirmDate is null or ltrim(rtrim(ConfirmDate))='')"
+            '    End If
+            'End If
+            BuildConditionNewForFilter = strWhereCond
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            BuildConditionNewForFilter = ""
+        End Try
+    End Function
+
+#Region "Public Sub generatePager(totalPageCount As Integer, pageSize As Integer, currentPage As Integer)"
+    Public Sub generatePager(totalPageCount As Integer, pageSize As Integer, currentPage As Integer)
+        Dim totalLinkInPage As Integer = 10
+        Dim startPageLink As Integer = Math.Max(currentPage - Convert.ToInt32(Math.Floor(Convert.ToDecimal(totalLinkInPage) / 2)), 1)
+        Dim lastPageLink As Integer = Math.Min(startPageLink + totalLinkInPage - 1, totalPageCount)
+
+        If ((startPageLink + totalLinkInPage - 1) > totalPageCount) Then
+            lastPageLink = Math.Min(currentPage + Convert.ToInt32(Math.Floor(Convert.ToDecimal(totalLinkInPage) / 2)), totalPageCount)
+            startPageLink = Math.Max(lastPageLink - totalLinkInPage + 1, 1)
+        End If
+
+        Dim pageLinkContainer As List(Of ListItem) = New List(Of ListItem)
+
+        If (startPageLink <> 0) Then
+            pageLinkContainer.Add(New ListItem("First", "0", currentPage <> 0))
+        End If
+
+        For i As Integer = startPageLink To lastPageLink
+            pageLinkContainer.Add(New ListItem(i.ToString(), i.ToString(), currentPage <> i))
+        Next
+
+        If (lastPageLink <> totalPageCount) Then
+            pageLinkContainer.Add(New ListItem("Last", totalPageCount.ToString(), currentPage <> totalPageCount))
+        End If
+        dlPager.DataSource = pageLinkContainer
+        dlPager.DataBind()
+    End Sub
+#End Region
+
+#Region "Protected Sub dlPager_ItemCommand(source As Object, e As DataListCommandEventArgs)"
+    Protected Sub dlPager_ItemCommand(source As Object, e As DataListCommandEventArgs)
+        If (e.CommandName = "PageNo") Then
+            Session("pageIndexNo") = Convert.ToInt32(e.CommandArgument)
+            GetGuestsPageWiseForFilter(Convert.ToInt32(e.CommandArgument), CType(RowsPerPageCUS.SelectedValue, Integer))
+
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub RowsPerPageCUS_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles RowsPerPageCUS.SelectedIndexChanged"
+    Protected Sub RowsPerPageCUS_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles RowsPerPageCUS.SelectedIndexChanged
+        GetGuestsPageWise(0, CType(RowsPerPageCUS.SelectedValue, Integer))
+    End Sub
+#End Region
+
+#Region "Protected Sub btnVisaProcess_Click(sender As Object, e As System.EventArgs) Handles btnVisaProcess.Click"
+    Protected Sub btnVisaProcess_Click(sender As Object, e As System.EventArgs) Handles btnVisaProcess.Click
+        Try
+            btnApply.Width = 80
+            If hdProcessType.Value = "ApplyAll" Then
+                thApplyTitle.InnerText = "Apply visa for list of guests"
+                ddlSponsor.SelectedIndex = 0
+                gvShowGuests.Columns(6).Visible = False
+                gvShowGuests.Columns(7).Visible = False
+                btnApply.Visible = True
+                btnApply.Text = "Apply"
+                hdProcessSaveOption.Value = "ApplyVisa"
+                ApplyAllVisas("SponsorAll")
+            ElseIf hdProcessType.Value = "Apply" Then
+                SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                sqlTrans = SqlConn.BeginTransaction
+                myCommand = New SqlCommand("sp_VisaProcessing", SqlConn, sqlTrans)
+                myCommand.CommandType = CommandType.StoredProcedure
+                myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = Convert.ToString(hdRequestId.Value)
+                myCommand.Parameters.Add(New SqlParameter("@guestLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdGuestLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@rLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdRLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@roomNo", SqlDbType.Int)).Value = Convert.ToInt32(hdRoomNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@processType", SqlDbType.VarChar, 50)).Value = Convert.ToString(hdProcessType.Value)
+                myCommand.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = Convert.ToString(hdPartyCode.Value)
+                myCommand.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                myCommand.ExecuteNonQuery()
+                sqlTrans.Commit()
+
+                If Not Session("sDsGuestsList") Is Nothing Then
+                    Dim dsGuest As DataSet = Session("sDsGuestsList")
+
+                    Dim dr1 As DataRow = dsGuest.Tables(0).Select("requestid = '" + Convert.ToString(hdRequestId.Value) + "' AND guestLineNo='" + hdGuestLineNo.Value.Trim + "' AND rLineNo='" + hdRLineNo.Value.Trim + "'  AND roomNo='" + hdRoomNo.Value.Trim + "' ").FirstOrDefault
+                    If Not dr1 Is Nothing Then
+                        dr1("VisaStatus") = "101"
+                        ' dr1("passportNo") = txtPassportNo.Text.Trim
+                    End If
+                    Session("sDsGuestsList") = dsGuest
+
+                End If
+
+                GetGuestsPageWiseForFilter(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+            ElseIf hdProcessType.Value = "UnApplyAll" Then
+                thApplyTitle.InnerText = "Un-Apply visa for list of guests"
+                ddlSponsor.SelectedIndex = 0
+                gvShowGuests.Columns(6).Visible = True
+                gvShowGuests.Columns(7).Visible = False
+                btnApply.Visible = True
+                btnApply.Text = "Un-Apply"
+                hdProcessSaveOption.Value = "UnApplyVisa"
+                FilterAllVisas("SponsorAll")
+            ElseIf hdProcessType.Value = "UnApply" Then
+                SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                sqlTrans = SqlConn.BeginTransaction
+                myCommand = New SqlCommand("sp_VisaProcessing", SqlConn, sqlTrans)
+                myCommand.CommandType = CommandType.StoredProcedure
+                myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = Convert.ToString(hdRequestId.Value)
+                myCommand.Parameters.Add(New SqlParameter("@guestLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdGuestLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@rLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdRLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@roomNo", SqlDbType.Int)).Value = Convert.ToInt32(hdRoomNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@processType", SqlDbType.VarChar, 50)).Value = Convert.ToString(hdProcessType.Value)
+                myCommand.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                myCommand.ExecuteNonQuery()
+                sqlTrans.Commit()
+                GetGuestsPageWise(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+            ElseIf hdProcessType.Value = "RejectedAndReApply" Then
+                SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                sqlTrans = SqlConn.BeginTransaction
+                myCommand = New SqlCommand("sp_VisaProcessing", SqlConn, sqlTrans)
+                myCommand.CommandType = CommandType.StoredProcedure
+                myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = Convert.ToString(hdRequestId.Value)
+                myCommand.Parameters.Add(New SqlParameter("@guestLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdGuestLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@rLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdRLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@roomNo", SqlDbType.Int)).Value = Convert.ToInt32(hdRoomNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@processType", SqlDbType.VarChar, 50)).Value = Convert.ToString(hdProcessType.Value)
+                myCommand.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                myCommand.ExecuteNonQuery()
+                sqlTrans.Commit()
+                GetGuestsPageWise(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+            ElseIf hdProcessType.Value = "ConfirmAllVisas" Then
+                thApplyTitle.InnerText = "Confirm visa for list of guests"
+                ddlSponsor.SelectedIndex = 0
+                gvShowGuests.Columns(6).Visible = True
+                gvShowGuests.Columns(7).Visible = False
+                btnApply.Visible = True
+                btnApply.Text = "Confirm"
+                hdProcessSaveOption.Value = "ConfirmVisa"
+                FilterAllVisas("SponsorAll")
+            ElseIf hdProcessType.Value = "ConfirmVisa" Then
+                SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                sqlTrans = SqlConn.BeginTransaction
+                myCommand = New SqlCommand("sp_VisaProcessing", SqlConn, sqlTrans)
+                myCommand.CommandType = CommandType.StoredProcedure
+                myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = Convert.ToString(hdRequestId.Value)
+                myCommand.Parameters.Add(New SqlParameter("@guestLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdGuestLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@rLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdRLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@roomNo", SqlDbType.Int)).Value = Convert.ToInt32(hdRoomNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@processType", SqlDbType.VarChar, 50)).Value = Convert.ToString(hdProcessType.Value)
+                myCommand.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                myCommand.ExecuteNonQuery()
+                sqlTrans.Commit()
+                If Not Session("sDsGuestsList") Is Nothing Then
+                    Dim dsGuest As DataSet = Session("sDsGuestsList")
+
+                    Dim dr1 As DataRow = dsGuest.Tables(0).Select("requestid = '" + Convert.ToString(hdRequestId.Value) + "' AND guestLineNo='" + hdGuestLineNo.Value.Trim + "' AND rLineNo='" + hdRLineNo.Value.Trim + "'  AND roomNo='" + hdRoomNo.Value.Trim + "' ").FirstOrDefault
+                    If Not dr1 Is Nothing Then
+                        dr1("VisaStatus") = "102"
+                    End If
+                    Session("sDsGuestsList") = dsGuest
+
+                End If
+                GetGuestsPageWiseForFilter(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+            ElseIf hdProcessType.Value = "AllGuestView" Then
+                thApplyTitle.InnerText = "list of guests in " + hdRequestId.Value
+                ddlSponsor.SelectedIndex = 0
+                gvShowGuests.Columns(6).Visible = True
+                gvShowGuests.Columns(7).Visible = True
+                btnApply.Visible = False
+                GetAllGuest("SponsorAll")
+            ElseIf hdProcessType.Value = "BackToApplyAll" Then
+                thApplyTitle.InnerText = "Back to apply visa for list of guests"
+                ddlSponsor.SelectedIndex = 0
+                gvShowGuests.Columns(6).Visible = True
+                gvShowGuests.Columns(7).Visible = True
+                btnApply.Visible = True
+                btnApply.Text = "Back To Apply"
+                btnApply.Width = 130
+                hdProcessSaveOption.Value = "BackToApplyVisa"
+                FilterAllVisas("SponsorAll")
+            ElseIf hdProcessType.Value = "BackToApply" Then
+                SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                sqlTrans = SqlConn.BeginTransaction
+                myCommand = New SqlCommand("sp_VisaProcessing", SqlConn, sqlTrans)
+                myCommand.CommandType = CommandType.StoredProcedure
+                myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = Convert.ToString(hdRequestId.Value)
+                myCommand.Parameters.Add(New SqlParameter("@guestLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdGuestLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@rLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdRLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@roomNo", SqlDbType.Int)).Value = Convert.ToInt32(hdRoomNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@processType", SqlDbType.VarChar, 50)).Value = Convert.ToString(hdProcessType.Value)
+                myCommand.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                myCommand.ExecuteNonQuery()
+                sqlTrans.Commit()
+                GetGuestsPageWise(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+            ElseIf hdProcessType.Value = "GuestDetails" Then
+                ModalPopupGuestInfo.Show()
+                TabVisaInfo.ActiveTabIndex = 0
+                SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                myCommand = New SqlCommand("sp_get_visaGuest_Details", SqlConn)
+                myCommand.CommandType = CommandType.StoredProcedure
+                myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = Convert.ToString(hdRequestId.Value)
+                myCommand.Parameters.Add(New SqlParameter("@guestLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdGuestLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@rLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdRLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@roomNo", SqlDbType.Int)).Value = Convert.ToInt32(hdRoomNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = Convert.ToString(hdPartyCode.Value)
+                Dim myReader As SqlDataReader
+                myReader = myCommand.ExecuteReader()
+                If myReader.Read Then
+                    txtRequestId.Text = myReader("RequestId")
+                    If Not IsDBNull(myReader("GuestLineNo")) Then
+                        hdGInfoLineNo.Value = Convert.ToString(myReader("GuestLineNo"))
+                    Else
+                        hdGInfoLineNo.Value = ""
+                    End If
+                    If Not IsDBNull(myReader("RLineNo")) Then
+                        hdGInfoRlineNo.Value = Convert.ToString(myReader("RLineNo"))
+                    Else
+                        hdGInfoRlineNo.Value = ""
+                    End If
+                    If Not IsDBNull(myReader("RoomNo")) Then
+                        hdGInfoRoomNo.Value = Convert.ToString(myReader("RoomNo"))
+                    Else
+                        hdGInfoRoomNo.Value = ""
+                    End If
+                    If Not IsDBNull(myReader("ArrivalDate")) Then
+                        txtArrivalDt.Text = Convert.ToDateTime(myReader("ArrivalDate")).ToString("dd/MM/yyyy")
+                    Else
+                        txtArrivalDt.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("DepartureDate")) Then
+                        txtDepartureDt.Text = Convert.ToDateTime(myReader("DepartureDate")).ToString("dd/MM/yyyy")
+                    Else
+                        txtDepartureDt.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("AgentCode")) Then
+                        txtAgentCode.Text = Convert.ToString(myReader("AgentCode"))
+                    Else
+                        txtAgentCode.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("Agency")) Then
+                        txtAgency.Text = Convert.ToString(myReader("Agency"))
+                    Else
+                        txtAgency.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("GuestName")) Then
+                        txtGuestName.Text = Convert.ToString(myReader("GuestName"))
+                    Else
+                        txtGuestName.Text = ""
+                    End If
+                    chkEditName.Checked = False
+                    chkEditName_CheckedChanged(sender, e)
+                    If Not IsDBNull(myReader("Title")) Then
+                        ddlTitle.ClearSelection()
+                        ddlTitle.Items.FindByValue(myReader("Title")).Selected = True
+                    Else
+                        ddlTitle.SelectedIndex = 0
+                    End If
+                    If Not IsDBNull(myReader("LastName")) Then
+                        txtFamilyName.Text = Convert.ToString(myReader("LastName"))
+                    Else
+                        txtFamilyName.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("FirstName")) Then
+                        txtFirstName.Text = Convert.ToString(myReader("FirstName"))
+                    Else
+                        txtFirstName.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("MiddleName")) Then
+                        txtMiddleName.Text = Convert.ToString(myReader("MiddleName"))
+                    Else
+                        txtMiddleName.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("DOB")) Then
+                        txtDOB.Text = Convert.ToDateTime(myReader("DOB")).ToString("dd/MM/yyyy")
+                    Else
+                        txtDOB.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("PassportNo")) Then
+                        txtPassportNo.Text = Convert.ToString(myReader("PassportNo"))
+                    Else
+                        txtPassportNo.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("nationalitycode")) Then
+                        txtNationCode.Text = Convert.ToString(myReader("nationalitycode"))
+                    Else
+                        txtNationCode.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("ctryName")) Then
+                        txtNationality.Text = Convert.ToString(myReader("CtryName"))
+                    Else
+                        txtNationality.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("Category")) Then
+                        ddlCategory.ClearSelection()
+                        ddlCategory.Items.FindByValue(myReader("Category")).Selected = True
+                    Else
+                        ddlCategory.SelectedIndex = 0
+                    End If
+                    If Not IsDBNull(myReader("VisaStatus")) Then
+                        Dim visaStatus As String = Convert.ToString(myReader("VisaStatus"))
+                        If visaStatus = "100" Then
+                            txtStatus.Text = "NA"
+                        ElseIf visaStatus = "101" Then
+                            txtStatus.Text = "VA"
+                        ElseIf visaStatus = "102" Then
+                            txtStatus.Text = "VC"
+                        ElseIf visaStatus = "104" Then
+                            txtStatus.Text = "RA"
+                        Else
+                            txtStatus.Text = ""
+                        End If
+                    Else
+                        txtStatus.Text = ""
+                    End If
+                    If txtStatus.Text.Trim = "VC" Then
+                        chkEditName.Enabled = False
+                        txtPassportNo.Enabled = False
+                    Else
+                        chkEditName.Enabled = True
+                        txtPassportNo.Enabled = True
+                    End If
+                    If Not IsDBNull(myReader("StatusDate")) Then
+                        txtStatusDt.Text = Convert.ToDateTime(myReader("StatusDate")).ToString("dd/MM/yyyy")
+                    Else
+                        txtStatusDt.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("SponsorId")) Then
+                        ddlVisaSponsor.ClearSelection()
+                        ddlVisaSponsor.Items.FindByValue(myReader("SponsorId")).Selected = True
+                    Else
+                        ddlVisaSponsor.ClearSelection()
+                        If txtRequestId.Text.Contains("RG/") Then
+                            ddlVisaSponsor.Items.FindByValue("VT-000002").Selected = True
+                        Else
+                            ddlVisaSponsor.Items.FindByValue("VT-000001").Selected = True
+                        End If
+                    End If
+                    If Not IsDBNull(myReader("ApplyDate")) Then
+                        txtApplyDt.Text = Convert.ToDateTime(myReader("ApplyDate")).ToString("dd/MM/yyyy")
+                    Else
+                        txtApplyDt.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("visaoptions")) Then
+                        ddlVisa.ClearSelection()
+                        ddlVisa.Items.FindByValue(myReader("visaoptions")).Selected = True
+                        hdVisa.Value = myReader("visaoptions").ToString()
+                    Else
+                        ddlVisa.SelectedIndex = 0
+                        hdVisa.Value = "Required"
+                    End If
+                    If Not IsDBNull(myReader("Reason")) Then
+                        txtReason.Text = Convert.ToString(myReader("Reason"))
+                    Else
+                        txtReason.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("Age")) Then
+                        txtAge.Text = Convert.ToString(myReader("Age"))
+                    Else
+                        txtAge.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("BlackList")) Then
+                        ddlBlackList.ClearSelection()
+                        ddlBlackList.Items.FindByValue(myReader("BlackList")).Selected = True
+                    Else
+                        ddlBlackList.SelectedIndex = 0
+                    End If
+                    ddlBlackList_SelectedIndexChanged(sender, e)
+                    If Not IsDBNull(myReader("ByWhome")) Then
+                        txtByWhome.Text = Convert.ToString(myReader("ByWhome"))
+                    Else
+                        txtByWhome.Text = ""
+                    End If
+                    If Not IsDBNull(myReader("Comments")) Then
+                        txtComments.Text = Convert.ToString(myReader("Comments"))
+                    Else
+                        txtComments.Text = ""
+                    End If
+                End If
+                myReader.Close()
+                clsDBConnect.dbCommandClose(myCommand)
+
+                myCommand = New SqlCommand("sp_get_VisaDetails", SqlConn)
+                myCommand.CommandType = CommandType.StoredProcedure
+                myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = hdRequestId.Value
+                myCommand.Parameters.Add(New SqlParameter("@guestLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdGuestLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@visaOptions", SqlDbType.VarChar, 100)).Value = ddlVisa.SelectedValue
+                myCommand.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = Convert.ToString(hdPartyCode.Value)
+                Using myDataAdapter As New SqlDataAdapter(myCommand)
+                    Using dt As New DataTable()
+                        myDataAdapter.Fill(dt)
+                        Dim chk As New DataColumn("chkSelect", GetType(Boolean))
+                        chk.DefaultValue = True
+                        dt.Columns.Add(chk)
+                        gvVisaDetails.DataSource = dt
+                        gvVisaDetails.DataBind()
+                        If Not dt Is Nothing AndAlso dt.Rows.Count > 0 Then
+                            txtTotalSell.Text = Convert.ToString(dt.Compute("sum(Selling)", ""))
+                            txtTotalCost.Text = Convert.ToString(dt.Compute("sum(Cost)", ""))
+                        Else
+                            txtTotalSell.Text = "0.00"
+                            txtTotalCost.Text = "0.00"
+                        End If
+                    End Using
+                End Using
+            End If
+            clsDBConnect.dbCommandClose(myCommand)
+            clsDBConnect.dbConnectionClose(SqlConn)
+
+        Catch ex As Exception
+            If Not SqlConn Is Nothing Then
+                If SqlConn.State = ConnectionState.Open Then
+                    If Not sqlTrans Is Nothing Then
+                        sqlTrans.Rollback()
+                        sqlTrans.Dispose()
+                    End If
+                    clsDBConnect.dbCommandClose(myCommand)
+                    clsDBConnect.dbConnectionClose(SqlConn)
+                End If
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + Regex.Replace(ex.Message, "[^a-zA-Z0-9_@.-]", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnApply_Click(sender As Object, e As System.EventArgs) Handles btnApply.Click"
+    Protected Sub btnApply_Click(sender As Object, e As System.EventArgs) Handles btnApply.Click
+        Try
+            Dim guestListDt As New DataTable()
+            guestListDt.Columns.Add(New DataColumn("requestid", GetType(String)))
+            guestListDt.Columns.Add(New DataColumn("guestlineno", GetType(Integer)))
+            guestListDt.Columns.Add(New DataColumn("rlineno", GetType(Integer)))
+            guestListDt.Columns.Add(New DataColumn("roomno", GetType(Integer)))
+            For Each gvDr As GridViewRow In gvShowGuests.Rows
+                If gvDr.RowType = DataControlRowType.DataRow Then
+                    Dim guestDr As DataRow = guestListDt.NewRow
+                    guestDr("requestid") = gvDr.Cells(0).Text
+                    guestDr("guestlineno") = gvDr.Cells(1).Text
+                    guestDr("rlineno") = CType(gvDr.FindControl("lblRLineNo"), Label).Text
+                    guestDr("roomno") = CType(gvDr.FindControl("lblRoomNo"), Label).Text
+                    guestListDt.Rows.Add(guestDr)
+                End If
+            Next
+            If guestListDt.Rows.Count > 0 Then
+                Dim xmlGuestList As String = ConvertDatatableToXML(guestListDt)
+                SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                sqlTrans = SqlConn.BeginTransaction
+                myCommand = New SqlCommand("sp_UpdateVisaStatus", SqlConn, sqlTrans)
+                myCommand.CommandType = CommandType.StoredProcedure
+                myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = Convert.ToString(guestListDt.Rows(0).Item("requestid"))
+                myCommand.Parameters.Add(New SqlParameter("@processType", SqlDbType.VarChar, 50)).Value = Convert.ToString(hdProcessSaveOption.Value.Trim)
+                myCommand.Parameters.Add(New SqlParameter("@xmlGuestList", SqlDbType.Xml)).Value = xmlGuestList
+                myCommand.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = hdPartyCode.Value
+                myCommand.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                myCommand.ExecuteNonQuery()
+                sqlTrans.Commit()
+                clsDBConnect.dbCommandClose(myCommand)
+                clsDBConnect.dbConnectionClose(SqlConn)
+                '  ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Updated Visa Status Successfully' );", True)
+                ModalExtraPopup.Hide()
+
+                Dim strStatus As Integer
+                If hdProcessSaveOption.Value.Trim = "Apply" Or hdProcessSaveOption.Value.Trim = "ApplyVisa" Then
+                    strStatus = 101
+                ElseIf hdProcessSaveOption.Value.Trim = "UnApplyVisa" Then
+                    strStatus = 100
+                ElseIf hdProcessSaveOption.Value.Trim = "RejectedAndReApply" Then
+                    strStatus = 104
+                ElseIf hdProcessSaveOption.Value.Trim = "ConfirmVisa" Then
+                    strStatus = 102
+                ElseIf hdProcessSaveOption.Value.Trim = "BackToApplyVisa" Then
+                    strStatus = 101
+                End If
+
+                If Not Session("sDsGuestsList") Is Nothing Then
+                    Dim dsGuest As DataSet = Session("sDsGuestsList")
+
+                    If guestListDt.Rows.Count > 0 Then
+                        For i As Integer = 0 To guestListDt.Rows.Count - 1
+                            Dim dr1 As DataRow = dsGuest.Tables(0).Select("requestid = '" + Convert.ToString(guestListDt.Rows(i).Item("requestid")) + "' AND guestLineNo='" + Convert.ToString(guestListDt.Rows(i).Item("guestlineno")) + "' AND rLineNo='" + Convert.ToString(guestListDt.Rows(i).Item("rlineno")) + "'  AND roomNo='" + Convert.ToString(guestListDt.Rows(i).Item("roomno")) + "' ").FirstOrDefault
+                            If Not dr1 Is Nothing Then
+                                If strStatus = 0 Then
+                                    dr1("VisaStatus") = DBNull.Value 'strStatus
+                                Else
+                                    dr1("VisaStatus") = strStatus
+                                End If
+
+                            End If
+                        Next
+                    End If
+
+                  
+                    Session("sDsGuestsList") = dsGuest
+
+                End If
+
+                GetGuestsPageWiseForFilter(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+            Else
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('There is no guest in the list');", True)
+                Exit Sub
+            End If
+        Catch ex As Exception
+            If Not SqlConn Is Nothing Then
+                If SqlConn.State = ConnectionState.Open Then
+                    sqlTrans.Rollback()
+                    clsDBConnect.dbCommandClose(myCommand)
+                    clsDBConnect.dbConnectionClose(SqlConn)
+                End If
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Public Function ConvertDatatableToXML(ByVal dt As DataTable) As String"
+    Public Function ConvertDatatableToXML(ByVal dt As DataTable) As String
+        Dim mstr As New MemoryStream()
+        dt.TableName = "guestList"
+        dt.WriteXml(mstr, True)
+        mstr.Seek(0, SeekOrigin.Begin)
+        Dim sr As New StreamReader(mstr)
+        Dim xmlstr As String
+        xmlstr = sr.ReadToEnd()
+        Return (xmlstr)
+    End Function
+#End Region
+
+#Region "Protected Sub chkEditName_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkEditName.CheckedChanged"
+    Protected Sub chkEditName_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkEditName.CheckedChanged
+        If chkEditName.Checked = True Then
+            ddlTitle.Enabled = True
+            ddlTitle.BackColor = Drawing.Color.White
+            txtFamilyName.Enabled = True
+            txtFirstName.Enabled = True
+            txtMiddleName.Enabled = True
+            If hdPartyCode.Value <> "VisaOnlyBooking" Then
+                ddlVisa.Enabled = True
+                ddlVisa.BackColor = Drawing.Color.White
+            End If
+        Else
+            ddlTitle.Enabled = False
+            ddlTitle.BackColor = Drawing.Color.FromArgb(245, 239, 232)
+            txtFamilyName.Enabled = False
+            txtFirstName.Enabled = False
+            txtMiddleName.Enabled = False
+            ddlVisa.Enabled = False
+            ddlVisa.BackColor = Drawing.Color.FromArgb(245, 239, 232)
+        End If
+        ModalPopupGuestInfo.Show()
+    End Sub
+#End Region
+
+#Region "Protected Sub btnSaveGuest_Click(sender As Object, e As System.EventArgs) Handles btnSaveGuest.Click"
+    Protected Sub btnSaveGuest_Click(sender As Object, e As System.EventArgs) Handles btnSaveGuest.Click
+        Try
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            sqlTrans = SqlConn.BeginTransaction
+            myCommand = New SqlCommand("sp_updateVisaGuestInfo", SqlConn, sqlTrans)
+            myCommand.CommandType = CommandType.StoredProcedure
+            myCommand.Parameters.Add(New SqlParameter("@requestId", SqlDbType.VarChar, 20)).Value = Convert.ToString(txtRequestId.Text.Trim)
+            myCommand.Parameters.Add(New SqlParameter("@guestLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdGInfoLineNo.Value.Trim)
+            myCommand.Parameters.Add(New SqlParameter("@rLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdGInfoRlineNo.Value)
+            myCommand.Parameters.Add(New SqlParameter("@roomNo", SqlDbType.Int)).Value = Convert.ToInt32(hdGInfoRoomNo.Value)
+            myCommand.Parameters.Add(New SqlParameter("@title", SqlDbType.VarChar, 50)).Value = Convert.ToString(ddlTitle.SelectedValue.Trim)
+            myCommand.Parameters.Add(New SqlParameter("@firstName", SqlDbType.VarChar, 200)).Value = Convert.ToString(txtFirstName.Text.Trim)
+            myCommand.Parameters.Add(New SqlParameter("@middleName", SqlDbType.VarChar, 200)).Value = Convert.ToString(txtMiddleName.Text.Trim)
+            myCommand.Parameters.Add(New SqlParameter("@lastName", SqlDbType.VarChar, 200)).Value = Convert.ToString(txtFamilyName.Text.Trim)
+            If IsDate(txtDOB.Text) Then
+                myCommand.Parameters.Add(New SqlParameter("@DOB", SqlDbType.DateTime)).Value = Convert.ToDateTime(txtDOB.Text.Trim)
+            Else
+                myCommand.Parameters.Add(New SqlParameter("@DOB", SqlDbType.DateTime)).Value = DBNull.Value
+            End If
+            myCommand.Parameters.Add(New SqlParameter("@passportNo", SqlDbType.VarChar, 200)).Value = Convert.ToString(txtPassportNo.Text.Trim)
+            myCommand.Parameters.Add(New SqlParameter("@AgentCode", SqlDbType.VarChar, 20)).Value = txtAgentCode.Text.Trim
+            myCommand.Parameters.Add(New SqlParameter("@nationalityCode", SqlDbType.VarChar, 50)).Value = txtNationCode.Text.Trim
+            myCommand.Parameters.Add(New SqlParameter("@category", SqlDbType.VarChar, 50)).Value = ddlCategory.SelectedValue
+            myCommand.Parameters.Add(New SqlParameter("@VisaOptions", SqlDbType.VarChar, 100)).Value = ddlVisa.SelectedValue
+            myCommand.Parameters.Add(New SqlParameter("@ExistVisaOptions", SqlDbType.VarChar, 100)).Value = hdVisa.Value
+            myCommand.Parameters.Add(New SqlParameter("@sponsorId", SqlDbType.VarChar, 20)).Value = ddlVisaSponsor.SelectedValue
+            myCommand.Parameters.Add(New SqlParameter("@reason", SqlDbType.VarChar)).Value = txtReason.Text.Trim
+            myCommand.Parameters.Add(New SqlParameter("@blackList", SqlDbType.Bit)).Value = Convert.ToBoolean(ddlBlackList.SelectedValue)
+            myCommand.Parameters.Add(New SqlParameter("@byWhome", SqlDbType.VarChar, 200)).Value = txtByWhome.Text.Trim
+            myCommand.Parameters.Add(New SqlParameter("@comments", SqlDbType.VarChar, 200)).Value = txtComments.Text.Trim
+            If ddlVisa.SelectedValue <> hdVisa.Value And ddlVisa.SelectedValue = "Required" Then
+                myCommand.Parameters.Add(New SqlParameter("@opListCode", SqlDbType.VarChar, 20)).Value = CType(gvVisaDetails.Rows(0).FindControl("lblOpListCode"), Label).Text.Trim
+                Dim sellPrice As String = CType(gvVisaDetails.Rows(0).FindControl("lblSelling"), Label).Text.Trim
+                If Not IsNumeric(sellPrice) Then sellPrice = "0"
+                Dim costPrice As String = CType(gvVisaDetails.Rows(0).FindControl("lblCost"), Label).Text.Trim
+                If Not IsNumeric(costPrice) Then costPrice = "0"
+                myCommand.Parameters.Add(New SqlParameter("@SellingPrice", SqlDbType.Decimal)).Value = Convert.ToDecimal(sellPrice)
+                myCommand.Parameters("@SellingPrice").Precision = 18
+                myCommand.Parameters("@SellingPrice").Scale = 3
+                myCommand.Parameters.Add(New SqlParameter("@ocpListCode", SqlDbType.VarChar, 20)).Value = CType(gvVisaDetails.Rows(0).FindControl("lblocpListCode"), Label).Text.Trim
+                myCommand.Parameters.Add(New SqlParameter("@CostPrice", SqlDbType.Decimal)).Value = Convert.ToDecimal(costPrice)
+                myCommand.Parameters("@CostPrice").Precision = 18
+                myCommand.Parameters("@CostPrice").Scale = 3
+            End If
+            myCommand.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = Convert.ToString(hdPartyCode.Value)
+            myCommand.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+            myCommand.ExecuteNonQuery()
+            sqlTrans.Commit()
+            clsDBConnect.dbCommandClose(myCommand)
+            clsDBConnect.dbConnectionClose(SqlConn)
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Guest Information Updated Successfully' );", True)
+
+            If Not Session("sDsGuestsList") Is Nothing Then
+                Dim dsGuest As DataSet = Session("sDsGuestsList")
+
+                Dim dr1 As DataRow = dsGuest.Tables(0).Select("requestid = '" + txtRequestId.Text.Trim + "' AND guestLineNo='" + hdGInfoLineNo.Value.Trim + "' AND rLineNo='" + hdGInfoRlineNo.Value + "'  AND roomNo='" + hdGInfoRoomNo.Value + "' ").FirstOrDefault
+                If Not dr1 Is Nothing Then
+                    dr1("Title") = Convert.ToString(ddlTitle.SelectedValue.Trim)
+                    dr1("FirstName") = Convert.ToString(txtFirstName.Text.Trim)
+                    dr1("FamilyName") = Convert.ToString(txtFamilyName.Text.Trim)
+                    dr1("passportNo") = txtPassportNo.Text.Trim
+                End If
+                Session("sDsGuestsList") = dsGuest
+
+            End If
+
+            GetGuestsPageWiseForFilter(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+        Catch ex As Exception
+            If SqlConn.State = ConnectionState.Open Then
+                sqlTrans.Rollback()
+                clsDBConnect.dbCommandClose(myCommand)
+                clsDBConnect.dbConnectionClose(SqlConn)
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            ModalPopupGuestInfo.Show()
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub gvVisaDetails_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvVisaDetails.RowDataBound"
+    Protected Sub gvVisaDetails_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvVisaDetails.RowDataBound
+        If e.Row.RowType = DataControlRowType.DataRow Then
+            Dim chkSelection As CheckBox = CType(e.Row.FindControl("chkSelect"), CheckBox)
+            chkSelection.Enabled = False
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnSearch_Click(sender As Object, e As System.EventArgs) Handles btnSearch.Click"
+    Protected Sub btnSearch_Click(sender As Object, e As System.EventArgs) Handles btnSearch.Click
+        GetGuestsPageWise(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+    End Sub
+#End Region
+
+#Region "Protected Sub btnResetSearch_Click(sender As Object, e As System.EventArgs) Handles btnResetSearch.Click"
+    Protected Sub btnResetSearch_Click(sender As Object, e As System.EventArgs) Handles btnResetSearch.Click
+        txtApplyFromDt.Text = ""
+        txtApplyToDt.Text = ""
+        txtSearchRequestId.Text = ""
+        txtFromDate.Text = Date.Now.ToString("dd/MM/yyyy")
+        txtToDate.Text = Date.Now.AddDays(14).ToString("dd/MM/yyyy")
+        ddlSortBy.SelectedIndex = 2
+        ddlAllOrPending.SelectedIndex = 0
+        ddlStatus.SelectedIndex = 0
+        chkVisaNotIssue.Checked = False
+        RowsPerPageCUS.SelectedIndex = 8
+
+
+        Dim dtt As DataTable
+        dtt = Session("DtVisaDynamic")
+        If dtt.Rows.Count > 0 Then
+            dtt.Clear()
+        End If
+        Session("DtVisaDynamic") = dtt
+        dlList.DataSource = dtt
+        dlList.DataBind()
+
+        gvVisaApplied.DataSource = Nothing
+        gvVisaApplied.DataBind()
+        '   GetGuestsPageWiseForFilter(0, CType(RowsPerPageCUS.SelectedValue, Integer))
+        Session("pageIndexNo") = 0
+
+        ' btnResetSelection_Click(sender, e)
+    End Sub
+#End Region
+
+#Region "Protected Sub ddlAllOrPending_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlAllOrPending.SelectedIndexChanged"
+    Protected Sub ddlAllOrPending_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlAllOrPending.SelectedIndexChanged
+        If ddlAllOrPending.SelectedIndex = 0 Then
+            ddlStatus.SelectedIndex = 0
+        Else
+            ddlStatus.SelectedIndex = 2
+        End If
+        GetGuestsPageWise(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+    End Sub
+#End Region
+
+#Region "Protected Sub ddlSortBy_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlSortBy.SelectedIndexChanged"
+    Protected Sub ddlSortBy_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlSortBy.SelectedIndexChanged
+        GetGuestsPageWise(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+    End Sub
+#End Region
+
+#Region "Protected Sub ddlStatus_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlStatus.SelectedIndexChanged"
+    Protected Sub ddlStatus_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlStatus.SelectedIndexChanged
+        GetGuestsPageWise(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+    End Sub
+#End Region
+
+#Region "Protected Sub chkVisaNotIssue_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkVisaNotIssue.CheckedChanged"
+    Protected Sub chkVisaNotIssue_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkVisaNotIssue.CheckedChanged
+        GetGuestsPageWise(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+    End Sub
+#End Region
+
+#Region "Protected Sub btnSelect_Click(sender As Object, e As System.EventArgs) Handles btnSelect.Click"
+    Protected Sub btnSelect_Click(sender As Object, e As System.EventArgs) Handles btnSelect.Click
+        Try
+            If ddlSponsor.SelectedIndex > 0 Then
+                If hdProcessType.Value = "AllGuestView" Then
+                    GetAllGuest("Sponsor")
+                ElseIf hdProcessType.Value = "ApplyAll" Then
+                    ApplyAllVisas("Sponsor")
+                Else
+                    FilterAllVisas("Sponsor")
+                End If
+                ModalExtraPopup.Show()
+            Else
+                btnVisaProcess_Click(sender, e)
+            End If
+        Catch ex As Exception
+            ModalExtraPopup.Show()
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub FilterAllVisas(ByVal FilterType As String)"
+    Protected Sub FilterAllVisas(ByVal FilterType As String)
+        Try
+            strSqlQry = ""
+            If hdProcessType.Value = "UnApplyAll" Then
+                strSqlQry = "select requestid,guestlineno,rlineNo, RoomNo,lastname as FamilyName, firstname,passportno, s.PartyName as SponsorName,applyDate,confirmDate, v.SponsorId from visa_guest v left outer join partymast s on v.sponsorid=s.partycode and s.sptypecode='VISA' " &
+                    "where applydate is not null and requestid=@requestid"
+                If FilterType = "Sponsor" Then
+                    strSqlQry = strSqlQry + " and v.SponsorId=@sponsorid"
+                End If
+                strSqlQry = strSqlQry + " order by guestlineno asc"
+
+            ElseIf hdProcessType.Value = "ConfirmAllVisas" Then
+                strSqlQry = "select requestid,guestlineno,rlineNo, RoomNo, lastname as FamilyName, firstname,passportno, s.PartyName as SponsorName,applyDate,confirmDate,v.SponsorId from visa_guest v left outer join partymast s on v.sponsorid=s.partycode and s.sptypecode='VISA' " &
+                "where applydate is not null and ConfirmDate is null and requestid=@requestid"
+                If FilterType = "Sponsor" Then
+                    strSqlQry = strSqlQry + " and v.SponsorId=@sponsorid"
+                End If
+                strSqlQry = strSqlQry + " order by guestlineno asc"
+
+            ElseIf hdProcessType.Value = "BackToApplyAll" Then
+                strSqlQry = "select requestid,guestlineno,rlineNo, RoomNo, lastname as FamilyName, firstname,passportno, S.PartyName as SponsorName,applyDate,ConfirmDate,v.SponsorId from visa_guest v left outer join partymast s on v.sponsorid=s.partycode and s.sptypecode='VISA' " &
+                "where applydate is not null and ConfirmDate is not null and requestid=@requestid"
+                If FilterType = "Sponsor" Then
+                    strSqlQry = strSqlQry + " and v.SponsorId=@sponsorid"
+                End If
+                strSqlQry = strSqlQry + " order by guestlineno asc"
+            End If
+            If strSqlQry <> "" Then
+                SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                myCommand = New SqlCommand(strSqlQry, SqlConn)
+                myCommand.CommandType = CommandType.Text
+                myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = hdRequestId.Value
+                If FilterType = "Sponsor" Then myCommand.Parameters.Add(New SqlParameter("@sponsorid", SqlDbType.VarChar, 20)).Value = ddlSponsor.SelectedValue
+                Using myDataAdapter As New SqlDataAdapter(myCommand)
+                    Using dt As New DataTable()
+                        myDataAdapter.Fill(dt)
+                        gvShowGuests.DataSource = dt
+                        gvShowGuests.DataBind()
+                    End Using
+                End Using
+                clsDBConnect.dbCommandClose(myCommand)
+                clsDBConnect.dbConnectionClose(SqlConn)
+                ModalExtraPopup.Show()
+            End If
+        Catch ex As Exception
+            If Not SqlConn Is Nothing Then
+                If SqlConn.State = ConnectionState.Open Then
+                    clsDBConnect.dbCommandClose(myCommand)
+                    clsDBConnect.dbConnectionClose(SqlConn)
+                End If
+            End If
+            Throw ex
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub GetAllGuest(ByVal FilterType As String)"
+    Protected Sub GetAllGuest(ByVal FilterType As String)
+        Try
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            myCommand = New SqlCommand("sp_GetAllVisaGuestList", SqlConn)
+            myCommand.CommandType = CommandType.StoredProcedure
+            myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = hdRequestId.Value
+            If FilterType = "Sponsor" Then
+                myCommand.Parameters.Add(New SqlParameter("@sponsorid", SqlDbType.VarChar, 20)).Value = ddlSponsor.SelectedValue
+            Else
+                myCommand.Parameters.Add(New SqlParameter("@sponsorid", SqlDbType.VarChar, 20)).Value = "SponsorAll"
+            End If
+            myCommand.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = hdPartyCode.Value
+
+            Using myDataAdapter As New SqlDataAdapter(myCommand)
+                Using dt As New DataTable()
+                    myDataAdapter.Fill(dt)
+                    gvShowGuests.DataSource = dt
+                    gvShowGuests.DataBind()
+                End Using
+            End Using
+            clsDBConnect.dbCommandClose(myCommand)
+            clsDBConnect.dbConnectionClose(SqlConn)
+            ModalExtraPopup.Show()
+        Catch ex As Exception
+            If Not SqlConn Is Nothing Then
+                If SqlConn.State = ConnectionState.Open Then
+                    clsDBConnect.dbCommandClose(myCommand)
+                    clsDBConnect.dbConnectionClose(SqlConn)
+                End If
+            End If
+            Throw ex
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub ApplyAllVisas(ByVal FilterType As String)"
+    Protected Sub ApplyAllVisas(ByVal FilterType As String)
+        Try
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            myCommand = New SqlCommand("sp_ApplyVisaAllGuest", SqlConn)
+            myCommand.CommandType = CommandType.StoredProcedure
+            myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = hdRequestId.Value
+            If FilterType = "Sponsor" Then
+                myCommand.Parameters.Add(New SqlParameter("@sponsorid", SqlDbType.VarChar, 20)).Value = ddlSponsor.SelectedValue
+            Else
+                myCommand.Parameters.Add(New SqlParameter("@sponsorid", SqlDbType.VarChar, 20)).Value = "SponsorAll"
+            End If
+            myCommand.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = hdPartyCode.Value
+
+            Using myDataAdapter As New SqlDataAdapter(myCommand)
+                Using dt As New DataTable()
+                    myDataAdapter.Fill(dt)
+                    gvShowGuests.DataSource = dt
+                    gvShowGuests.DataBind()
+                End Using
+            End Using
+            clsDBConnect.dbCommandClose(myCommand)
+            clsDBConnect.dbConnectionClose(SqlConn)
+            ModalExtraPopup.Show()
+        Catch ex As Exception
+            If Not SqlConn Is Nothing Then
+                If SqlConn.State = ConnectionState.Open Then
+                    clsDBConnect.dbCommandClose(myCommand)
+                    clsDBConnect.dbConnectionClose(SqlConn)
+                End If
+            End If
+            Throw ex
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub ddlBlackList_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlBlackList.SelectedIndexChanged"
+    Protected Sub ddlBlackList_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlBlackList.SelectedIndexChanged
+        If ddlBlackList.SelectedIndex = 0 Then
+            txtByWhome.Enabled = False
+            txtComments.Enabled = False
+            txtByWhome.Text = ""
+            txtComments.Text = ""
+        Else
+            txtByWhome.Enabled = True
+            txtComments.Enabled = True
+        End If
+        ModalPopupGuestInfo.Show()
+    End Sub
+#End Region
+
+#Region "Protected Sub ddlVisa_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlVisa.SelectedIndexChanged"
+    Protected Sub ddlVisa_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlVisa.SelectedIndexChanged
+        Try
+            If ddlVisa.SelectedValue <> "Required" Then
+                Dim visaDetailDt As New DataTable()
+                visaDetailDt.Columns.Add(New DataColumn("chkSelect", GetType(Boolean)))
+                visaDetailDt.Columns.Add(New DataColumn("VisaType", GetType(String)))
+                visaDetailDt.Columns.Add(New DataColumn("VisaCategory", GetType(String)))
+                visaDetailDt.Columns.Add(New DataColumn("NoOfVisa", GetType(Integer)))
+                visaDetailDt.Columns.Add(New DataColumn("Selling", GetType(Decimal)))
+                visaDetailDt.Columns.Add(New DataColumn("Cost", GetType(Decimal)))
+                visaDetailDt.Columns.Add(New DataColumn("FromDate", GetType(String)))
+                visaDetailDt.Columns.Add(New DataColumn("ToDate", GetType(String)))
+                gvVisaDetails.DataSource = visaDetailDt
+                gvVisaDetails.DataBind()
+                txtTotalSell.Text = "0.00"
+                txtTotalCost.Text = "0.00"
+            Else
+                SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+                myCommand = New SqlCommand("sp_get_VisaDetails", SqlConn)
+                myCommand.CommandType = CommandType.StoredProcedure
+                myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = hdRequestId.Value
+                myCommand.Parameters.Add(New SqlParameter("@guestLineNo", SqlDbType.Int)).Value = Convert.ToInt32(hdGuestLineNo.Value)
+                myCommand.Parameters.Add(New SqlParameter("@visaOptions", SqlDbType.VarChar, 100)).Value = ddlVisa.SelectedValue
+                myCommand.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = Convert.ToString(hdPartyCode.Value)
+                If IsDate(hdCheckInDt.Value) = True Then
+                    myCommand.Parameters.Add(New SqlParameter("@CheckInDt", SqlDbType.VarChar, 10)).Value = Convert.ToDateTime(hdCheckInDt.Value).ToString("yyyy/MM/dd")
+                End If
+                Using myDataAdapter As New SqlDataAdapter(myCommand)
+                    Using dt As New DataTable()
+                        myDataAdapter.Fill(dt)
+                        Dim chk As New DataColumn("chkSelect", GetType(Boolean))
+                        chk.DefaultValue = True
+                        dt.Columns.Add(chk)
+                        gvVisaDetails.DataSource = dt
+                        gvVisaDetails.DataBind()
+                        If Not dt Is Nothing AndAlso dt.Rows.Count > 0 Then
+                            txtTotalSell.Text = Convert.ToString(dt.Compute("sum(Selling)", ""))
+                            txtTotalCost.Text = Convert.ToString(dt.Compute("sum(Cost)", ""))
+                        Else
+                            txtTotalSell.Text = "0.00"
+                            txtTotalCost.Text = "0.00"
+                        End If
+                    End Using
+                End Using
+                clsDBConnect.dbCommandClose(myCommand)
+                clsDBConnect.dbConnectionClose(SqlConn)
+            End If
+            ModalPopupGuestInfo.Show()
+        Catch ex As Exception
+
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub IBtnCancelEdit_Click(sender As Object, e As System.EventArgs)"
+    Protected Sub IBtnCancelEdit_Click(sender As Object, e As System.EventArgs)
+        gvVisaApplied.EditIndex = -1
+        GetGuestsPageWiseForFilter(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+    End Sub
+#End Region
+
+#Region "Protected Sub gvVisaApplied_RowEditing(sender As Object, e As System.Web.UI.WebControls.GridViewEditEventArgs) Handles gvVisaApplied.RowEditing"
+    Protected Sub gvVisaApplied_RowEditing(sender As Object, e As System.Web.UI.WebControls.GridViewEditEventArgs) Handles gvVisaApplied.RowEditing
+        gvVisaApplied.EditIndex = e.NewEditIndex
+        Dim gvrowOld As GridViewRow = gvVisaApplied.Rows(e.NewEditIndex)
+        Dim lblRequestid As Label = CType(gvrowOld.FindControl("lblRequestNo"), Label)
+        Dim lblGuestLineNo As Label = CType(gvrowOld.FindControl("lblGuestLineNo"), Label)
+        Dim lblRLineNo As Label = CType(gvrowOld.FindControl("lblRLineNo"), Label)
+        Dim lblRoomNo As Label = CType(gvrowOld.FindControl("lblRoomNo"), Label)
+        GetGuestsPageWiseForFilter(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+        Dim gvrow As GridViewRow = gvVisaApplied.Rows(e.NewEditIndex)
+        Dim Requestid As String = CType(gvrow.FindControl("lblRequestNo"), Label).Text.Trim
+        Dim GuestLineNo As String = CType(gvrow.FindControl("lblGuestLineNo"), Label).Text.Trim
+        Dim RLineNo As String = CType(gvrow.FindControl("lblRLineNo"), Label).Text.Trim
+        Dim RoomNo As String = CType(gvrow.FindControl("lblRoomNo"), Label).Text.Trim
+        If lblRequestid.Text.Trim = Requestid And lblGuestLineNo.Text.Trim = GuestLineNo And lblRLineNo.Text.Trim = RLineNo And lblRoomNo.Text.Trim = RoomNo Then
+            Dim txtPassportNo As TextBox = CType(gvrow.FindControl("txtPassportNo"), TextBox)
+            txtPassportNo.Focus()
+        Else
+            gvVisaApplied.EditIndex = -1
+            GetGuestsPageWiseForFilter(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Refresh guest list');", True)
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub gvVisaApplied_RowUpdating(sender As Object, e As System.Web.UI.WebControls.GridViewUpdateEventArgs) Handles gvVisaApplied.RowUpdating"
+    Protected Sub gvVisaApplied_RowUpdating(sender As Object, e As System.Web.UI.WebControls.GridViewUpdateEventArgs) Handles gvVisaApplied.RowUpdating
+        Try
+            Dim gvrow As GridViewRow = gvVisaApplied.Rows(e.RowIndex)
+            Dim txtPassportNo As TextBox = CType(gvrow.FindControl("txtPassportNo"), TextBox)
+            If txtPassportNo.Text = "" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Passport number can not be empty' );", True)
+                Exit Sub
+            End If
+            Dim lblRequestid As Label = CType(gvrow.FindControl("lblRequestNo"), Label)
+            Dim lblGuestLineNo As Label = CType(gvrow.FindControl("lblGuestLineNo"), Label)
+            Dim lblRLineNo As Label = CType(gvrow.FindControl("lblRLineNo"), Label)
+            Dim lblRoomNo As Label = CType(gvrow.FindControl("lblRoomNo"), Label)
+            Dim lblPartyCode As Label = CType(gvrow.FindControl("lblPartyCode"), Label)
+
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            sqlTrans = SqlConn.BeginTransaction
+            myCommand = New SqlCommand("sp_Visa_PassportUpdate", SqlConn, sqlTrans)
+            myCommand.CommandType = CommandType.StoredProcedure
+            myCommand.Parameters.Add(New SqlParameter("@requestid", SqlDbType.VarChar, 20)).Value = Convert.ToString(lblRequestid.Text.Trim)
+            myCommand.Parameters.Add(New SqlParameter("@guestLineNo", SqlDbType.Int)).Value = Convert.ToInt32(lblGuestLineNo.Text)
+            myCommand.Parameters.Add(New SqlParameter("@rLineNo", SqlDbType.Int)).Value = Convert.ToInt32(lblRLineNo.Text)
+            myCommand.Parameters.Add(New SqlParameter("@roomNo", SqlDbType.Int)).Value = Convert.ToInt32(lblRoomNo.Text)
+            myCommand.Parameters.Add(New SqlParameter("@passportNo", SqlDbType.VarChar, 200)).Value = Convert.ToString(txtPassportNo.Text.Trim)
+            myCommand.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = Convert.ToString(lblPartyCode.Text.Trim)
+            myCommand.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+            myCommand.ExecuteNonQuery()
+            sqlTrans.Commit()
+            gvVisaApplied.EditIndex = -1
+
+            If Not Session("sDsGuestsList") Is Nothing Then
+                Dim dsGuest As DataSet = Session("sDsGuestsList")
+
+                Dim dr1 As DataRow = dsGuest.Tables(0).Select("requestid = '" + lblRequestid.Text.Trim + "' AND guestLineNo='" + lblGuestLineNo.Text + "' AND rLineNo='" + lblRLineNo.Text + "'  AND roomNo='" + lblRoomNo.Text + "' ").FirstOrDefault
+                If Not dr1 Is Nothing Then
+                    dr1("passportNo") = txtPassportNo.Text.Trim
+                End If
+
+                Session("sDsGuestsList") = dsGuest
+
+            End If
+
+            GetGuestsPageWiseForFilter(Convert.ToInt32(Session("pageIndexNo")), CType(RowsPerPageCUS.SelectedValue, Integer))
+            '   ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Passport number updated successfully' );", True)
+        Catch ex As Exception
+            If Not SqlConn Is Nothing Then
+                If SqlConn.State = ConnectionState.Open Then
+                    If Not sqlTrans Is Nothing Then
+                        sqlTrans.Rollback()
+                        sqlTrans.Dispose()
+                    End If
+                    clsDBConnect.dbCommandClose(myCommand)
+                    clsDBConnect.dbConnectionClose(SqlConn)
+                End If
+            End If
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + Regex.Replace(ex.Message, "[^a-zA-Z0-9_@.-]", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaApplied.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+
+End Class

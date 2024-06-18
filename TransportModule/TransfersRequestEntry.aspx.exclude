@@ -1,0 +1,1088 @@
+﻿
+<%@ Page Title="" Language="VB" MasterPageFile="~/SubPageMaster.master" AutoEventWireup="false" CodeFile="TransfersRequestEntry.aspx.vb" Inherits="TransportModule_TransfersRequestEntry"  %>
+
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="cc1" %>
+
+<%@ Register Assembly="System.Web.Extensions, Version=1.0.61025.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+    Namespace="System.Web.UI" TagPrefix="asp" %>
+    <%@ OutputCache location="none" %> 
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" Runat="Server">
+
+    <style type="text/css" >
+            
+            .TextBoxRightAlign
+            {
+                text-align:right;
+            }
+
+
+              .ModalPopupBG
+            {
+                background-color: gray;
+                filter: alpha(opacity=50);
+                opacity: 0.9;
+            }
+            
+            .TextBoxRightAlign
+            {
+                text-align:right;
+            }
+            
+</style>
+
+<link type ="text/css" href ="../Content/css/JqueryUI.css" rel ="Stylesheet" />
+<script src="../Content/js/jquery-1.5.1.min.js" type="text/javascript"></script>
+<script src="../Content/js/JqueryUI.js" type="text/javascript"></script>
+<script src="../Content/js/accounts.js" type="text/javascript"></script>
+ <script language="javascript" src="../TADDScript.js" type="text/javascript"></script>
+
+<script type="text/javascript" >
+
+
+    $(document).ready(function () {
+
+        MyAutoCustomer_rptFillArray();
+
+
+    });
+ 
+
+
+</script>
+
+
+<script language="javascript" type="text/javascript" >
+
+
+    function TimeOutHandler(result) {
+
+        alert("Timeout :" + result);
+    }
+
+    function ErrorHandler(result) {
+        var msg = result.get_exceptionType() + "\r\n";
+        msg += result.get_message() + "\r\n";
+        msg += result.get_stackTrace();
+        alert(msg);
+    }
+
+    function OnlyNumber(evt) {
+
+        evt = (evt) ? evt : event;
+        var charCode = (evt.charCode) ? evt.charCode : ((evt.keyCode) ? evt.keyCode :
+    ((evt.which) ? evt.which : 0));
+
+        if (charCode != 47 && (charCode > 45 && charCode < 58)) {
+            return true;
+        }
+        if (charCode == 8) {
+            return true;
+        }
+
+        return false;
+
+    }
+
+    function FillExcursionDetails(lblExcusionNo, lblExcLineNo, lblticketno, lblpaymode, lbladult, lblchild, lblagentcd, lblagent, lblsellcode, lblcurcode, lblsperson) {
+
+        var btncopy = document.getElementById("<%=btncopy.ClientID%>");
+        btncopy.disabled = true;
+        var txtExcid = document.getElementById("<%=txtexcid.ClientID%>");
+        var txtExcno = document.getElementById("<%=txtexculno.ClientID%>");
+        var txtClientRef = document.getElementById("<%=txtClientRef.ClientID%>");
+        txtExcid.value = lblExcusionNo;
+        txtExcno.value = lblExcLineNo
+        txtClientRef.value = lblticketno;
+        var code = document.getElementById("<%=ddlPaymentCode.ClientID%>");
+        var select = document.getElementById("<%=ddlPaymentName.ClientID%>");
+
+        select.value = lblpaymode;
+        code.value = select.options[select.selectedIndex].text;
+
+        var txtagent = document.getElementById("<%=txtagntnametodsp.ClientID%>");
+        txtagent.value = lblagent;
+        var select = document.getElementById("<%=ddlSellingCode.ClientID%>");
+        select.options[select.selectedIndex].value = lblsellcode;
+        var code = document.getElementById("<%=ddlSellingName.ClientID%>");
+        code.options[code.selectedIndex].value = lblsellcode;
+        var code = document.getElementById("<%=ddlCurrency.ClientID%>");
+        code.options[code.selectedIndex].text = lblcurcode;
+        var ddlSPersoncode = document.getElementById("<%=ddlSPersoncode.ClientID%>");
+        ddlSPersoncode.options[ddlSPersoncode.selectedIndex].text = lblsperson;
+        var ddlSpersonName = document.getElementById("<%=ddlSpersonName.ClientID%>");
+        ddlSpersonName.options[ddlSpersonName.selectedIndex].value = lblsperson;
+
+        var select = document.getElementById("<%=ddlCustomerName.ClientID%>");
+        select.options[select.selectedIndex].value = lblagentcd;
+        select.options[select.selectedIndex].text = lblagent;
+        var codeid = lblagentcd;
+
+
+        var connstr = document.getElementById("<%=txtconnection.ClientID%>");
+        constr = connstr.value;
+
+        if (codeid != '') {
+            ColServices.clsServices.GetTrfSelType(constr, codeid, FillSellingCodes, ErrorHandler, TimeOutHandler);
+            //validate();
+            ColServices.clsServices.GetSellingCurrName(constr, codeid, FillCustCurrCodes, ErrorHandler, TimeOutHandler);
+            ColServices.clsServices.GetExchRate4Reservation(constr, codeid, setExchRate, ErrorHandler, TimeOutHandler);
+            //05082014
+            ColServices.clsServices.getspersonname(constr, codeid, setspersonname, ErrorHandler, TimeOutHandler);
+        }
+
+    }
+
+    function FormValidation(state) {
+
+        var ddlPayment = document.getElementById("<%=ddlPaymentCode.ClientID%>");
+        var ddlLanguage = document.getElementById("<%=ddlLanguageCode.ClientID%>");
+        var ddlSellingCode = document.getElementById("<%=ddlSellingCode.ClientID%>");
+        var ddlCustomerName = document.getElementById("<%=ddlCustomerName.ClientID%>");
+        var ddlSPersoncode = document.getElementById("<%=ddlSPersoncode.ClientID%>");
+        var connstr = document.getElementById("<%=txtconnection.ClientID%>");
+
+        if (ddlCustomerName.value == "[Select]" || ddlCustomerName.value == "") {
+            ddlCustomerName.focus();
+            alert("Please select Customer name");
+            return false;
+        }
+
+        if (ddlSellingCode.value == "[Select]" || ddlSellingCode.value == "") {
+            ddlSellingCode.focus();
+            alert("Please select selling code");
+            return false;
+        }
+
+        if (ddlPayment.value == "[Select]" || ddlPayment.value == "") {
+            ddlPayment.focus();
+            alert("Please select Payment Mode");
+            return false;
+        }
+
+        if (ddlLanguage.value == "[Select]" || ddlLanguage.value == "") {
+            ddlLanguage.focus();
+            alert("Please select Language");
+            return false;
+        }
+
+        if (ddlSPersoncode.value == "[Select]" || ddlSPersoncode.value == "") {
+            //ddlSPersoncode.focus();
+            alert("Please select Sales Person");
+            return false;
+        }
+
+    }
+
+
+    function fnCustomerName(agentcode) {
+        var select = document.getElementById("<%=ddlCustomerName.ClientID%>");
+        var codeid = select.options[select.selectedIndex].text;
+        select.options[select.selectedIndex].text = agentcode;
+
+    }
+
+
+
+
+    function CallWebMethod(methodType) {
+
+        switch (methodType) {
+
+            case "agentname":
+                var btncopy = document.getElementById("<%=btncopy.ClientID%>");
+                btncopy.disabled = false;
+                var txtExcid = document.getElementById("<%=txtexcid.ClientID%>");
+                var txtExcno = document.getElementById("<%=txtexculno.ClientID%>");
+                txtExcid.value = "";
+                txtExcno.value="";
+                var select = document.getElementById("<%=ddlCustomerName.ClientID%>");
+                var codeid = select.options[select.selectedIndex].value;
+                var connstr = document.getElementById("<%=txtconnection.ClientID%>");
+                //document.getElementById("<%=hdnCustomer.ClientID%>").value = null;
+                document.getElementById("<%=hdnCustomer.ClientID%>").value = codeid;
+                var txtAgent = document.getElementById("<%=txtAgent.ClientID%>");
+                var txtagentautonmdisp = document.getElementById("<%=txtagntnametodsp.ClientID%>");
+                txtAgent.value = codeid;
+                txtagentautonmdisp.value = select.options[select.selectedIndex].text
+                constr = connstr.value;
+                if (codeid != '[Select]') {
+                    ColServices.clsServices.GetTrfSelType(constr, codeid, FillSellingCodes, ErrorHandler, TimeOutHandler);
+                    //validate();
+                    ColServices.clsServices.GetSellingCurrName(constr, codeid, FillCustCurrCodes, ErrorHandler, TimeOutHandler);
+                    ColServices.clsServices.GetExchRate4Reservation(constr, codeid, setExchRate, ErrorHandler, TimeOutHandler);
+                    //05082014
+                    ColServices.clsServices.getspersonname(constr, codeid, setspersonname, ErrorHandler, TimeOutHandler);
+                }
+
+                break;
+
+            case "trfsellcode":
+                var select = document.getElementById("<%=ddlSellingCode.ClientID%>");
+                var codeid = select.options[select.selectedIndex].text;
+                var selectname = document.getElementById("<%=ddlSellingName.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                //validate();
+
+                break;
+
+            case "trfsellname":
+                var select = document.getElementById("<%=ddlSellingName.ClientID%>");
+                var codeid = select.options[select.selectedIndex].value;
+                var selectname = document.getElementById("<%=ddlSellingCode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+                //validate();
+                break;
+
+
+            case "usercode":
+                var select = document.getElementById("<%=ddlSPersoncode.ClientID%>");
+                var codeid = select.options[select.selectedIndex].text;
+                document.getElementById("<%=hdnsperson.ClientID%>").value = null;
+                document.getElementById("<%=hdnsperson.ClientID%>").value = codeid;
+                var selectname = document.getElementById("<%=ddlSpersonName.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+
+                break;
+
+            case "username":
+                var select = document.getElementById("<%=ddlSpersonName.ClientID%>");
+                var codeid = select.options[select.selectedIndex].value;
+                document.getElementById("<%=hdnsperson.ClientID%>").value = null;
+                document.getElementById("<%=hdnsperson.ClientID%>").value = codeid;
+                var selectname = document.getElementById("<%=ddlSPersoncode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+
+                break;
+
+            case "paycode":
+                var select = document.getElementById("<%=ddlPaymentCode.ClientID%>");
+                var codeid = select.options[select.selectedIndex].text;
+                document.getElementById("<%=hdnpayment.ClientID%>").value = null;
+                document.getElementById("<%=hdnpayment.ClientID%>").value = codeid;
+                var selectname = document.getElementById("<%=ddlPaymentName.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+
+                break;
+            case "payname":
+                var select = document.getElementById("<%=ddlPaymentName.ClientID%>");
+                var codeid = select.options[select.selectedIndex].value;
+                document.getElementById("<%=hdnpayment.ClientID%>").value = null;
+                document.getElementById("<%=hdnpayment.ClientID%>").value = codeid;
+                var selectname = document.getElementById("<%=ddlPaymentCode.ClientID%>");
+                selectname.value = select.options[select.selectedIndex].text;
+
+                break;
+
+
+            case "nationlanguage":
+                var select = document.getElementById("<%=ddlLanguageCode.ClientID%>");
+                var codeid = select.options[select.selectedIndex].value;
+                document.getElementById("<%=hdnlanguage.ClientID%>").value = null;
+                document.getElementById("<%=hdnlanguage.ClientID%>").value = codeid;
+
+                break;
+
+        }
+
+    }
+
+
+    function setExchRate(result) {
+        var txt = document.getElementById("<%=txtConversionRate.ClientID%>");
+        txt.value = DecRound(result);
+
+    }
+
+    function setspersonname(result) {
+        var spersoncode = document.getElementById("<%=ddlspersoncode.ClientID%>");
+        var spersonname = document.getElementById("<%=ddlspersonname.ClientID%>");
+        //11082014
+        var hdnspersoncode = document.getElementById("<%=hdnsperson.ClientID%>");
+
+        spersonname.value = result;
+        spersoncode.value = spersonname.options[spersonname.selectedIndex].text;
+        //11082014
+        hdnspersoncode.value = spersonname.options[spersonname.selectedIndex].value;
+    }
+
+
+    function DecRound(amtToRound) {
+
+        var txtdec = document.getElementById("<%=hdnvalue.ClientID%>");
+
+        nodecround = Math.pow(10, parseInt(txtdec.value));
+        var rdamt = Math.round(parseFloat(Number(amtToRound)) * nodecround) / nodecround;
+
+        return parseFloat(rdamt);
+    }
+
+    function FillCustCurrCodes(result) {
+
+        if (result.length > 0) {
+            var dd1name = document.getElementById("<%=ddlCurrency.ClientID%>");
+
+            RemoveAll(dd1name)
+
+            for (var i = 0; i < result.length; i++) {
+                var option = new Option(result[i].ListText, result[i].ListValue);
+                dd1name.options.add(option);
+                //      dd1value.value = result[i].ListText;
+            }
+
+
+
+        }
+
+
+    }
+
+
+    function FillSellingCodes(result) {
+
+        if (result.length > 1) {
+            var dd1name = document.getElementById("<%=ddlSellingName.ClientID%>");
+            var dd1code = document.getElementById("<%=ddlSellingCode.ClientID%>");
+            RemoveAll(dd1name)
+            RemoveAll(dd1code)
+            for (var i = 0; i < result.length; i++) {
+                var option = new Option(result[i].ListText, result[i].ListValue);
+                dd1name.options.add(option);
+                //      dd1value.value = result[i].ListText;
+            }
+
+            for (var i = 0; i < result.length; i++) {
+                var option = new Option(result[i].ListValue, result[i].ListText);
+                dd1code.options.add(option);
+                //      dd1value.value = result[i].ListText;
+            }
+
+        }
+
+    }
+
+
+</script>
+
+
+
+<table style="border-right: gray 2px solid; border-top: gray 2px solid; border-left: gray 2px solid;width:960px; border-bottom: gray 2px solid" class="td_cell">
+ <TR style="COLOR: #000000">
+   <TD style="TEXT-ALIGN: center;width:108px" class="td_cell"><asp:Label id="lblHeading" runat="server" Text="Transfers Request" CssClass="field_heading" Width="1000px"></asp:Label></TD>
+ </TR>
+ <tr>
+   <td >
+     <asp:UpdatePanel id="UpdatePanel2" runat="server">
+     <contenttemplate>
+      <script type="text/javascript">
+          var prm = Sys.WebForms.PageRequestManager.getInstance();
+          prm.add_beginRequest(function () {
+
+          });
+
+          prm.add_endRequest(function () {
+
+          });
+
+
+
+
+                </script>
+    
+
+     <table style="border-right: gray 2px solid; border-top: gray 2px solid; border-left:gray 2px solid;width:990px; border-bottom:gray 2px solid" 
+             class="td_cell">
+            <TR style="COLOR: #000000">
+               <TD style="WIDTH:110px; height: 37px;" >Transfer ID</TD>
+               <TD style="width:312px">
+                   <asp:TextBox ID="txtTransferId" runat="server" CssClass="field_input" 
+                       Enabled="True" ReadOnly="true" TabIndex="0" Width="150px"></asp:TextBox>
+               </TD>
+               <td style="width:124px">Date</td>
+                <td style="width:168px">
+                    <asp:TextBox ID="dpDate" runat="server" AutoPostBack="True" 
+                        CssClass="fiel_input" TabIndex="1" Width="100px"></asp:TextBox>
+                    <cc1:CalendarExtender ID="CEPFromDate" runat="server" Format="dd/MM/yyyy" 
+                        PopupButtonID="ImgPBtnFrmDt" TargetControlID="dpDate">
+                    </cc1:CalendarExtender>
+                    <cc1:MaskedEditExtender ID="MEPFromDate" runat="server" Mask="99/99/9999" 
+                        MaskType="Date" TargetControlID="dpDate">
+                    </cc1:MaskedEditExtender>
+                    <asp:ImageButton ID="ImgPBtnFrmDt" runat="server" 
+                        ImageUrl="~/Images/Calendar_scheduleHS.png" TabIndex="2" />
+                    <cc1:MaskedEditValidator ID="MEVPFromDate" runat="server" 
+                        ControlExtender="MEPFromDate" ControlToValidate="dpDate" CssClass="field_error" 
+                        Display="Dynamic" EmptyValueBlurredText="Date is required" 
+                        EmptyValueMessage="Date is required" ErrorMessage="MEPFromDate" 
+                        InvalidValueBlurredMessage="Invalid Date" InvalidValueMessage="Invalid Date" 
+                        TabIndex="-1" TooltipMessage="Date in dd/mm/yyyy format">
+                    </cc1:MaskedEditValidator>
+                </td>
+               <td style="FONT-SIZE: 8pt;width:107px" class="td_cell" align ="left">User Code</td>
+               <td style="width: 258px" class="td_cell">
+                   <input id="txtUserCode" runat="server" class="field_input" style="width:150px" 
+                       tabindex="3" type="text" visible="true" />
+               </TD>
+
+					  
+             </TR>
+
+             <tr style="COLOR: #000000">
+                 <td style="WIDTH:110px; height: 37px;">
+                     Customer</td>
+                 <td colspan="1" style="border-color: green;" style="border-color:green">
+                     <input type="text" id="txtAgent"
+                       name="accSearch"  
+                      class="field_input MyAutoCompleteClass" tabindex="4"  
+                       style="width: 250px;display:none"   runat="server"/>
+
+                        <input type="text" id="txtagntnametodsp"
+                       name="accSearch"  
+                      class="field_input MyAutoCompleteClass" tabindex="4"  
+                       style="width:250px"   runat="server"/>
+                     
+                     <select id="ddlCustomerName" runat="server" 
+                        class="field_input  MyDropDownListCustValue" 
+                         onchange="CallWebMethod('agentname')" style="WIDTH:250px" tabindex="5">
+                         <option selected=""></option>
+                     </select>
+                 </td>
+                  <td style="FONT-SIZE: 8pt;width:116px" class="td_cell" align ="left">Client Ref</td>
+                    <td style="width: auto" class="td_cell">
+                    <asp:TextBox id="txtClientRef"  runat="server" CssClass="field_input" Width="200px" 
+                            TabIndex="28"></asp:TextBox>
+
+                    </td>
+                 <td align="left" class="td_cell" style="FONT-SIZE: 8pt">
+                     Selling Type</td>
+                 <td class="td_cell"  >
+                     <select id="ddlSellingCode" runat="server" class="field_input" 
+                         onchange="CallWebMethod('trfsellcode')" style="WIDTH:75px" tabindex="6">
+                         <option selected=""></option>
+                     </select>
+                     <select id="ddlSellingName" runat="server" class="field_input" 
+                         onchange="CallWebMethod('trfsellname')" style="WIDTH:125px" tabindex="7">
+                         <option selected=""></option>
+                     </select>
+                 </td>
+               
+                 </tr>
+
+
+
+                 <tr style="COLOR: #000000">
+                 <td style="WIDTH:110px; height: 24px;">
+                     Currency</td>
+                 <td style="width:312px; height: 24px;">
+                     <select ID="ddlCurrency" runat="server" class="field_input" name="D2" 
+                         style="WIDTH:200px" tabindex="8">
+                         <option selected=""></option>
+                     </select></td>
+                 <td style="width:124px; height: 24px;">
+                     Conv Rate
+                 </td>
+                 <td style="width:168px; height: 24px;">
+                     <asp:TextBox ID="txtConversionRate" runat="server" CssClass="field_input" 
+                         Enabled="True"  TabIndex="9" Width="130px"></asp:TextBox>
+                 </td>
+                 <td align="left" class="td_cell" 
+                     style="FONT-SIZE: 8pt;width:107px; height: 24px;">
+                     Sperson</td>
+                 <td class="td_cell" style="height: 24px; width: 258px;"colspan=3>
+                     <select id="ddlSPersoncode" runat="server" class="field_input" name="D3" 
+                         onchange="CallWebMethod('usercode')" style="WIDTH:75px" tabindex="10">
+                         <option selected=""></option>
+                     </select>
+                     <select id="ddlSpersonName" runat="server" class="field_input" name="D1" 
+                         onchange="CallWebMethod('username')" style="WIDTH:125px" tabindex="11">
+                         <option selected=""></option>
+                     </select>
+                 </td>
+             </tr>
+
+             <tr style="COLOR: #000000">
+                 <td style="WIDTH:110px; height: 24px;">
+                     Payment</td>
+                 <td colspan="1" style="width:312px; height: 24px;">
+                     <select id="ddlPaymentCode" runat="server" class="field_input" name="D4" 
+                         onchange="CallWebMethod('paycode')" style="WIDTH:75px" tabindex="12">
+                       
+                     </select>
+                     <select id="ddlPaymentName" runat="server" class="field_input" name="D5" 
+                         onchange="CallWebMethod('payname')" style="WIDTH:175px" tabindex="13">
+                        
+                     </select>
+                 </td>
+                 <td></td>
+                <td></td>
+                 <td align="left" class="td_cell" 
+                     style="FONT-SIZE: 8pt;width:107px; height: 24px;">
+                     Language</td>
+                 <td class="td_cell" style="height: 24px">
+                     <select id="ddlLanguageCode" runat="server" class="field_input" name="D6"  onchange="CallWebMethod('nationlanguage')"
+                         style="WIDTH:150px" tabindex="14">
+                         <option selected=""></option>
+                     </select>
+                 </td>
+             </tr>
+
+              <tr style="COLOR: #000000">
+                 <td style="WIDTH:110px; height: 24px;">
+                  <asp:TextBox id="txtpickupbox" runat="server" CssClass="field_input" Width="107px" 
+                         Enabled="True" TabIndex="15" Visible="False"></asp:TextBox></TD>
+                      <TD style="width:312px">
+                   <asp:Button ID="btnSelect" runat="server" CssClass="btn" Font-Bold="False" 
+                              Text="Pick up from excursion" Width="200px" TabIndex="16" 
+                              Visible="true" />
+               </TD>
+
+                 <td colspan="7">
+                      <asp:label id="lblText" runat="server"  CssClass="field_input" Width="420px" 
+                          text="Enter the Full/Partial excursion ID in the box or select from the help button" 
+                          ForeColor="#0033CC" Font-Bold="True" Visible="False"></asp:label>
+                 </td>
+             </tr>
+             <tr>
+              <td style="width:124px; height: 24px;">
+                     Excursion Id
+                 </td>
+                 <td style="width:168px; height: 24px;">
+                     <asp:TextBox ID="txtexcid" runat="server" CssClass="field_input" 
+                         Enabled="False"  TabIndex="9" Width="130px"></asp:TextBox>
+                 </td>
+                  <td style="width:124px; height: 24px;">
+                     Excursion LineNo
+                 </td>
+                 <td style="width:168px; height: 24px;">
+                     <asp:TextBox ID="txtexculno" runat="server" CssClass="field_input" 
+                         Enabled="False"  TabIndex="9" Width="130px"></asp:TextBox>
+                 </td>
+             </tr>
+                 </table>
+
+            
+
+ 
+   <table>
+ 
+ <tr>
+   <td class="td_cell" style="width:119px;" align="center">
+ <asp:Button ID="btnHelp" runat="server" CssClass="btn" Font-Bold="False" 
+        Text="Help" Width="75px" TabIndex="58" />    
+ </td>
+ <td class="td_cell" style="width:94px;" align="center">
+ <asp:Button ID="btnPrint" runat="server" CssClass="btn" Font-Bold="False" 
+        Text="Print" Width="100px" TabIndex="60" Visible="False"/>
+
+
+
+<div id="ShowExcursionHelp" runat="server" style="display:none;overflow:scroll;height:350px;width:900px;border:3px solid green; background-color:White">
+
+<table style="float:left">
+    <tr>
+    <td colspan="4" align="center" valign="middle"><asp:Label id="lblMsg" runat="server" Text="Records not found. Please redefine search criteria" Font-Size="8pt" Font-Names="Verdana" Font-Bold="True" Width="357px" Visible="False" CssClass="lblmsg"></asp:Label></td>
+    </tr>
+    <tr>
+    <td><asp:Button ID="btnSearch" Text="Search" runat="server"  CssClass="field_button" Width="60px" />&nbsp;</td>
+    <td><asp:Button ID="btnClose" Text="Close" runat="server"   CssClass="field_button" Width="60px" />&nbsp;</td>
+    </tr>
+</table>
+
+<asp:GridView ID="gv_Excursion" runat="server" AutoGenerateColumns="False"  BackColor="White" BorderColor="#999999" CssClass="td_cell" >
+<Columns>
+<asp:TemplateField  Visible="False">
+<ItemTemplate>
+<asp:Label ID="lblExcusionNo" runat="server" Text='<%# Bind("excusionid") %>'></asp:Label>
+<asp:Label ID="lblrlineno" runat="server" Text='<%# Bind("rlineno") %>'></asp:Label>
+<asp:Label ID="lblticketno" runat="server" Text='<%# Bind("ticketno") %>'></asp:Label>
+<asp:Label ID="lblpaymode" runat="server" Text='<%# Bind("paycode") %>'></asp:Label>
+<asp:Label ID="lbladult" runat="server" Text='<%# Bind("adults") %>'></asp:Label>
+<asp:Label ID="lblchild" runat="server" Text='<%# Bind("child") %>'></asp:Label>
+<asp:Label ID="lblroomno" runat="server" Text='<%# Bind("roomno") %>'></asp:Label>
+<asp:Label ID="lblguestnm" runat="server" Text='<%# Bind("guestname") %>'></asp:Label>
+<asp:Label ID="lblpartynm" runat="server" Text='<%# Bind("partyname") %>'></asp:Label>
+<asp:Label ID="lblpicktime" runat="server" Text='<%# Bind("pickuptime") %>'></asp:Label>
+<asp:Label ID="lblremarks" runat="server" Text='<%# Bind("remarks") %>'></asp:Label>
+<asp:Label ID="lblagent" runat="server" Text='<%# Bind("agentname") %>'></asp:Label>
+<asp:Label ID="lblagentcd" runat="server" Text='<%# Bind("agentcode") %>'></asp:Label>
+<asp:Label ID="lblsellcode" runat="server" Text='<%# Bind("trfsellcode") %>'></asp:Label>
+<asp:Label ID="lblcurcode" runat="server" Text='<%# Bind("currcode") %>'></asp:Label>
+<asp:Label ID="lblsperson" runat="server" Text='<%# Bind("spersoncode") %>'></asp:Label>
+<asp:Label ID="lblpartycode" runat="server" Text='<%# Bind("partycode") %>'></asp:Label>
+<asp:Label ID="lbltourdate" runat="server" Text='<%# Bind("tourdate") %>'></asp:Label>
+</ItemTemplate>
+</asp:TemplateField>
+
+<asp:ButtonField HeaderText="Action"  Text="Select" CommandName="SelectRow">
+<ItemStyle HorizontalAlign="Left" ForeColor="Blue"     VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:ButtonField>
+
+<asp:BoundField DataField="excusionid"   SortExpression="excusionid" HeaderText="Excusionid">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="80px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="rlineno" SortExpression="rlineno" HeaderText="ExcusionLineNo">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="requestdate" SortExpression="requestdate" HeaderText="RequestDate">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="80px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="tourdate" SortExpression="tourdate" HeaderText="TourDate">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="200px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="othtypcode" SortExpression="othtypcode" HeaderText="Service Code">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="othtypname" SortExpression="othtypname" HeaderText="Service Name">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="partyname" SortExpression="partyname" HeaderText="Hotel Name">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="guestname" SortExpression="guestname" HeaderText="Guest Name">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="roomno" SortExpression="roomno" HeaderText="Room No">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="adults" SortExpression="adults" HeaderText="Adults">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="child" SortExpression="child" HeaderText="Child">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="plgrpcode" SortExpression="plgrpcode" HeaderText="Market">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+            
+<asp:BoundField DataField="ticketno" SortExpression="ticketno" HeaderText="Ticket No">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="paycode" SortExpression="paycode" HeaderText="Payment Mode">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="collectby" SortExpression="collectby" HeaderText="Collect By">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="payref" SortExpression="payref" HeaderText="Payment Ref">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="prepaidid" SortExpression="prepaidid" HeaderText="Prepaid Id">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left" Width="100px"></HeaderStyle>
+</asp:BoundField>
+                                                               
+</Columns>
+<RowStyle BackColor="#EEEEEE" ForeColor="Black"></RowStyle>
+<SelectedRowStyle BackColor="#008A8C" ForeColor="White" Font-Bold="True"></SelectedRowStyle>
+<PagerStyle BackColor="#999999" ForeColor="Black" HorizontalAlign="Center"></PagerStyle>
+<HeaderStyle BackColor="#454580" ForeColor="White" Font-Bold="True"></HeaderStyle>
+<AlternatingRowStyle BackColor="Transparent" Font-Size="10px"></AlternatingRowStyle>
+</asp:GridView> 
+
+</div>
+ 
+<cc1:modalpopupextender id="ModalPopupDays" runat="server" BehaviorID="ModalPopupDays"
+	cancelcontrolid="btnCancel1" okcontrolid="btnOkay" 
+	targetcontrolid="btnInvisibleGuest" popupcontrolid="ShowExcursionHelp"
+	popupdraghandlecontrolid="PopupHeader" drag="true" 
+	backgroundcssclass="ModalPopupBG">
+</cc1:modalpopupextender>
+
+<input id="btnInvisibleGuest" runat="server" type="button" value="Cancel" style="visibility:hidden" />
+<input id="btnOkay" type="button" value="OK" style="visibility:hidden"  />
+<input id="btnCancel1" type="button" value="Cancel" style="visibility:hidden" />
+
+ </td>
+ </tr>
+
+ <tr>
+
+ <td>
+ 
+ 
+  <CC1:TabContainer
+ ID="TabContainer1"
+ runat="server"
+ ActiveTabIndex="4">
+<CC1:TabPanel
+ ID="Zone1"
+ runat="server"
+ HeaderText="Booking Posting">
+<ContentTemplate>
+ 
+
+
+ <div id="Wrapper" runat="server" style="width:1000px;overflow:scroll">
+<asp:GridView id="gvTransfersRequest"   runat="server" Width="1000px" 
+        Font-Size="10px" CssClass="td_cell " 
+GridLines="Vertical" CellPadding="3" BorderWidth="1px" BorderStyle="None" 
+        BorderColor="#999999" AutoGenerateColumns="False" 
+AllowSorting="True" AllowPaging="True" BackColor="White"  
+        DataKeyNames="requestid,transferdate,transfertype,startingpoint,endingpoint,pickupdate,pickuptime,cartype,units,price,salecurrency,salevalue,hotelcode,shifthotelcode,roomno,adults,child,guestname,flightcode,flighttime,complementcust,invno,creditnoteno,remarks,handling_currency,handling_value,supcartype,costprice,supplierref,pagingboard,compfromsup,flightdate">
+<Columns>
+
+<asp:TemplateField   Visible="False" HeaderText="LineNo"  >
+<ItemTemplate >
+<asp:Label id="lbRLineNo"   runat="server" Text='<%# Bind("requestid") %>'></asp:Label> 
+<asp:Label id="lblRowID"  runat="server" ></asp:Label> 
+<asp:Label id="lblAmend" runat="server"  Text='TEst1'></asp:Label>
+<asp:Label id="lblCancel" runat="server"  Text='Test2'></asp:Label>
+</ItemTemplate>
+    <HeaderStyle BackColor="#06788B" />
+</asp:TemplateField>
+
+<asp:TemplateField  HeaderText="Copy">
+<ItemTemplate>
+<asp:CheckBox id="chkselect"   runat="server" class="field_input" width="50px"></asp:checkBox>
+</ItemTemplate>
+    <HeaderStyle BackColor="#06788B" />
+</asp:TemplateField> 
+
+<asp:TemplateField  HeaderText="Select">
+<ItemTemplate>
+<asp:Button id="btnSelect" CommandName="AddRow" text="Select" CommandArgument='<%#Eval("tlineno") %>'  runat="server" class="field_input" width="50px"></asp:Button>
+</ItemTemplate>
+    <HeaderStyle BackColor="#06788B" />
+</asp:TemplateField>  
+
+ <asp:BoundField  DataField="requestid" Visible="False" SortExpression="requestid" 
+        HeaderText="Request Id">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>  
+
+ <asp:BoundField  DataField="tlineno" Visible="False" SortExpression="tlineno" 
+        HeaderText="TLineNo">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>  
+
+<asp:BoundField HtmlEncode="False" DataFormatString="{00:dd/MM/yyyy}"   DataField="transferdate"  HeaderText="Transfer Date">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>                                        
+                      
+                                        
+<asp:BoundField DataField="transfertype" SortExpression="transfertype" HeaderText="Transfer Type">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="startingpoint" SortExpression="startingpoint" HeaderText="Starting Point">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+ 
+<asp:BoundField DataField="endingpoint" SortExpression="endingpoint" HeaderText="Ending Point">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>        
+
+<asp:BoundField DataField="cartype" SortExpression="cartype" HeaderText="Car Type">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+                 
+ <asp:BoundField DataField="units" SortExpression="units" HeaderText="Units">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>      
+
+
+<asp:BoundField DataField="price" SortExpression="price" HeaderText="Price">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>     
+
+<asp:BoundField DataField="salecurrency" SortExpression="salecurrency" HeaderText="Sale Currency">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>    
+
+<asp:BoundField DataField="salevalue" SortExpression="salevalue" HeaderText="Sale Value">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>  
+
+<asp:BoundField DataField="hotelcode" SortExpression="hotelcode" HeaderText="Hotel Code">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+
+<asp:BoundField DataField="shifthotelcode" SortExpression="shifthotelcode" HeaderText="Shift Hotel Code">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="roomno" SortExpression="roomno" HeaderText="Room No">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="adults" SortExpression="adults" HeaderText="Adult">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+
+<asp:BoundField DataField="child" SortExpression="child" HeaderText="Child">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+                         
+<asp:BoundField DataField="guestname" SortExpression="guestname" HeaderText="Guest Name">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="flightcode" SortExpression="flightcode" HeaderText="Flight Code">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="flighttime" SortExpression="flighttime" HeaderText="Flight Time">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="complementcust" SortExpression="complimentcust" HeaderText="Complimentary to Customer">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="remarks" SortExpression="remarks" HeaderText="Remarks %">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="handling_currency" SortExpression="handling_currency" HeaderText="Handle Currency">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="handling_value" SortExpression="handling_value" HeaderText="Handle Value">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="supcartype" SortExpression="supcartype" HeaderText="Supplier Car Code">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>                                                 
+
+<asp:BoundField DataField="costprice" SortExpression="costprice" HeaderText="Cost Price">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>    
+
+<asp:BoundField DataField="supplierref" SortExpression="supplierref" HeaderText="Supplier Ref">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>                                                 
+
+<asp:BoundField DataField="pagingboard" SortExpression="pagingboard" HeaderText="Paging Board">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="compfromsup" SortExpression="compfromsup" HeaderText="Comp.From Supplier">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+<asp:BoundField DataField="flightdate" SortExpression="flightdate" HeaderText="Flight Date">
+<ItemStyle HorizontalAlign="Left" VerticalAlign="Top"></ItemStyle>
+<HeaderStyle BackColor="#06788B" HorizontalAlign="Left"></HeaderStyle>
+</asp:BoundField>
+
+</Columns>
+<RowStyle BackColor="#EEEEEE" ForeColor="Black"></RowStyle>
+<SelectedRowStyle BackColor="#008A8C" ForeColor="White" Font-Bold="True"></SelectedRowStyle>
+<PagerStyle BackColor="#999999" ForeColor="Black" HorizontalAlign="Center"></PagerStyle>
+<HeaderStyle BackColor="#454580" ForeColor="White" Font-Bold="True"></HeaderStyle>
+<AlternatingRowStyle BackColor="Transparent" Font-Size="10px"></AlternatingRowStyle>
+</asp:GridView> 
+
+<table style="float:left">
+<tr>
+<td class="td_cell">Total Sale Amount</td>
+<td><asp:TextBox ID="txtTotalSaleAmount" ReadOnly="True" Text="0" runat="server" 
+        CssClass="field_input TextBoxRightAlign"  Width="80px" /></td>
+<td class="td_cell">Total Sale Amount(AED)</td>
+<td><asp:TextBox ID="txtTotalSaleAmountAED" ReadOnly="True" Text="0"  
+        runat="server" CssClass="field_input TextBoxRightAlign"  Width="80px" /></td>
+<td><asp:TextBox ID="txtTotalCostAmount" ReadOnly="True" Text="0"  runat="server" 
+        CssClass="field_input TextBoxRightAlign"  Width="80px" Visible="False" /></td>
+<td>
+    <asp:TextBox ID="txtTotalCostAmountAED" runat="server" 
+        CssClass="field_input TextBoxRightAlign" ReadOnly="True" Text="0" 
+        Visible="False" Width="80px"></asp:TextBox>
+    </td>
+</tr>
+<tr>
+<td colspan="6"> 
+    <span style="width:20px;height:10px;background-color:#FF934A">&nbsp;&nbsp;&nbsp;&nbsp;</span> 
+    <asp:Label id="lblAmendColor" Text="Amend"  runat="server" /> 
+    <span style="width:20px;height:10px;background-color:#ff3300">&nbsp;&nbsp;&nbsp;&nbsp;</span>  
+    <asp:Label id="lblCancel" Text="Cancel"  runat="server" /> </td>
+
+</tr>
+
+</table>
+  
+</div>
+</ContentTemplate>
+
+
+
+
+</CC1:TabPanel>
+ 
+ </CC1:TabContainer>
+ 
+ 
+ </td>
+ </tr>
+
+ 
+ 
+ 
+ </td>
+ 
+ 
+ </tr>
+
+
+</table>
+
+ </contenttemplate>
+   </asp:UpdatePanel>
+
+
+
+
+
+ 
+
+  </td>
+ </tr>
+ <tr>
+              <td style="width: 949px">
+               <div ID="divtransfer" runat="server" 
+                      
+                      style="border: 1px solid #04a205; LEFT: 392px; background-color: #FFFFFF; width: 212px; display:none;">
+ 
+<TABLE  style="BORDER-RIGHT: gray 2px solid; BORDER-TOP: gray 2px solid; BORDER-LEFT: gray 2px solid; WIDTH: 1px; BORDER-BOTTOM: gray 2px solid" Width="200px">
+<TR>
+<TD class="field_heading" align=center colSpan=1>
+<asp:Label id="Label2" runat="server" Text="Print Transfer Vouchers" ForeColor="White" Width="200px" CssClass="field_heading"></asp:Label>
+</TD>
+</TR>
+
+<TR>
+<td class="td_cell">
+<input id="rdnbdeparture" runat="server" checked name="departure" type="radio" /> Departure Transfer Slip</td>
+</TR>
+<TR>
+<td class="td_cell">
+<input id="rdnarrival" runat="server" checked name="departure" type="radio" /> Arrival Sign Board</td>
+</TR>
+
+<tr>
+<td></td>
+
+
+</tr>
+<tr>
+<TD class="td_cell">
+
+<asp:Button id="btnReport" 
+         runat="server" Text="Load Report" Width="90px" 
+        CssClass="btn" ></asp:Button>
+        <asp:Button id="btnCancel" 
+         runat="server" Text="Cancel" Width="90px" 
+        CssClass="btn"></asp:Button>
+        </TD>
+</tr>
+</TABLE>
+                  
+                  
+                  </div>
+
+                  
+      
+  
+
+
+
+
+
+
+
+ 
+
+   </td></tr>
+   </table>
+
+<asp:Button ID="btncopy" runat="server" CssClass="btn" Font-Bold="False" Text="Copy Line" Width="80px"/>&nbsp;
+<asp:Button ID="btnReturn" runat="server" CssClass="btn" Font-Bold="False" Text="Return To Search" Width="111px"/>&nbsp;
+<asp:Button ID="btnSave" Text="Final Save" CssClass="field_button" runat="server" Width="100px" />&nbsp;
+<asp:Button ID="btnExit" Text="Exit" CssClass="field_button" runat="server" Width="50px" />&nbsp;
+<asp:Button ID="Button1" Text="Check_PostBack" CssClass="field_button" runat="server" Visible="false" Width="50px" />
+<input id="txtconnection" runat="server" style="visibility: hidden; width: 12px; height: 9px" type="text" />
+<asp:HiddenField ID="hdnSelection" runat="server"/>
+<asp:HiddenField ID="hdnTransferid" runat="server"/>
+<asp:HiddenField ID="hdnTransferType" runat="server"/>
+<asp:HiddenField ID="hdnCustomer" runat="server"/>
+<asp:HiddenField ID="hdnCurrencyCode" runat="server"/>
+<asp:HiddenField ID="hdnFlightcode" runat="server"/>
+<asp:HiddenField ID="hdnstartingcode" runat="server"/>
+<asp:HiddenField ID="hdnendingcode" runat="server"/>
+<asp:HiddenField ID="hdnvalue" runat="server" Value="2"/>
+<asp:HiddenField ID="hdnsperson" runat="server"/>
+<asp:HiddenField ID="hdnpayment" runat="server"/>
+<asp:HiddenField ID="hdnlanguage" runat="server"/>
+<asp:HiddenField ID="txtdecimal" runat="server" />
+
+<asp:ScriptManagerProxy ID="ScriptManagerProxy1" runat="server">
+    <Services>
+        <asp:ServiceReference Path="~/clsServices.asmx" />
+    </Services>
+</asp:ScriptManagerProxy>
+
+</asp:Content>

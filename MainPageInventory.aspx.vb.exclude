@@ -1,0 +1,179 @@
+Imports System.Data
+Imports System.Data.SqlClient
+
+Partial Class MainPageInventory
+    Inherits System.Web.UI.Page
+#Region "Global Decalration"
+    Dim objUtils As New clsUtils
+#End Region
+
+#Region "Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        Try
+            If Page.IsPostBack = False Then
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("Login.aspx", False)
+                    Exit Sub
+                End If
+                txtMonthYear.Text = MonthName(Now.Date.Month(), False) + ", " + Now.Date.Year().ToString
+                FillMonthlycalendar(Now.Date.Month(), Now.Date.Year())
+            End If
+
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("MainPage.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+
+    End Sub
+
+#End Region
+
+    Private Sub FillMonthlycalendar(ByVal iMonth As Integer, ByVal iYear As Integer)
+        Dim myDS As New DataSet
+        Dim da As New SqlDataAdapter
+        Try
+
+            Dim constring As String = ConfigurationManager.ConnectionStrings("strDBConnection").ConnectionString
+            Using con As New SqlConnection(constring)
+                Using cmd As New SqlCommand("SP_MONTHLYDAYS", con)
+                    cmd.CommandType = CommandType.StoredProcedure
+                    cmd.Parameters.AddWithValue("@month", iMonth)
+                    cmd.Parameters.AddWithValue("@year", iYear)
+                    con.Open()
+                    da.SelectCommand = cmd
+                    da.Fill(myDS, "Details")
+                    dlMonthlyCalendar.DataSource = myDS
+                    dlMonthlyCalendar.DataBind()
+                    con.Close()
+
+                End Using
+            End Using
+        Catch ex As Exception
+
+        End Try
+
+
+    End Sub
+
+    ''' <summary>
+    ''' btnNext_Click
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
+    ''' <remarks></remarks>
+    Protected Sub btnNext_Click(sender As Object, e As System.EventArgs) Handles btnNext.Click
+        Try
+
+            Dim strDate As String = ""
+            Dim strMonthNo As String = ""
+            Dim strDates As String()
+            strDate = txtMonthYear.Text
+            strDates = strDate.Split(",")
+            strMonthNo = GetMonthNo(strDates(0))
+            Dim dtDay As DateTime
+            dtDay = Convert.ToDateTime("01/" & strMonthNo & "/" & strDates(1))
+            dtDay = dtDay.AddMonths(1)
+            txtMonthYear.Text = MonthName(dtDay.Month(), False) + ", " + dtDay.Year().ToString
+            FillMonthlycalendar(dtDay.Month(), dtDay.Year())
+        Catch ex As Exception
+
+        End Try
+    End Sub
+    ''' <summary>
+    ''' GetMonthNo
+    ''' </summary>
+    ''' <param name="strDates"></param>
+    ''' <returns></returns>
+    ''' <remarks></remarks>
+    Private Function GetMonthNo(strDates As String) As String
+        Dim strMonthNo As String = ""
+        Select (strDates)
+            Case "January"
+                strMonthNo = "01"
+            Case "February"
+                strMonthNo = "02"
+            Case "March"
+                strMonthNo = "03"
+            Case "April"
+                strMonthNo = "04"
+            Case "May"
+                strMonthNo = "05"
+            Case "June"
+                strMonthNo = "06"
+            Case "July"
+                strMonthNo = "07"
+            Case "August"
+                strMonthNo = "08"
+            Case "September"
+                strMonthNo = "09"
+            Case "October"
+                strMonthNo = "10"
+            Case "November"
+                strMonthNo = "11"
+            Case "December"
+                strMonthNo = "12"
+
+        End Select
+
+        Return strMonthNo
+
+    End Function
+    ''' <summary>
+    ''' 
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
+    ''' <remarks></remarks>
+    Protected Sub btnBack_Click(sender As Object, e As System.EventArgs) Handles btnBack.Click
+        Try
+            Dim strDate As String = ""
+            Dim strMonthNo As String = ""
+            Dim strDates As String()
+            strDate = txtMonthYear.Text
+            strDates = strDate.Split(",")
+            strMonthNo = GetMonthNo(strDates(0))
+            Dim dtDay As DateTime
+            dtDay = Convert.ToDateTime("01/" & strMonthNo & "/" & strDates(1))
+            dtDay = dtDay.AddMonths(-1)
+            txtMonthYear.Text = MonthName(dtDay.Month(), False) + ", " + dtDay.Year().ToString
+            FillMonthlycalendar(dtDay.Month(), dtDay.Year())
+        Catch ex As Exception
+
+        End Try
+    End Sub
+    ''' <summary>
+    ''' dlMonthlyCalendar_ItemDataBound
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
+    ''' <remarks></remarks>
+    Protected Sub dlMonthlyCalendar_ItemDataBound(sender As Object, e As System.Web.UI.WebControls.DataListItemEventArgs) Handles dlMonthlyCalendar.ItemDataBound
+        If e.Item.ItemType = ListItemType.Item Or e.Item.ItemType = ListItemType.AlternatingItem Then
+            Dim lblDate As Label = CType(e.Item.FindControl("lblDate"), Label)
+            Dim lblDay As Label = CType(e.Item.FindControl("lblDay"), Label)
+
+            If lblDay.Text = "Friday" Then
+                lblDate.BackColor = Drawing.Color.Gray
+            Else
+                '  lblDate.Attributes.Add("style", "background=#CC3300;")
+                lblDate.BackColor = Drawing.Color.IndianRed
+            End If
+
+            Dim i As Integer = e.Item.ItemIndex
+            If i < 7 Then
+                lblDay.Visible = True
+                lblDay.Text = lblDay.Text.Substring(0, 3).ToUpper
+            Else
+                lblDay.Visible = False
+            End If
+            Dim dvDay As HtmlControl = CType(e.Item.FindControl("dvDay"), HtmlControl)
+            If lblDate.Text = "" Then
+                dvDay.Attributes.Add("style", "border: 1px solid #ccc; width:90%;height:100px;margin-bottom:10px;background:#F1F1F1;")
+            End If
+        End If
+
+
+
+    End Sub
+End Class

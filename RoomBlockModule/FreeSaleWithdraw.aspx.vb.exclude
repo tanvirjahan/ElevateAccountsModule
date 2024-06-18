@@ -1,0 +1,1736 @@
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Drawing.Color
+Imports System.Collections.ArrayList
+Imports System.Collections.Generic
+
+Partial Class FreeSaleWithdraw
+    Inherits System.Web.UI.Page
+
+
+#Region "Global Declaration"
+    Dim objUser As New clsUser
+    Dim objUtils As New clsUtils
+    Dim strSqlQry As String
+    Dim mySqlCmd As SqlCommand
+    Dim mySqlReader As SqlDataReader
+    Dim mySqlConn As SqlConnection
+    Dim sqlTrans As SqlTransaction
+    Shared HotelCode As String
+#End Region
+
+#Region "related to user control wucCountrygroup"
+    Protected Sub btnvsprocess_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnvsprocess.Click
+        wucCountrygroup.fnbtnVsProcess(txtvsprocesssplit, dlList)
+        If Convert.ToString(Session("FreeSaleWdrlState")) = "New" Or (Convert.ToString(Session("FreeSaleWdrlState")) = "Edit" And String.IsNullOrEmpty(Convert.ToString(Session("WdrlDirectInventoryID")))) Then
+            gvOffer.DataSource = Nothing
+            gvOffer.DataBind()
+            ddlLinkTo.SelectedIndex = 0
+        End If
+    End Sub
+    Protected Sub lnkCodeAndValue_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            wucCountrygroup.fnCodeAndValue_ButtonClick(sender, e, dlList, Nothing, Nothing)
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    Protected Sub lbClose_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            wucCountrygroup.fnCloseButtonClick(sender, e, dlList)
+            If Convert.ToString(Session("FreeSaleWdrlState")) = "New" Or (Convert.ToString(Session("FreeSaleWdrlState")) = "Edit" And String.IsNullOrEmpty(Convert.ToString(Session("WdrlDirectInventoryID")))) Then
+                gvOffer.DataSource = Nothing
+                gvOffer.DataBind()
+                ddlLinkTo.SelectedIndex = 0
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+
+    <System.Web.Script.Services.ScriptMethod()> _
+   <System.Web.Services.WebMethod()> _
+    Public Shared Function GetAgentListSearch(ByVal prefixText As String) As List(Of String)
+
+        Dim strSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim lsAgentNames As New List(Of String)
+        Dim lsCountryList As String
+        Try
+
+            strSqlQry = "select a.agentname, a.ctrycode from agentmast a where a.active=1 and a.agentname like  '%" & Trim(prefixText) & "%'"
+
+            'Dim wc As New PriceListModule_Countrygroup
+            'wc = wucCountrygroup
+            'lsCountryList = wc.fnGetSelectedCountriesList
+            If HttpContext.Current.Session("SelectedCountriesList_WucCountryGroupUserControl") IsNot Nothing Then
+                lsCountryList = HttpContext.Current.Session("SelectedCountriesList_WucCountryGroupUserControl").ToString.Trim
+                If lsCountryList <> "" Then
+                    'strSqlQry += " and a.ctrycode in (" & lsCountryList & ")"
+                End If
+
+            End If
+
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            ' SqlConn = clsDBConnect.dbConnectionnew(objclsConnectionName.ConnectionName)
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    'lsAgentNames.Add(myDS.Tables(0).Rows(i)("agentname").ToString())
+                    lsAgentNames.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("agentname").ToString(), myDS.Tables(0).Rows(i)("ctrycode").ToString()))
+                Next
+            End If
+
+            Return lsAgentNames
+        Catch ex As Exception
+
+            Return lsAgentNames
+        End Try
+
+    End Function
+#End Region
+
+#Region "Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        If IsPostBack = False Then
+            Try
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+                Me.whotelatbcontrol.appval = CType(Request.QueryString("appid"), String)
+                Me.whotelatbcontrol.menuidval = objUser.GetMenuId(Session("dbconnectionName"), CType("FreeSaleSearch.aspx?appid=2", String), CType(Request.QueryString("appid"), Integer))
+
+                ddlInventoryType.Items.Add(New ListItem("Free Sale", "Free Sale"))
+                ddlInventoryType.SelectedIndex = 0
+                ddlInventoryType.Enabled = False
+                ddlLinkTo.Items.Add(New ListItem("[Select]", ""))
+                ddlLinkTo.Items.Add(New ListItem("Contract", "Contract"))
+                ddlLinkTo.Items.Add(New ListItem("All Offers", "All Offers"))
+                ddlLinkTo.Items.Add(New ListItem("Specific Offers", "Specific Offers"))
+                ddlLinkTo.Items.Add(New ListItem("Both", "Both"))
+                ViewState("PartycodeOffer") = ""
+                ViewState("CountriesOffer") = ""
+                Dim spDt As New DataTable
+                spDt.Columns.Add(New DataColumn("FromDate", GetType(Date)))
+                spDt.Columns.Add(New DataColumn("ToDate", GetType(Date)))
+                ViewState("DatesOffer") = spDt
+                If Convert.ToString(Request.QueryString("State")) = "WithdrawDirect" Then
+                    Session("FreeSaleWdrlState") = "WithdrawDirect"
+                ElseIf Convert.ToString(Request.QueryString("State")) = "Edit" Then
+                    Session("FreeSaleWdrlState") = "Edit"
+                ElseIf Convert.ToString(Request.QueryString("State")) = "View" Then
+                    Session("FreeSaleWdrlState") = "View"
+                Else
+                    Session("FreeSaleWdrlState") = "New"
+                End If
+                '' Create a Dynamic datatable ---- Start
+                Session("sDtDynamic") = Nothing
+                Dim dtDynamic = New DataTable()
+                Dim dcCode = New DataColumn("Code", GetType(String))
+                Dim dcValue = New DataColumn("Value", GetType(String))
+                Dim dcCodeAndValue = New DataColumn("CodeAndValue", GetType(String))
+                dtDynamic.Columns.Add(dcCode)
+                dtDynamic.Columns.Add(dcValue)
+                dtDynamic.Columns.Add(dcCodeAndValue)
+                Session("sDtDynamic") = dtDynamic
+                hdCurrentDate.Value = Date.Now.ToString("dd/MM/yyyy")
+                Session("WdrlDirectInventoryID") = ""
+                Session("WdrlDirectCtry") = ""
+                Session("WdrlDirectAgent") = ""
+                Session("WdrlDirectRooms") = ""
+                Dim dtWdrl As New DataTable
+                dtWdrl.Columns.Add(New DataColumn("FromDate", GetType(Date)))
+                dtWdrl.Columns.Add(New DataColumn("ToDate", GetType(Date)))
+                Session("WdrlDirectStayPeriod") = dtWdrl
+                hdDisplayFlag.Value = False
+                Dim dtStayPeriod As New DataTable
+                dtStayPeriod.Columns.Add(New DataColumn("FromDate", GetType(Date)))
+                dtStayPeriod.Columns.Add(New DataColumn("ToDate", GetType(Date)))
+                Session("FreesaleCtrySelect") = ""
+                Session("FreesaleAgentSelect") = ""
+                Session("FreesaleRoomSelect") = ""
+                Session("FreesaleStayPeriod") = dtStayPeriod
+                If Convert.ToString(Session("FreeSaleWdrlState")) = "WithdrawDirect" Then
+                    Page.Title = Page.Title + " " + "Free Sale Withdraw"
+                    Dim inventoryID As String
+                    inventoryID = CType(Request.QueryString("InventoryID"), String)
+                    FillToApproval(inventoryID)
+                    lblHeading.Text = "Free Sale Withdraw"
+                ElseIf Convert.ToString(Session("FreeSaleWdrlState")) = "Edit" Then
+                    Page.Title = Page.Title + " " + "Free Sale Withdraw"
+                    Dim inventoryID As String
+                    inventoryID = CType(Request.QueryString("InventoryID"), String)
+                    FillToApproval(inventoryID)
+                    lblHeading.Text = "Pending Free Sale Withdraw"
+                    DisableControl()
+                ElseIf Convert.ToString(Session("FreeSaleWdrlState")) = "View" Then
+                    Page.Title = Page.Title + " " + "Free Sale Withdraw View"
+                    Dim inventoryID As String
+                    inventoryID = CType(Request.QueryString("InventoryID"), String)
+                    FillToApproval(inventoryID)
+                    Me.whotelatbcontrol.Visible = False
+                    lblHeading.Text = "Free Sale Withdraw View"
+                    DisableControl()
+                Else
+                    Page.Title = Page.Title + " " + "Free Sale Withdraw"
+                    wucCountrygroup.sbSetPageState("", "FreeSaleWithdraw", CType(Session("FreeSaleWdrlState"), String))
+                    Session("isAutoTick_wuccountrygroupusercontrol") = 1
+                    wucCountrygroup.sbShowCountry()
+                    lblHeading.Text = "Free Sale Withdraw"
+                    ddlInventoryType.SelectedValue = "Free Sale"
+                    FillRoomType()
+                    GenerateGridColumns("BeLoad", 0)
+                    txtHotelName.Focus()
+                End If
+                Session.Add("strsortexpressionFsMatch", "InventoryType")
+                Session.Add("strsortdirectionFsMatch", SortDirection.Ascending)
+                Session.Add("strsortExpressionFsPartial", "InventoryType")
+                Session.Add("strsortDirectionFsPartial", SortDirection.Ascending)
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+        End If
+    End Sub
+#End Region
+
+#Region "GetHotelsList Web Method"
+    <System.Web.Script.Services.ScriptMethod()> _
+     <System.Web.Services.WebMethod()> _
+    Public Shared Function GetHotelsList(ByVal prefixText As String) As List(Of String)
+        Dim bstrSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim PartyName As New List(Of String)
+        Try
+            bstrSqlQry = "select partycode,partyname from partymast where sptypecode='HOT' and active=1 and partyName like  '" & Trim(prefixText) & "%' order by partyname"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            myDataAdapter = New SqlDataAdapter(bstrSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    PartyName.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("partyname").ToString(), myDS.Tables(0).Rows(i)("partycode").ToString()))
+                Next
+            End If
+            Return PartyName
+        Catch ex As Exception
+            Return PartyName
+        End Try
+    End Function
+#End Region
+
+#Region "Private Sub FillRoomType()"
+    Private Sub FillRoomType()
+        Dim myDataAdapter As New SqlDataAdapter
+        Try
+            Dim myDS As New DataSet
+            strSqlQry = ""
+            HotelCode = txtHotelCode.Text.Trim
+            strSqlQry = "select rmtypcode,rmtypname from  partyrmtyp(nolock) where  inactive=0 and partycode='" & txtHotelCode.Text.Trim() & "' order by isnull(rankord,999)"
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+            myDataAdapter.Fill(myDS)
+            grdroomtype.DataSource = myDS
+            grdroomtype.DataBind()
+
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            clsDBConnect.dbConnectionClose(mySqlConn)                          'Close connection       
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnRoomUpdate_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnRoomUpdate.Click"
+    Protected Sub btnRoomUpdate_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnRoomUpdate.Click
+        FillRoomType()
+    End Sub
+#End Region
+
+#Region "Protected Sub btnSave_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSave.Click"
+    Protected Sub btnSave_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSave.Click
+        Try
+            If ValidatePage() = False Then Exit Sub
+            If DisplayStatus() = False Then Exit Sub
+            If InsertRecord() = False Then Exit Sub
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Saved Successfully' );", True)
+            If Session("FreeSaleWdrlState") = "New" Then
+                Dim strscript As String = ""
+                strscript = "window.opener.__doPostBack('InventoryWindowPostBack', '');window.opener.focus();window.close();"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+            ElseIf Session("FreeSaleWdrlState") = "WithdrawDirect" Then
+                Response.Redirect("FreeSaleSearch.aspx?appid=2", False)
+            ElseIf Session("FreeSaleWdrlState") = "Edit" Then
+                Response.Redirect("FreeSalePending.aspx?appid=2", False)
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnSaveAndAnotherHotel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSaveAndAnotherHotel.Click"
+    Protected Sub btnSaveAndAnotherHotel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSaveAndAnotherHotel.Click
+        Try
+            If ValidatePage() = False Then Exit Sub
+            If DisplayStatus() = False Then Exit Sub
+            If InsertRecord() = False Then Exit Sub
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Saved Successfully' );", True)
+            ClearControl()
+            txtHotelName.Text = ""
+            txtHotelCode.Text = ""
+            txtApplicableTo.Text = ""
+            FillRoomType()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnSaveAndSameHotel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSaveAndSameHotel.Click"
+    Protected Sub btnSaveAndSameHotel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnSaveAndSameHotel.Click
+        Try
+            If ValidatePage() = False Then Exit Sub
+            If DisplayStatus() = False Then Exit Sub
+            If InsertRecord() = False Then Exit Sub
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Saved Successfully' );", True)
+            ClearControl()
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Public Function ValidatePage() As Boolean"
+    Public Function ValidatePage() As Boolean
+        If wucCountrygroup.checkcountrylist.ToString = "" And wucCountrygroup.checkagentlist.ToString = "" Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select any one of the Country or Agent');", True)
+            wucCountrygroup.Focus()
+            ValidatePage = False
+            Exit Function
+        End If
+        If (ddlLinkTo.SelectedValue = "Specific Offers" And Session("FreeSaleWdrlState") = "New") Or (Session("FreeSaleWdrlState") = "Edit" And String.IsNullOrEmpty(Convert.ToString(Session("WdrlDirectInventoryID"))) And ddlLinkTo.SelectedValue = "Specific Offers") Then
+            If wucCountrygroup.checkcountrylist.ToString <> CType(ViewState("CountriesOffer"), String) Or txtHotelCode.Text.Trim <> CType(ViewState("PartycodeOffer"), String) Or gvStayPeriod.Rows.Count <> CType(ViewState("DatesOffer"), DataTable).Rows.Count Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Mismatching promotion details, Kindly reselect');", True)
+                ddlLinkTo.SelectedIndex = 0
+                gvOffer.DataSource = Nothing
+                gvOffer.DataBind()
+                ddlLinkTo.Focus()
+                ValidatePage = False
+                Exit Function
+            End If
+        End If
+        Dim txtStayfromDate As TextBox
+        Dim txtStayToDate As TextBox
+        Dim ToDt As Date
+        Dim slNo As Integer
+        slNo = 0
+        Dim datesOffer As DataTable = Nothing
+        Dim datesofferDr As DataRow
+        If (ddlLinkTo.SelectedValue = "Specific Offers" And Session("FreeSaleWdrlState") = "New") Or (Session("FreeSaleWdrlState") = "Edit" And String.IsNullOrEmpty(Convert.ToString(Session("WdrlDirectInventoryID"))) And ddlLinkTo.SelectedValue = "Specific Offers") Then datesOffer = CType(ViewState("DatesOffer"), DataTable)
+        For Each lRow As GridViewRow In gvStayPeriod.Rows
+            txtStayfromDate = lRow.FindControl("txtStayfromDate")
+            txtStayToDate = lRow.FindControl("txtStayToDate")
+            If Not IsDate(txtStayfromDate.Text) Or Not IsDate(txtStayToDate.Text) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Invalid stay period date');", True)
+                gvStayPeriod.Focus()
+                ValidatePage = False
+                Exit Function
+            End If
+            If ToDt <> Nothing Then
+                If (Convert.ToDateTime(txtStayfromDate.Text) <= ToDt) Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Date overlapping');", True)
+                    gvStayPeriod.Focus()
+                    ValidatePage = False
+                    Exit Function
+                End If
+            End If
+            ToDt = Convert.ToDateTime(txtStayToDate.Text)
+            If (ddlLinkTo.SelectedValue = "Specific Offers" And Session("FreeSaleWdrlState") = "New") Or (Session("FreeSaleWdrlState") = "Edit" And String.IsNullOrEmpty(Convert.ToString(Session("WdrlDirectInventoryID"))) And ddlLinkTo.SelectedValue = "Specific Offers") Then
+                datesofferDr = datesOffer.Rows(slNo)
+                If datesofferDr("FromDate") <> Convert.ToDateTime(txtStayfromDate.Text) Or datesofferDr("ToDate") <> Convert.ToDateTime(txtStayToDate.Text) Then
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Mismatching promotion details, Kindly reselect');", True)
+                    ddlLinkTo.SelectedIndex = 0
+                    gvOffer.DataSource = Nothing
+                    gvOffer.DataBind()
+                    ddlLinkTo.Focus()
+                    ValidatePage = False
+                    Exit Function
+                End If
+            End If
+            slNo = slNo + 1
+        Next
+        ValidatePage = True
+    End Function
+#End Region
+
+#Region "Protected Function DisplayStatus() As Boolean"
+    Protected Function DisplayStatus() As Boolean
+        If gvExactInventory.Rows.Count < 1 And gvPartialMatchInventory.Rows.Count < 1 Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('There is no withdraw inventory, Click Display button and check the withdraw inventory');", True)
+            btnDisplay.Focus()
+            DisplayStatus = False
+            Exit Function
+        End If
+        If hdDisplayFlag.Value = False Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Click Display button and check the withdraw inventory');", True)
+            btnDisplay.Focus()
+            DisplayStatus = False
+            Exit Function
+        Else
+            Dim chkRmType As CheckBox
+            Dim rmTypeCode As Label
+            Dim RmTypeList As String = ""
+            For Each lRow As GridViewRow In grdroomtype.Rows
+                chkRmType = lRow.FindControl("chkrmtyp")
+                rmTypeCode = lRow.FindControl("txtrmtypcode")
+                If chkRmType.Checked = True Then
+                    If (RmTypeList = "") Then
+                        RmTypeList = CType(rmTypeCode.Text.Trim, String)
+                    Else
+                        RmTypeList = RmTypeList + "," + CType(rmTypeCode.Text.Trim, String)
+                    End If
+                End If
+            Next
+            Dim stayPeriod As Boolean = False
+            Dim dt As DataTable = CType(Session("FreeSaleStayPeriod"), DataTable)
+            If (dt.Rows.Count = gvStayPeriod.Rows.Count) Then
+                stayPeriod = True
+                Dim txtStayfromDate As TextBox
+                Dim txtStayToDate As TextBox
+                Dim dr As DataRow
+                Dim i As Integer = 0
+                For Each lRow As GridViewRow In gvStayPeriod.Rows
+                    dr = dt.Rows(i)
+                    txtStayfromDate = lRow.FindControl("txtStayfromDate")
+                    txtStayToDate = lRow.FindControl("txtStayToDate")
+                    If IsDate(txtStayfromDate.Text) And IsDate(txtStayToDate.Text) Then
+                        If (dr("FromDate") <> Convert.ToDateTime(txtStayfromDate.Text) Or dr("ToDate") <> Convert.ToDateTime(txtStayToDate.Text)) Then
+                            stayPeriod = False
+                            Exit For
+                        End If
+                    End If
+                    i = i + 1
+                Next
+            End If
+            If (Convert.ToString(Session("FreesaleCtrySelect")) <> wucCountrygroup.checkcountrylist.ToString.Trim Or
+             Convert.ToString(Session("FreesaleAgentSelect")) <> wucCountrygroup.checkagentlist.ToString.Trim Or
+             Convert.ToString(Session("FreesaleRoomSelect")) <> RmTypeList Or stayPeriod = False) Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Some data has modified, Click Display button and recheck the stop sale inventory');", True)
+                hdDisplayFlag.Value = False
+                btnDisplay.Focus()
+                DisplayStatus = False
+            Else
+                DisplayStatus = True
+            End If
+        End If
+    End Function
+#End Region
+
+#Region "Public Function InsertRecord() As Boolean"
+    Public Function InsertRecord() As Boolean
+        Try
+            Dim WithdrawType As String = ""
+            If Not String.IsNullOrEmpty(Convert.ToString(Session("WdrlDirectInventoryID"))) Then
+                Dim chk As CheckBox
+                Dim lblrmTypeCode As Label
+                WithdrawType = "Full"
+                Try
+                    Dim DirectCtryList As New List(Of String)
+                    DirectCtryList.AddRange(Convert.ToString(Session("WdrlDirectCtry")).Split(","))
+                    Dim CtryList As New List(Of String)
+                    CtryList.AddRange(Convert.ToString(wucCountrygroup.checkcountrylist.ToString.Trim).Split(","))
+                    For Each x In DirectCtryList
+                        If CtryList.Contains(x) = False Then
+                            WithdrawType = "Partial"
+                            Exit Try
+                        End If
+                    Next
+                    Dim DirectAgentList As New List(Of String)
+                    DirectAgentList.AddRange(Convert.ToString(Session("WdrlDirectAgent")).Split(","))
+                    Dim AgentList As New List(Of String)
+                    AgentList.AddRange(Convert.ToString(wucCountrygroup.checkagentlist.ToString.Trim).Split(","))
+                    For Each x In DirectAgentList
+                        If AgentList.Contains(x) = False Then
+                            WithdrawType = "Partial"
+                            Exit Try
+                        End If
+                    Next
+                    Dim wdrlRmType() As String = Convert.ToString(Session("WdrlDirectRooms")).Split(",")
+                    For i = 0 To wdrlRmType.GetUpperBound(0)
+                        For Each lRow As GridViewRow In grdroomtype.Rows
+                            chk = lRow.FindControl("chkrmtyp")
+                            lblrmTypeCode = lRow.FindControl("txtrmtypcode")
+                            If CType(lblrmTypeCode.Text.Trim, String) = wdrlRmType(i) Then
+                                If chk.Checked = False Then
+                                    WithdrawType = "Partial"
+                                    Exit Try
+                                Else
+                                    Exit For
+                                End If
+                            End If
+                        Next
+                    Next
+                    Dim dt As DataTable = CType(Session("WdrlDirectStayPeriod"), DataTable)
+                    Dim txtSfromDate As TextBox
+                    Dim txtSToDate As TextBox
+                    If dt.Rows.Count <> gvStayPeriod.Rows.Count Then
+                        WithdrawType = "Partial"
+                    Else
+                        For i = 0 To dt.Rows.Count - 1
+                            Dim dr As DataRow = dt.Rows(i)
+                            Dim lRow As GridViewRow = gvStayPeriod.Rows(i)
+                            txtSfromDate = lRow.FindControl("txtStayfromDate")
+                            txtSToDate = lRow.FindControl("txtStayToDate")
+                            If IsDate(txtSfromDate.Text) And IsDate(txtSToDate.Text) Then
+                                If (dr("fromDate") < Convert.ToDateTime(txtSfromDate.Text) Or dr("toDate") > Convert.ToDateTime(txtSToDate.Text)) Then
+                                    WithdrawType = "Partial"
+                                    Exit For
+                                End If
+                            End If
+                        Next
+                    End If
+                Catch ex As Exception
+                    InsertRecord = False
+                    ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                    Exit Function
+                End Try
+            Else
+                WithdrawType = "New"
+            End If
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))          'connection open
+            sqlTrans = mySqlConn.BeginTransaction
+            Dim InventoryID As String
+            If Session("FreeSaleWdrlState") = "New" Then WithdrawType = "New"
+            If Session("FreeSaleWdrlState") = "New" Or Session("FreeSaleWdrlState") = "WithdrawDirect" Then
+                InventoryID = objUtils.GetAutoDocNo("FSWITHDRAW", mySqlConn, sqlTrans)
+            ElseIf Session("FreeSaleWdrlState") = "Edit" Then
+                InventoryID = txtInventoryID.Text.Trim
+            Else
+
+                sqlTrans.Rollback()
+                clsDBConnect.dbSqlTransation(sqlTrans)
+                clsDBConnect.dbConnectionClose(mySqlConn)
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Inventory ID can not be empty');", True)
+                InsertRecord = False
+                Exit Function
+            End If
+
+
+            If Session("FreeSaleWdrlState") = "New" Or Session("FreeSaleWdrlState") = "WithdrawDirect" Then
+                mySqlCmd = New SqlCommand("sp_add_InventoryWdrl_Header", mySqlConn, sqlTrans)
+            ElseIf Session("FreeSaleWdrlState") = "Edit" Then
+                mySqlCmd = New SqlCommand("sp_mod_InventoryWdrl_Header", mySqlConn, sqlTrans)
+            End If
+            mySqlCmd.CommandType = CommandType.StoredProcedure
+            mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+            mySqlCmd.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = CType(txtHotelCode.Text.Trim, String)
+            mySqlCmd.Parameters.Add(New SqlParameter("@InventoryType", SqlDbType.VarChar, 100)).Value = ddlInventoryType.SelectedValue
+            mySqlCmd.Parameters.Add(New SqlParameter("@ApplicableTo", SqlDbType.VarChar, -1)).Value = txtApplicableTo.Text.Trim
+            mySqlCmd.Parameters.Add(New SqlParameter("@LinkTo", SqlDbType.VarChar, 100)).Value = ddlLinkTo.SelectedValue.Trim
+            If Session("FreeSaleWdrlState") = "Edit" Or Session("FreeSaleWdrlState") = "WithdrawDirect" Then
+                mySqlCmd.Parameters.Add(New SqlParameter("@OriginalInventoryID", SqlDbType.VarChar, 20)).Value = Convert.ToString(Session("WdrlDirectInventoryID"))
+            End If
+            mySqlCmd.Parameters.Add(New SqlParameter("@WithdrawType", SqlDbType.VarChar, 100)).Value = WithdrawType
+            mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+            mySqlCmd.Parameters.Add(New SqlParameter("@Approved", SqlDbType.Int, 4)).Value = If(chkApprove.Checked = True, 1, 0)
+            mySqlCmd.ExecuteNonQuery()
+            mySqlCmd.Dispose()
+
+            If Session("FreeSaleWdrlState") = "Edit" Then
+                mySqlCmd = New SqlCommand("sp_del_InventoryWdrl_RmType", mySqlConn, sqlTrans)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                mySqlCmd.ExecuteNonQuery()
+                mySqlCmd.Dispose()
+
+                mySqlCmd = New SqlCommand("sp_del_InventoryWdrl_Countries", mySqlConn, sqlTrans)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                mySqlCmd.ExecuteNonQuery()
+                mySqlCmd.Dispose()
+
+                mySqlCmd = New SqlCommand("sp_del_InventoryWdrl_Agents", mySqlConn, sqlTrans)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                mySqlCmd.ExecuteNonQuery()
+                mySqlCmd.Dispose()
+
+                mySqlCmd = New SqlCommand("sp_del_InventoryWdrl_Dates", mySqlConn, sqlTrans)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                mySqlCmd.ExecuteNonQuery()
+                mySqlCmd.Dispose()
+
+                mySqlCmd = New SqlCommand("sp_del_InventoryWdrl_Offers", mySqlConn, sqlTrans)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                mySqlCmd.ExecuteNonQuery()
+                mySqlCmd.Dispose()
+            End If
+            Dim chkRmType As CheckBox
+            Dim rmTypeCode As Label
+            Dim RmTypeList As String = ""
+            For Each lRow As GridViewRow In grdroomtype.Rows
+                chkRmType = lRow.FindControl("chkrmtyp")
+                rmTypeCode = lRow.FindControl("txtrmtypcode")
+                If chkRmType.Checked = True Then
+                    mySqlCmd = New SqlCommand("sp_add_InventoryWdrl_RmType", mySqlConn, sqlTrans)
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                    mySqlCmd.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = CType(txtHotelCode.Text.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@RmTypCode", SqlDbType.VarChar, 20)).Value = CType(rmTypeCode.Text.Trim, String)
+                    mySqlCmd.ExecuteNonQuery()
+                    mySqlCmd.Dispose()
+                    If (RmTypeList = "") Then
+                        RmTypeList = CType(rmTypeCode.Text.Trim, String)
+                    Else
+                        RmTypeList = RmTypeList + "," + CType(rmTypeCode.Text.Trim, String)
+                    End If
+                End If
+            Next
+
+            If wucCountrygroup.checkcountrylist.ToString <> "" Then
+                Dim arrcountry As String() = wucCountrygroup.checkcountrylist.ToString.Trim.Split(",")
+                For i = 0 To arrcountry.Length - 1
+                    If arrcountry(i) <> "" Then
+                        mySqlCmd = New SqlCommand("sp_add_InventoryWdrl_Countries", mySqlConn, sqlTrans)
+                        mySqlCmd.CommandType = CommandType.StoredProcedure
+                        mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                        mySqlCmd.Parameters.Add(New SqlParameter("@CtryCode", SqlDbType.VarChar, 20)).Value = CType(arrcountry(i), String)
+                        mySqlCmd.ExecuteNonQuery()
+                        mySqlCmd.Dispose()
+                    End If
+                Next
+            End If
+
+            If wucCountrygroup.checkagentlist.ToString <> "" Then
+                Dim arragents As String() = wucCountrygroup.checkagentlist.ToString.Trim.Split(",")
+                For i = 0 To arragents.Length - 1
+                    If arragents(i) <> "" Then
+                        mySqlCmd = New SqlCommand("sp_add_InventoryWdrl_Agents", mySqlConn, sqlTrans)
+                        mySqlCmd.CommandType = CommandType.StoredProcedure
+                        mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                        mySqlCmd.Parameters.Add(New SqlParameter("@AgentCode", SqlDbType.VarChar, 20)).Value = CType(arragents(i), String)
+                        mySqlCmd.ExecuteNonQuery()
+                        mySqlCmd.Dispose()
+                    End If
+                Next
+            End If
+
+            Dim LineNo As Integer = 1
+            Dim txtStayfromDate As TextBox
+            Dim txtStayToDate As TextBox
+            For Each lRow As GridViewRow In gvStayPeriod.Rows
+                txtStayfromDate = lRow.FindControl("txtStayfromDate")
+                txtStayToDate = lRow.FindControl("txtStayToDate")
+                If IsDate(txtStayfromDate.Text) And IsDate(txtStayToDate.Text) Then
+                    mySqlCmd = New SqlCommand("sp_add_InventoryWdrl_Dates", mySqlConn, sqlTrans)
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                    mySqlCmd.Parameters.Add(New SqlParameter("@ILineNo", SqlDbType.Int, 4)).Value = LineNo
+                    mySqlCmd.Parameters.Add(New SqlParameter("@FromDate", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtStayfromDate.Text).ToString("yyyy/MM/dd"))
+                    mySqlCmd.Parameters.Add(New SqlParameter("@ToDate", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtStayToDate.Text).ToString("yyyy/MM/dd"))
+                    mySqlCmd.ExecuteNonQuery()
+                    LineNo = LineNo + 1
+                    mySqlCmd.Dispose()
+                End If
+            Next
+            If ddlLinkTo.SelectedValue = "Specific Offers" Then
+                Dim chkOffer As CheckBox
+                Dim promotionID As Label
+                For Each gvRow As GridViewRow In gvOffer.Rows
+                    chkOffer = CType(gvRow.FindControl("chkOffer"), CheckBox)
+                    promotionID = CType(gvRow.FindControl("txtPromotionID"), Label)
+                    If chkOffer.Checked = True Then
+                        mySqlCmd = New SqlCommand("sp_add_Inventorywdrl_Offers", mySqlConn, sqlTrans)
+                        mySqlCmd.CommandType = CommandType.StoredProcedure
+                        mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = InventoryID
+                        mySqlCmd.Parameters.Add(New SqlParameter("@PromotionID", SqlDbType.VarChar, 20)).Value = promotionID.Text.Trim
+                        mySqlCmd.Parameters.Add(New SqlParameter("@PromotionName", SqlDbType.VarChar, 2000)).Value = gvRow.Cells(2).Text.Trim
+                        mySqlCmd.Parameters.Add(New SqlParameter("@ApplicableTo", SqlDbType.VarChar, -1)).Value = gvRow.Cells(3).Text.Trim
+                        mySqlCmd.Parameters.Add(New SqlParameter("@Period", SqlDbType.VarChar, 200)).Value = gvRow.Cells(4).Text.Trim
+                        mySqlCmd.ExecuteNonQuery()
+                        mySqlCmd.Dispose()
+                    End If
+                Next
+            End If
+
+            If (chkApprove.Checked = True) Then
+                Dim CondLineNo As Integer = 0
+                Dim dt As DataTable
+                If (gvExactInventory.Rows.Count > 0) Then
+                    CondLineNo = CondLineNo + 1
+                    dt = InsertMakeDataTable(gvExactInventory, "Exact Match", InventoryID, CondLineNo)
+                    If (dt.Rows.Count > 0) Then
+                        CondLineNo = dt.Rows.Count
+                        mySqlCmd = New SqlCommand("sp_add_InventoryWdrl_SubDetails", mySqlConn, sqlTrans)
+                        mySqlCmd.CommandType = CommandType.StoredProcedure
+                        mySqlCmd.Parameters.Add(New SqlParameter("@MatchingType", SqlDbType.VarChar, 100)).Value = "ExactMatch"
+                        mySqlCmd.Parameters.Add(New SqlParameter("@tblMatchingInventory", SqlDbType.Structured)).Value = dt
+                        mySqlCmd.ExecuteNonQuery()
+                        mySqlCmd.Dispose()
+                    End If
+                End If
+                Dim tmpLineNo As Integer = CondLineNo
+                If (gvPartialMatchInventory.Rows.Count > 0) Then
+                    CondLineNo = CondLineNo + 1
+                    dt = InsertMakeDataTable(gvPartialMatchInventory, "Partial Match", InventoryID, CondLineNo)
+                    If (dt.Rows.Count > 0) Then
+                        CondLineNo = dt.Rows.Count + tmpLineNo
+                        mySqlCmd = New SqlCommand("sp_add_InventoryWdrl_SubDetails", mySqlConn, sqlTrans)
+                        mySqlCmd.CommandType = CommandType.StoredProcedure
+                        mySqlCmd.Parameters.Add(New SqlParameter("@MatchingType", SqlDbType.VarChar, 100)).Value = "PartialMatch"
+                        mySqlCmd.Parameters.Add(New SqlParameter("@tblMatchingInventory", SqlDbType.Structured)).Value = dt
+                        mySqlCmd.ExecuteNonQuery()
+                        mySqlCmd.Dispose()
+                    End If
+                End If
+            End If
+
+            sqlTrans.Commit()    'SQl Transation Commit
+            clsDBConnect.dbSqlTransation(sqlTrans)
+            clsDBConnect.dbCommandClose(mySqlCmd)
+            clsDBConnect.dbConnectionClose(mySqlConn)
+            InsertRecord = True
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            If mySqlConn.State = ConnectionState.Open Then
+                sqlTrans.Rollback()
+                clsDBConnect.dbSqlTransation(sqlTrans)
+                clsDBConnect.dbCommandClose(mySqlCmd)
+                clsDBConnect.dbConnectionClose(mySqlConn)
+            End If
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            InsertRecord = False
+        End Try
+    End Function
+#End Region
+
+#Region "Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click"
+    Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+    End Sub
+#End Region
+
+#Region "Protected Sub ClearControl()"
+    Protected Sub ClearControl()
+        txtInventoryID.Text = ""
+        If (Session("FreeSaleWdrlState") = "Edit" Or Session("FreeSaleWdrlState") = "WithdrawDirect") Then
+            Session("FreeSaleWdrlState") = "New"
+            wucCountrygroup.sbSetPageState("", "FreeSaleWithdraw", CType(Session("FreeSaleWdrlState"), String))
+            wucCountrygroup.sbShowCountry()
+            lblHeading.Text = "Free Sale Withdraw"
+            Session("WdrlDirectInventoryID") = ""
+            Session("WdrlDirectCtry") = ""
+            Session("WdrlDirectAgent") = ""
+            Session("WdrlDirectRooms") = ""
+            Dim dtStayPeriod As DataTable = CType(Session("WdrlDirectStayPeriod"), DataTable)
+            dtStayPeriod.Clear()
+            Session("WdrlDirectStayPeriod") = dtStayPeriod
+            hdDisplayFlag.Value = False
+            Session("FreesaleCtrySelect") = ""
+            Session("FreesaleAgentSelect") = ""
+            Session("FreesaleRoomSelect") = ""
+            Session("FreesaleStayPeriod") = dtStayPeriod
+        End If
+        ddlInventoryType.SelectedValue = "Free Sale"
+        ddlLinkTo.SelectedIndex = 0
+        ddlLinkTo.Enabled = True
+        gvOffer.Controls.Clear()
+        gvStayPeriod.DataSource = Nothing
+        gvStayPeriod.DataBind()
+        gvExactInventory.DataSource = Nothing
+        gvExactInventory.DataBind()
+        gvPartialMatchInventory.DataSource = Nothing
+        gvPartialMatchInventory.DataBind()
+        GenerateGridColumns("BeLoad", 0)
+        chkApprove.Checked = False
+    End Sub
+#End Region
+
+#Region "Sub GenerateGridColumns(ByVal lsMode As String, ByVal liRowIndex As Integer)"
+    Sub GenerateGridColumns(ByVal lsMode As String, ByVal liRowIndex As Integer)
+        Dim dtStayPeriod As New DataTable
+        Dim drStayPeriod As DataRow
+        dtStayPeriod.Columns.Add(New DataColumn("FromDate", GetType(Date)))
+        dtStayPeriod.Columns.Add(New DataColumn("ToDate", GetType(Date)))
+
+        Dim txtStayfromDate As TextBox
+        Dim txtStayToDate As TextBox
+
+        If lsMode.Trim.ToUpper <> "BeLoad" Then
+            For Each lRow As GridViewRow In gvStayPeriod.Rows
+                txtStayfromDate = lRow.FindControl("txtStayfromDate")
+                txtStayToDate = lRow.FindControl("txtStayToDate")
+                If IsDate(txtStayfromDate.Text) And IsDate(txtStayToDate.Text) Then
+                    drStayPeriod = dtStayPeriod.NewRow()
+                    drStayPeriod("FromDate") = txtStayfromDate.Text
+                    drStayPeriod("ToDate") = txtStayToDate.Text
+                    dtStayPeriod.Rows.Add(drStayPeriod)
+                End If
+            Next
+        End If
+
+        If lsMode.Trim.ToUpper = "DELETE" Then
+            If (dtStayPeriod.Rows.Count > liRowIndex) Then
+                dtStayPeriod.Rows(liRowIndex).Delete()
+            End If
+        End If
+        If lsMode.Trim.ToUpper = "ADD" Or dtStayPeriod.Rows.Count = 0 Then
+            drStayPeriod = dtStayPeriod.NewRow()
+            drStayPeriod("FromDate") = DBNull.Value
+            drStayPeriod("ToDate") = DBNull.Value
+            dtStayPeriod.Rows.Add(drStayPeriod)
+        End If
+        gvStayPeriod.DataSource = dtStayPeriod
+        gvStayPeriod.DataBind()
+    End Sub
+#End Region
+
+#Region "Protected Sub gvStayPeriod_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvStayPeriod.RowDataBound"
+    Protected Sub gvStayPeriod_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvStayPeriod.RowDataBound
+        Try
+            If e.Row.RowType = DataControlRowType.DataRow Then
+                Dim dtrow As DataRow = objUtils.fnGridViewRowToDataRow(CType(e.Row, GridViewRow))
+
+                Dim txtStayfromDate As TextBox
+                Dim txtStayToDate As TextBox
+                txtStayfromDate = e.Row.FindControl("txtStayfromDate")
+                txtStayToDate = e.Row.FindControl("txtStayToDate")
+                txtStayfromDate.Attributes.Add("onchange", "fillStayToDate('" & txtStayfromDate.ClientID & "','" & txtStayToDate.ClientID & "')")
+                txtStayToDate.Attributes.Add("onchange", "ValidateStayChkInDate('" & txtStayfromDate.ClientID & "','" & txtStayToDate.ClientID & "')")
+
+                If Not dtrow.IsNull("FromDate") Then txtStayfromDate.Text = dtrow("FromDate")
+                If Not dtrow.IsNull("ToDate") Then txtStayToDate.Text = dtrow("ToDate")
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub imgStayRemove_Click(ByVal sender As Object, ByVal e As System.Web.UI.ImageClickEventArgs)"
+    Protected Sub imgStayRemove_Click(ByVal sender As Object, ByVal e As System.Web.UI.ImageClickEventArgs)
+        Try
+            Dim row As GridViewRow = CType((CType(sender, ImageButton)).NamingContainer, GridViewRow)
+            GenerateGridColumns("DELETE", row.RowIndex)
+            If Convert.ToString(Session("FreeSaleWdrlState")) = "New" Or (Convert.ToString(Session("FreeSaleWdrlState")) = "Edit" And String.IsNullOrEmpty(Convert.ToString(Session("WdrlDirectInventoryID")))) Then
+                gvOffer.DataSource = Nothing
+                gvOffer.DataBind()
+                ddlLinkTo.SelectedIndex = 0
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub imgStayAdd_Click(ByVal sender As Object, ByVal e As System.Web.UI.ImageClickEventArgs)"
+    Protected Sub imgStayAdd_Click(ByVal sender As Object, ByVal e As System.Web.UI.ImageClickEventArgs)
+        Try
+            Dim row As GridViewRow = CType((CType(sender, ImageButton)).NamingContainer, GridViewRow)
+            GenerateGridColumns("ADD", 0)
+            row.FindControl("imgStayAdd").Visible = False
+            Dim txtStayFromDt As TextBox
+            txtStayFromDt = TryCast(gvStayPeriod.Rows(gvStayPeriod.Rows.Count - 1).FindControl("txtStayfromDate"), TextBox)
+            txtStayFromDt.Focus()
+            If Convert.ToString(Session("FreeSaleWdrlState")) = "New" Or (Convert.ToString(Session("FreeSaleWdrlState")) = "Edit" And String.IsNullOrEmpty(Convert.ToString(Session("WdrlDirectInventoryID")))) Then
+                gvOffer.DataSource = Nothing
+                gvOffer.DataBind()
+                ddlLinkTo.SelectedIndex = 0
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub FillToApproval(ByVal InventoryID As String)"
+    Protected Sub FillToApproval(ByVal InventoryID As String)
+        Dim myCmd As SqlCommand
+        Dim myReader As SqlDataReader
+        Dim LinkToVal As String = ""
+        Try
+            If (Convert.ToString(Session("FreeSaleWdrlState")) = "WithdrawDirect") Then
+                strSqlQry = "Select I.*,P.PartyName from Inventory_Header I inner join PartyMast P on I.Partycode=P.Partycode and P.sptypecode='HOT' and InventoryID ='" + InventoryID + "'"
+                Session("WdrlDirectInventoryID") = InventoryID
+            Else
+                txtInventoryID.Text = InventoryID
+                strSqlQry = "Select I.*,P.PartyName from InventoryWithdraw_Header I inner join PartyMast P on I.Partycode=P.Partycode and P.sptypecode='HOT' and InventoryID ='" + InventoryID + "'"
+            End If
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myCmd = New SqlCommand(strSqlQry, mySqlConn)
+            myReader = myCmd.ExecuteReader()
+            If myReader.Read() Then
+                If Not IsDBNull(myReader("PartyCode")) Then
+                    txtHotelCode.Text = CType(myReader("PartyCode"), String)
+                Else
+                    txtHotelCode.Text = ""
+                End If
+                If Not IsDBNull(myReader("PartyName")) Then
+                    txtHotelName.Text = CType(myReader("PartyName"), String)
+                    FillRoomType()
+                Else
+                    txtHotelName.Text = ""
+                End If
+                If Not IsDBNull(myReader("ApplicableTo")) Then
+                    txtApplicableTo.Text = CType(myReader("ApplicableTo"), String)
+                Else
+                    txtApplicableTo.Text = ""
+                End If
+                If Not IsDBNull(myReader("LinkTo")) Then
+                    LinkToVal = myReader("LinkTo")
+                End If
+                If Not IsDBNull(myReader("Approved")) Then
+                    If CType(myReader("Approved"), Integer) = 1 Then
+                        chkApprove.Checked = True
+                    Else
+                        chkApprove.Checked = False
+                    End If
+                End If
+                If (Convert.ToString(Session("FreeSaleWdrlState")) = "Edit") Then
+                    If Not IsDBNull(myReader("OriginalInventoryID")) Then
+                        Session("WdrlDirectInventoryID") = CType(myReader("OriginalInventoryID"), String)
+                    End If
+                End If
+            End If
+
+            If (Convert.ToString(Session("FreeSaleWdrlState")) = "WithdrawDirect") Then
+                wucCountrygroup.sbSetPageState(InventoryID, "InventoryFreeSale", "Edit")
+                Session("isAutoTick_wuccountrygroupusercontrol") = 1
+                wucCountrygroup.sbShowCountry()
+                Session("WdrlDirectCtry") = wucCountrygroup.checkcountrylist.ToString.Trim
+                Session("WdrlDirectAgent") = wucCountrygroup.checkagentlist.ToString.Trim
+                chkApprove.Checked = False
+            Else
+                wucCountrygroup.sbSetPageState(InventoryID, "FreeSaleWithdraw", Convert.ToString(Session("FreeSaleWdrlState")))
+                Session("isAutoTick_wuccountrygroupusercontrol") = 1
+                wucCountrygroup.sbShowCountry()
+            End If
+            Dim lblrmTypCode As Label
+            Dim chkRmType As CheckBox
+            Dim RmTypeList As String = ""
+            If (Convert.ToString(Session("FreeSaleWdrlState")) = "WithdrawDirect") Then
+                strSqlQry = "select rmtypcode from Inventory_RmType where InventoryID ='" + InventoryID + "'"
+            Else
+                strSqlQry = "select rmtypcode from InventoryWithdraw_RmType where InventoryID ='" + InventoryID + "'"
+            End If
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myCmd = New SqlCommand(strSqlQry, mySqlConn)
+            myReader = myCmd.ExecuteReader()
+            While (myReader.Read())
+                For Each rmt As GridViewRow In grdroomtype.Rows
+                    If rmt.RowType = DataControlRowType.DataRow Then
+                        lblrmTypCode = TryCast(rmt.FindControl("txtrmtypcode"), Label)
+                        chkRmType = TryCast(rmt.FindControl("chkrmtyp"), CheckBox)
+                        If lblrmTypCode.Text.Trim = myReader("rmtypcode") Then
+                            chkRmType.Checked = True
+                            Exit For
+                        End If
+                    End If
+                Next
+                If (RmTypeList = "") Then
+                    RmTypeList = myReader("rmtypcode")
+                Else
+                    RmTypeList = RmTypeList + "," + CType(myReader("rmtypcode"), String)
+                End If
+            End While
+            If (Convert.ToString(Session("FreeSaleWdrlState")) = "WithdrawDirect") Then Session("WdrlDirectRooms") = RmTypeList
+            myReader.Close()
+            Dim myDataAdapter As New SqlDataAdapter
+            Dim dtStayPeriod As DataTable = Session("WdrlDirectStayPeriod")
+            dtStayPeriod.Clear()
+            If (Convert.ToString(Session("FreeSaleWdrlState")) = "WithdrawDirect") Then
+                strSqlQry = "select FromDate,ToDate from Inventory_Dates where InventoryID ='" + InventoryID + "' order by ILineNO"
+            Else
+                strSqlQry = "select FromDate,ToDate from InventoryWithdraw_Dates where InventoryID ='" + InventoryID + "' order by ILineNO"
+            End If
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+            myDataAdapter.Fill(dtStayPeriod)
+            gvStayPeriod.DataSource = dtStayPeriod
+            gvStayPeriod.DataBind()
+            If (Convert.ToString(Session("FreeSaleWdrlState")) = "WithdrawDirect") Then
+                Session("WdrlDirectStayPeriod") = dtStayPeriod
+            End If
+
+            ddlLinkTo.ClearSelection()
+            ddlLinkTo.Items.FindByValue(LinkToVal).Selected = True
+            Dim offerList As New DataTable
+            If Convert.ToString(Session("FreeSaleWdrlState")) = "Edit" And ddlLinkTo.SelectedValue = "Specific Offers" And String.IsNullOrEmpty(Session("WdrlDirectInventoryID")) Then
+                ddlLinkTo_SelectedIndexChanged(ddlLinkTo, EventArgs.Empty)
+                strSqlQry = "select PromotionID,PromotionName,ApplicableTo,Period from InventoryWithdraw_Offers where InventoryID ='" + txtInventoryID.Text.Trim + "'"
+                myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+                myDataAdapter.Fill(offerList)
+                If offerList.Rows.Count > 0 And gvOffer.Rows.Count > 0 Then
+                    Dim chkOffer As CheckBox
+                    Dim promotionID As Label
+                    Dim offerDr As DataRow
+                    For i As Integer = 0 To offerList.Rows.Count - 1
+                        offerDr = offerList.Rows(i)
+                        For Each gvrow As GridViewRow In gvOffer.Rows
+                            chkOffer = CType(gvrow.FindControl("chkOffer"), CheckBox)
+                            promotionID = CType(gvrow.FindControl("txtPromotionID"), Label)
+                            If promotionID.Text.Trim = offerDr("PromotionID") And gvrow.Cells(2).Text.Trim = Convert.ToString(offerDr("PromotionName")).Trim _
+                                And gvrow.Cells(3).Text.Trim = Convert.ToString(offerDr("ApplicableTo")).Trim And gvrow.Cells(4).Text.Trim = Convert.ToString(offerDr("Period")).Trim Then
+                                chkOffer.Checked = True
+                                Exit For
+                            End If
+                        Next
+                    Next
+                End If
+            ElseIf (Convert.ToString(Session("FreeSaleWdrlState")) = "Edit" And ddlLinkTo.SelectedValue = "Specific Offers" And Not String.IsNullOrEmpty(Session("WdrlDirectInventoryID"))) Or (Convert.ToString(Session("FreeSaleWdrlState")) = "View" And ddlLinkTo.SelectedValue = "Specific Offers") Then
+                gvOffer.Visible = True
+                divOffer.Visible = True
+                strSqlQry = "select PromotionID,PromotionName,ApplicableTo,Period from InventoryWithdraw_Offers where InventoryID ='" + txtInventoryID.Text.Trim + "'"
+                myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+                myDataAdapter.Fill(offerList)
+                gvOffer.DataSource = offerList
+                gvOffer.DataBind()
+                Dim chkOffer As CheckBox
+                For Each gvrow As GridViewRow In gvOffer.Rows
+                    chkOffer = CType(gvrow.FindControl("chkOffer"), CheckBox)
+                    chkOffer.Checked = True
+                    chkOffer.Enabled = False
+                Next
+                CType(gvOffer.HeaderRow.FindControl("chkOfferAll"), CheckBox).Enabled = False
+                ddlLinkTo.Enabled = False
+            ElseIf Convert.ToString(Session("FreeSaleWdrlState")) = "WithdrawDirect" And ddlLinkTo.SelectedValue = "Specific Offers" Then
+                gvOffer.Visible = True
+                divOffer.Visible = True
+                strSqlQry = "select PromotionID,PromotionName,ApplicableTo,Period from Inventory_Offers where InventoryID ='" + CType(Session("WdrlDirectInventoryID"), String) + "'"
+                myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+                myDataAdapter.Fill(offerList)
+                gvOffer.DataSource = offerList
+                gvOffer.DataBind()
+                Dim chkOffer As CheckBox
+                For Each gvrow As GridViewRow In gvOffer.Rows
+                    chkOffer = CType(gvrow.FindControl("chkOffer"), CheckBox)
+                    chkOffer.Checked = True
+                    chkOffer.Enabled = False
+                Next
+                CType(gvOffer.HeaderRow.FindControl("chkOfferAll"), CheckBox).Enabled = False
+                ddlLinkTo.Enabled = False
+            End If
+            If (Convert.ToString(Session("FreeSaleWdrlState")) = "Edit" And Not String.IsNullOrEmpty(Session("WdrlDirectInventoryID"))) Then
+                Dim WdrlInventoryID = Session("WdrlDirectInventoryID")
+                strSqlQry = "select stuff ((select ',' + CtryCode from Inventory_Countries where inventoryid='" + WdrlInventoryID + "' for xml path('')),1,1,'') as Countries"
+                mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+                myCmd = New SqlCommand(strSqlQry, mySqlConn)
+                myReader = myCmd.ExecuteReader()
+                If myReader.Read() Then
+                    If Not IsDBNull(myReader(0)) Then
+                        Session("WdrlDirectCtry") = myReader(0)
+                    Else
+                        Session("WdrlDirectCtry") = ""
+                    End If
+
+                    Session("WdrlDirectAgent") = wucCountrygroup.checkagentlist.ToString.Trim
+                Else
+                    Session("WdrlDirectCtry") = ""
+                End If
+                myReader.Close()
+                strSqlQry = "select stuff ((select ',' + AgentCode from Inventory_Agents where inventoryid='" + WdrlInventoryID + "' for xml path('')),1,1,'') as Agents"
+                myCmd = New SqlCommand(strSqlQry, mySqlConn)
+                myReader = myCmd.ExecuteReader()
+                If myReader.Read() Then
+                    If Not IsDBNull(myReader(0)) Then
+                        Session("WdrlDirectAgent") = myReader(0)
+                    Else
+                        Session("WdrlDirectAgent") = ""
+                    End If
+                Else
+                    Session("WdrlDirectAgent") = ""
+                End If
+                myReader.Close()
+                strSqlQry = "select stuff ((select ',' + RmTypCode from Inventory_RmType where inventoryid='" + WdrlInventoryID + "' for xml path('')),1,1,'') as Rooms"
+                myCmd = New SqlCommand(strSqlQry, mySqlConn)
+                myReader = myCmd.ExecuteReader()
+                If myReader.Read() Then
+                    If Not IsDBNull(myReader(0)) Then
+                        Session("WdrlDirectRooms") = myReader(0)
+                    Else
+                        Session("WdrlDirectRooms") = ""
+                    End If
+                Else
+                    Session("WdrlDirectRooms") = ""
+                End If
+                myReader.Close()
+                dtStayPeriod.Clear()
+                strSqlQry = "select FromDate,ToDate from Inventory_Dates where InventoryID ='" + WdrlInventoryID + "' order by ILineNO"
+                mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+                myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+                myDataAdapter.Fill(dtStayPeriod)
+                Session("WdrlDirectStayPeriod") = dtStayPeriod
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbConnectionClose(mySqlConn)                          'Close connection       
+        End Try
+    End Sub
+#End Region
+
+#Region "Private Sub DisableControl()"
+    Private Sub DisableControl()
+        If CType(Session("FreeSaleWdrlState"), String) = "View" Then
+            txtInventoryID.Enabled = False
+            txtHotelName.Enabled = False
+            ddlInventoryType.Enabled = False
+            txtApplicableTo.Enabled = False
+            ddlLinkTo.Enabled = False
+            gvOffer.Enabled = False
+            btnvsprocess.Enabled = False
+            dlList.Enabled = False
+            wucCountrygroup.Disable(False)
+            Dim txt As TextBox
+            txt = TryCast(wucCountrygroup.FindControl("txtSearchAgent"), TextBox)
+            txt.Enabled = False
+            gvStayPeriod.Enabled = False
+            grdroomtype.Enabled = False
+            chkApprove.Enabled = False
+            btnSave.Visible = False
+            btnSaveAndAnotherHotel.Visible = False
+            btnSaveAndSameHotel.Visible = False
+        ElseIf CType(Session("FreeSaleWdrlState"), String) = "Edit" Then
+            txtInventoryID.Enabled = False
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnselect_Click(ByVal sender As Object, ByVal e As System.EventArgs)"
+    Protected Sub btnselect_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        If (txtHotelCode.Text.Trim <> "") Then
+            Dim myDataAdapter As SqlDataAdapter
+            gvShowdates.Visible = True
+            chkSeason.Checked = False
+            chkApplicable.Checked = False
+            Dim MyDs As New DataTable
+            Dim countryList As String = ""
+            Dim agentList As String = ""
+            Dim filterCond As String = ""
+            If wucCountrygroup.checkcountrylist.ToString().Trim <> "" Then
+                countryList = wucCountrygroup.checkcountrylist.ToString().Trim.Replace(",", "','")
+                filterCond = "c.contractid  in (select contractid from contracts_countries where ctrycode in (' " + countryList + "'))"
+            End If
+            If wucCountrygroup.checkagentlist.ToString().Trim <> "" Then
+                agentList = wucCountrygroup.checkagentlist.ToString().Trim.Replace(",", "','")
+                If filterCond <> "" Then
+                    filterCond = filterCond + " or c.contractid  in (select contractid from contracts_agents where agentcode in ( '" + agentList + "'))"
+                Else
+                    filterCond = "c.contractid  in (select contractid from contracts_agents where agentcode in ( '" + agentList + "'))"
+                End If
+            End If
+            If filterCond <> "" Then
+                filterCond = " and (" + filterCond + ")"
+            End If
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+            strSqlQry = " select c.contractid ,c.applicableto,v.SeasonName ,convert(varchar(10),v.fromdate,103) fromdate ,convert(varchar(10),v.todate,103) todate  from view_contractseasons v ,view_contracts_search c " _
+                          & " where v.contractid =c.contractid  and c.partycode ='" + txtHotelCode.Text.Trim + "' and convert(varchar(10),v.fromdate,111) >=GETDATE() " + filterCond + " order by convert(varchar(10),v.fromdate,111),convert(varchar(10),v.todate,111)"
+            mySqlCmd = New SqlCommand(strSqlQry, mySqlConn)
+            myDataAdapter = New SqlDataAdapter(strSqlQry, mySqlConn)
+            myDataAdapter.Fill(MyDs)
+            If MyDs.Rows.Count > 0 Then
+                gvShowdates.DataSource = MyDs
+                gvShowdates.DataBind()
+                gvShowdates.Visible = True
+            Else
+                gvShowdates.Visible = False
+            End If
+            ModalExtraPopup.Show()
+        Else
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Hotel Name' );", True)
+            Exit Sub
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub btnSelectDate_Click(sender As Object, e As System.EventArgs) Handles btnSelectDate.Click"
+    Protected Sub btnSelectDate_Click(sender As Object, e As System.EventArgs) Handles btnSelectDate.Click
+        Dim dtStayPeriod As New DataTable
+        Dim drStayPeriod As DataRow
+        dtStayPeriod.Columns.Add(New DataColumn("FromDate", GetType(Date)))
+        dtStayPeriod.Columns.Add(New DataColumn("ToDate", GetType(Date)))
+        Dim chkSelect As CheckBox
+        For Each sdRow As GridViewRow In gvShowdates.Rows
+            chkSelect = CType(sdRow.FindControl("chkdateselect"), CheckBox)
+            If (chkSelect.Checked = True) Then
+                drStayPeriod = dtStayPeriod.NewRow
+                drStayPeriod("FromDate") = CType(sdRow.Cells(5).Text, Date)
+                drStayPeriod("ToDate") = CType(sdRow.Cells(6).Text, Date)
+                dtStayPeriod.Rows.Add(drStayPeriod)
+            End If
+        Next
+        If dtStayPeriod.Rows.Count > 0 Then
+            gvStayPeriod.DataSource = dtStayPeriod
+            gvStayPeriod.DataBind()
+        End If
+        ModalExtraPopup.Hide()
+    End Sub
+#End Region
+
+#Region "Protected Sub btnclose_Click(sender As Object, e As System.EventArgs) Handles btnclose.Click"
+    Protected Sub btnclose_Click(sender As Object, e As System.EventArgs) Handles btnclose.Click
+        ModalExtraPopup.Hide()
+    End Sub
+#End Region
+
+#Region "Protected Sub chkSeason_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkSeason.CheckedChanged"
+    Protected Sub chkSeason_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkSeason.CheckedChanged
+        Dim chk As CheckBox
+        Dim seasonList As New List(Of String)
+        For Each gr As GridViewRow In gvShowdates.Rows
+            If gr.RowType = DataControlRowType.DataRow Then
+                chk = CType(gr.FindControl("chkdateselect"), CheckBox)
+                If chk.Checked = True Then
+                    If Not seasonList.Contains(gr.Cells(4).Text.Trim) Then
+                        seasonList.Add(gr.Cells(4).Text.Trim)
+                    End If
+                End If
+            End If
+        Next
+        If seasonList.Count > 0 Then
+            For Each gr As GridViewRow In gvShowdates.Rows
+                If seasonList.Contains(gr.Cells(4).Text.Trim) Then
+                    chk = CType(gr.FindControl("chkdateselect"), CheckBox)
+                    If chkSeason.Checked = True Then
+                        chk.Checked = True
+                    Else
+                        chk.Checked = False
+                    End If
+                End If
+            Next
+        End If
+        ModalExtraPopup.Show()
+    End Sub
+#End Region
+
+#Region "Protected Sub chkApplicable_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkApplicable.CheckedChanged"
+    Protected Sub chkApplicable_CheckedChanged(sender As Object, e As System.EventArgs) Handles chkApplicable.CheckedChanged
+        Dim chk As CheckBox
+        Dim ApplicableToList As New List(Of String)
+        For Each gr As GridViewRow In gvShowdates.Rows
+            If gr.RowType = DataControlRowType.DataRow Then
+                chk = CType(gr.FindControl("chkdateselect"), CheckBox)
+                If chk.Checked = True Then
+                    If Not ApplicableToList.Contains(gr.Cells(3).Text.Trim + " ! " + gr.Cells(4).Text.Trim) Then
+                        ApplicableToList.Add(gr.Cells(3).Text.Trim + " ! " + gr.Cells(4).Text.Trim)
+                    End If
+                End If
+            End If
+        Next
+        If ApplicableToList.Count > 0 Then
+            For Each gr As GridViewRow In gvShowdates.Rows
+                If ApplicableToList.Contains(gr.Cells(3).Text.Trim + " ! " + gr.Cells(4).Text.Trim) Then
+                    chk = CType(gr.FindControl("chkdateselect"), CheckBox)
+                    If chkApplicable.Checked = True Then
+                        chk.Checked = True
+                    Else
+                        chk.Checked = False
+                    End If
+                End If
+            Next
+        End If
+        ModalExtraPopup.Show()
+    End Sub
+#End Region
+
+#Region "Protected Sub ddlLinkTo_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlLinkTo.SelectedIndexChanged"
+    Protected Sub ddlLinkTo_SelectedIndexChanged(sender As Object, e As System.EventArgs) Handles ddlLinkTo.SelectedIndexChanged
+        If ddlLinkTo.SelectedValue = "Specific Offers" Then
+            If (txtHotelCode.Text = "") Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Hotel Code' );", True)
+                ddlLinkTo.SelectedIndex = 0
+                Exit Sub
+            End If
+            If wucCountrygroup.checkcountrylist.ToString().Trim = "" Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Countries' );", True)
+                ddlLinkTo.SelectedIndex = 0
+                Exit Sub
+            End If
+            If gvStayPeriod.Rows.Count <= 1 And IsDate(CType(gvStayPeriod.Rows(0).FindControl("txtStayfromDate"), TextBox).Text) = False And IsDate(CType(gvStayPeriod.Rows(0).FindControl("txtStayToDate"), TextBox).Text) = False Then
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Enter stay period' );", True)
+                ddlLinkTo.SelectedIndex = 0
+                Exit Sub
+            End If
+            Dim offerDt As DataTable = ShowOffers()
+            divOffer.Visible = True
+            gvOffer.DataSource = offerDt
+            gvOffer.DataBind()
+        Else
+            divOffer.Visible = False
+            gvOffer.DataSource = Nothing
+            gvOffer.DataBind()
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Function ShowOffers() As DataTable"
+    Protected Function ShowOffers() As DataTable
+        Try
+            Dim offerDt As New DataTable
+            Dim myDt As New DataTable
+            Dim spDt As DataTable
+
+            Dim txtStayfromDate As TextBox
+            Dim txtStayToDate As TextBox
+            Dim myDataAdapter As New SqlDataAdapter
+            ViewState("PartycodeOffer") = txtHotelCode.Text.Trim
+            ViewState("CountriesOffer") = wucCountrygroup.checkcountrylist.ToString().Trim
+            spDt = CType(ViewState("DatesOffer"), DataTable)
+            spDt.Clear()
+            Dim spDr As DataRow
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))
+            For Each lRow As GridViewRow In gvStayPeriod.Rows
+                txtStayfromDate = lRow.FindControl("txtStayfromDate")
+                txtStayToDate = lRow.FindControl("txtStayToDate")
+                If IsDate(txtStayfromDate.Text) And IsDate(txtStayToDate.Text) Then
+                    mySqlCmd = New SqlCommand("sp_View_InventoryOffer", mySqlConn)
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = CType(txtHotelCode.Text.Trim, String)
+                    mySqlCmd.Parameters.Add(New SqlParameter("@Countries", SqlDbType.VarChar, -1)).Value = wucCountrygroup.checkcountrylist.ToString().Trim
+                    mySqlCmd.Parameters.Add(New SqlParameter("@FromCDate", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtStayfromDate.Text).ToString("yyyy/MM/dd"))
+                    mySqlCmd.Parameters.Add(New SqlParameter("@ToCDate", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtStayToDate.Text).ToString("yyyy/MM/dd"))
+                    myDataAdapter.SelectCommand = mySqlCmd
+                    myDataAdapter.Fill(myDt)
+                    offerDt.Merge(myDt)
+                    myDt.Clear()
+                    mySqlCmd.Dispose()
+                    spDr = spDt.NewRow
+                    spDr("FromDate") = Convert.ToDateTime(txtStayfromDate.Text)
+                    spDr("ToDate") = Convert.ToDateTime(txtStayToDate.Text)
+                    spDt.Rows.Add(spDr)
+                End If
+            Next
+            ViewState("DatesOffer") = spDt
+            Dim DistinctList As DataTable = offerDt.DefaultView.ToTable(True, {"PromotionID", "PromotionName", "ApplicableTo", "Period"})
+            ShowOffers = DistinctList
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("InventoryFreeSale.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            ShowOffers = Nothing
+        End Try
+    End Function
+#End Region
+
+#Region "Protected Sub btnDisplay_Click(sender As Object, e As System.EventArgs) Handles btnDisplay.Click"
+    Protected Sub btnDisplay_Click(sender As Object, e As System.EventArgs) Handles btnDisplay.Click
+        If CType(Session("FreeSaleWdrlState"), String) = "View" Then
+            Dim dt As DataTable
+            dt = FillDisplayGrid("Exact Match")
+            Dim dc As New DataColumn("chkMatch", GetType(Boolean))
+            dc.DefaultValue = True
+            dt.Columns.Add(dc)
+            Dim dc1 As New DataColumn("AutoID", GetType(Long))
+            dc1.DefaultValue = 0
+            dt.Columns.Add(dc1)
+            gvExactInventory.DataSource = dt
+            gvExactInventory.DataBind()
+            Dim gvr As GridViewRow = gvExactInventory.HeaderRow
+            CType(gvr.FindControl("chkMatchAll"), CheckBox).Enabled = False
+            dt.Clear()
+            dt = FillDisplayGrid("Partial Match")
+            Dim dcPartial As New DataColumn("chkMatch", GetType(Boolean))
+            dcPartial.DefaultValue = True
+            dt.Columns.Add(dcPartial)
+            Dim dcPartial1 As New DataColumn("AutoID", GetType(Long))
+            dcPartial1.DefaultValue = 0
+            dt.Columns.Add(dcPartial1)
+            gvPartialMatchInventory.DataSource = dt
+            gvPartialMatchInventory.DataBind()
+            Dim gvrPartial As GridViewRow = gvPartialMatchInventory.HeaderRow
+            CType(gvrPartial.FindControl("chkPartialMatchAll"), CheckBox).Enabled = False
+            dt.Clear()
+        Else
+            If ValidatePage() = False Then Exit Sub
+            DisplayInventory()
+            DisplayPartialMatch()
+            hdDisplayFlag.Value = True
+            Session("FreesaleCtrySelect") = wucCountrygroup.checkcountrylist.ToString.Trim
+            Session("FreesaleAgentSelect") = wucCountrygroup.checkagentlist.ToString.Trim
+            Dim chkRmType As CheckBox
+            Dim rmTypeCode As Label
+            Dim RmTypeList As String = ""
+            For Each lRow As GridViewRow In grdroomtype.Rows
+                chkRmType = lRow.FindControl("chkrmtyp")
+                rmTypeCode = lRow.FindControl("txtrmtypcode")
+                If chkRmType.Checked = True Then
+                    If (RmTypeList = "") Then
+                        RmTypeList = CType(rmTypeCode.Text.Trim, String)
+                    Else
+                        RmTypeList = RmTypeList + "," + CType(rmTypeCode.Text.Trim, String)
+                    End If
+                End If
+            Next
+            Session("FreesaleRoomSelect") = RmTypeList
+            Dim dt As DataTable = CType(Session("FreesaleStayPeriod"), DataTable)
+            dt.Clear()
+            Dim dr As DataRow
+            Dim txtStayfromDate As TextBox
+            Dim txtStayToDate As TextBox
+            For Each lRow As GridViewRow In gvStayPeriod.Rows
+                dr = dt.NewRow
+                txtStayfromDate = lRow.FindControl("txtStayfromDate")
+                txtStayToDate = lRow.FindControl("txtStayToDate")
+                If IsDate(txtStayfromDate.Text) And IsDate(txtStayToDate.Text) Then
+                    dr("FromDate") = Convert.ToDateTime(txtStayfromDate.Text)
+                    dr("ToDate") = Convert.ToDateTime(txtStayToDate.Text)
+                    dt.Rows.Add(dr)
+                End If
+            Next
+            Session("FreesaleStayPeriod") = dt
+        End If
+        ModalDisplayWithdrawPopup.Show()
+    End Sub
+#End Region
+
+#Region "Protected Function FillDisplayGrid(ByVal MatchingInventoryType As String) As DataTable"
+    Protected Function FillDisplayGrid(ByVal MatchingInventoryType As String) As DataTable
+        Dim myDataAdapter As New SqlDataAdapter
+        Try
+            Dim myDt As New DataTable
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            mySqlCmd = New SqlCommand("sp_InventoryDisplayView", mySqlConn)
+            mySqlCmd.CommandType = CommandType.StoredProcedure
+            mySqlCmd.Parameters.Add(New SqlParameter("@InventoryID", SqlDbType.VarChar, 20)).Value = txtInventoryID.Text.Trim()
+            mySqlCmd.Parameters.Add(New SqlParameter("@MatchingType", SqlDbType.VarChar, 100)).Value = MatchingInventoryType
+            myDataAdapter.SelectCommand = mySqlCmd
+            myDataAdapter.Fill(myDt)
+            FillDisplayGrid = myDt
+        Catch ex As Exception
+            FillDisplayGrid = Nothing
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            clsDBConnect.dbConnectionClose(mySqlConn)
+        End Try
+    End Function
+#End Region
+
+#Region "Protected Sub DisplayInventory()"
+    Protected Sub DisplayInventory()
+        Dim myDataAdapter As New SqlDataAdapter
+        Dim InventoryDt As New DataTable
+        Try
+            Dim chkRmType As CheckBox
+            Dim rmTypeCode As Label
+            Dim RmTypeList As String = ""
+            For Each lRow As GridViewRow In grdroomtype.Rows
+                chkRmType = lRow.FindControl("chkrmtyp")
+                rmTypeCode = lRow.FindControl("txtrmtypcode")
+                If chkRmType.Checked = True Then
+                    If (RmTypeList = "") Then
+                        RmTypeList = CType(rmTypeCode.Text.Trim, String)
+                    Else
+                        RmTypeList = RmTypeList + "," + CType(rmTypeCode.Text.Trim, String)
+                    End If
+                End If
+            Next
+            Dim myDt As New DataTable
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            Dim txtStayfromDate As TextBox
+            Dim txtStayToDate As TextBox
+            For Each gr As GridViewRow In gvStayPeriod.Rows
+                txtStayfromDate = CType(gr.FindControl("txtStayfromDate"), TextBox)
+                txtStayToDate = CType(gr.FindControl("txtStayToDate"), TextBox)
+                mySqlCmd = New SqlCommand("sp_FreeSaleWithdrawDisplay", mySqlConn)
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = txtHotelCode.Text.Trim()
+                mySqlCmd.Parameters.Add(New SqlParameter("@InventoryType", SqlDbType.VarChar, 20)).Value = ddlInventoryType.SelectedValue.Trim()
+                mySqlCmd.Parameters.Add(New SqlParameter("@Countries", SqlDbType.VarChar, -1)).Value = wucCountrygroup.checkcountrylist.ToString().Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@Agents", SqlDbType.VarChar, -1)).Value = IIf(wucCountrygroup.checkagentlist.ToString().Trim = "", "Empty", wucCountrygroup.checkagentlist.ToString().Trim)
+                mySqlCmd.Parameters.Add(New SqlParameter("@RoomsList", SqlDbType.VarChar, -1)).Value = RmTypeList
+                mySqlCmd.Parameters.Add(New SqlParameter("@FromDate", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtStayfromDate.Text).ToString("yyyy/MM/dd"))
+                mySqlCmd.Parameters.Add(New SqlParameter("@ToDate", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtStayToDate.Text).ToString("yyyy/MM/dd"))
+                myDataAdapter.SelectCommand = mySqlCmd
+                myDataAdapter.Fill(myDt)
+                InventoryDt.Merge(myDt)
+                myDt.Clear()
+            Next
+            Dim dcChk As New DataColumn("chkMatch", GetType(Boolean))
+            dcChk.DefaultValue = True
+            InventoryDt.Columns.Add(dcChk)
+            InventoryDt.DefaultView.Sort = Session("strsortexpressionFsMatch") + " " + objUtils.ConvertSortDirectionToSql(Session("strsortdirectionFsMatch"))
+            gvExactInventory.DataSource = InventoryDt.DefaultView.ToTable()
+            gvExactInventory.DataBind()
+            If InventoryDt.Rows.Count > 0 Then CType(gvExactInventory.HeaderRow.Cells(0).FindControl("chkMatchAll"), CheckBox).Checked = True
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            clsDBConnect.dbConnectionClose(mySqlConn)                          'Close connection       
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub DisplayPartialMatch()"
+    Protected Sub DisplayPartialMatch()
+        Dim myDataAdapter As New SqlDataAdapter
+        Dim InventoryDt As New DataTable
+        Try
+            Dim chkRmType As CheckBox
+            Dim rmTypeCode As Label
+            Dim RmTypeList As String = ""
+            For Each lRow As GridViewRow In grdroomtype.Rows
+                chkRmType = lRow.FindControl("chkrmtyp")
+                rmTypeCode = lRow.FindControl("txtrmtypcode")
+                If chkRmType.Checked = True Then
+                    If (RmTypeList = "") Then
+                        RmTypeList = CType(rmTypeCode.Text.Trim, String)
+                    Else
+                        RmTypeList = RmTypeList + "," + CType(rmTypeCode.Text.Trim, String)
+                    End If
+                End If
+            Next
+            Dim myDt As New DataTable
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))                             'Open connection
+            Dim txtStayfromDate As TextBox
+            Dim txtStayToDate As TextBox
+            For Each gr As GridViewRow In gvStayPeriod.Rows
+                txtStayfromDate = CType(gr.FindControl("txtStayfromDate"), TextBox)
+                txtStayToDate = CType(gr.FindControl("txtStayToDate"), TextBox)
+                mySqlCmd = New SqlCommand("sp_FreeSaleWithdrawPartialMatch", mySqlConn) '
+                mySqlCmd.CommandType = CommandType.StoredProcedure
+                mySqlCmd.Parameters.Add(New SqlParameter("@PartyCode", SqlDbType.VarChar, 20)).Value = txtHotelCode.Text.Trim()
+                mySqlCmd.Parameters.Add(New SqlParameter("@InventoryType", SqlDbType.VarChar, 20)).Value = ddlInventoryType.SelectedValue.Trim()
+                mySqlCmd.Parameters.Add(New SqlParameter("@Countries", SqlDbType.VarChar, -1)).Value = wucCountrygroup.checkcountrylist.ToString().Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@Agents", SqlDbType.VarChar, -1)).Value = wucCountrygroup.checkagentlist.ToString().Trim
+                mySqlCmd.Parameters.Add(New SqlParameter("@FromDate", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtStayfromDate.Text).ToString("yyyy/MM/dd"))
+                mySqlCmd.Parameters.Add(New SqlParameter("@ToDate", SqlDbType.VarChar, 10)).Value = Convert.ToString(Convert.ToDateTime(txtStayToDate.Text).ToString("yyyy/MM/dd"))
+                mySqlCmd.Parameters.Add(New SqlParameter("@RoomTypes", SqlDbType.VarChar, -1)).Value = RmTypeList
+                myDataAdapter.SelectCommand = mySqlCmd
+                myDataAdapter.Fill(myDt)
+                InventoryDt.Merge(myDt)
+                myDt.Clear()
+            Next
+            Dim dcChk As New DataColumn("chkMatch", GetType(Boolean))
+            dcChk.DefaultValue = True
+            InventoryDt.Columns.Add(dcChk)
+            InventoryDt.DefaultView.Sort = Session("strsortExpressionFsPartial") + " " + objUtils.ConvertSortDirectionToSql(Session("strsortDirectionFsPartial"))
+            gvPartialMatchInventory.DataSource = InventoryDt.DefaultView.ToTable()
+            gvPartialMatchInventory.DataBind()
+            If InventoryDt.Rows.Count > 0 Then CType(gvPartialMatchInventory.HeaderRow.Cells(0).FindControl("chkPartialMatchAll"), CheckBox).Checked = True
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbAdapterClose(myDataAdapter)                       'Close adapter
+            clsDBConnect.dbConnectionClose(mySqlConn)                          'Close connection       
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub gvExactInventory_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvExactInventory.RowDataBound"
+    Protected Sub gvExactInventory_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvExactInventory.RowDataBound
+        If (e.Row.RowType = DataControlRowType.DataRow) Then
+            If CType(Session("FreeSaleWdrlState"), String) = "View" Then
+                CType(e.Row.FindControl("chkMatch"), CheckBox).Enabled = False
+            Else
+                If (CType(e.Row.FindControl("chkMatch"), CheckBox).Checked = False) Then
+                    e.Row.Attributes.Add("style", "background-color:#FFCC99;")
+                End If
+            End If
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub gvExactInventory_Sorting(sender As Object, e As System.Web.UI.WebControls.GridViewSortEventArgs) Handles gvExactInventory.Sorting"
+    Protected Sub gvExactInventory_Sorting(sender As Object, e As System.Web.UI.WebControls.GridViewSortEventArgs) Handles gvExactInventory.Sorting
+        Dim dt As New DataTable
+        Dt = MakeDataTable(gvExactInventory)
+        Session.Add("strsortexpressionFsMatch", e.SortExpression)
+        If IsDBNull(dt) = False Then
+            Dim dataView As DataView = dt.DefaultView
+            Session.Add("strsortdirectionFsMatch", objUtils.SwapSortDirection(Session("strsortdirectionFsMatch")))
+            dataView.Sort = Session("strsortexpressionFsMatch") & " " & objUtils.ConvertSortDirectionToSql(Session("strsortdirectionFsMatch"))
+            gvExactInventory.DataSource = dataView
+            gvExactInventory.DataBind()
+        End If
+        ModalDisplayWithdrawPopup.Show()
+    End Sub
+#End Region
+
+#Region "Protected Sub gvPartialMatchInventory_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvPartialMatchInventory.RowDataBound"
+    Protected Sub gvPartialMatchInventory_RowDataBound(sender As Object, e As System.Web.UI.WebControls.GridViewRowEventArgs) Handles gvPartialMatchInventory.RowDataBound
+        If (e.Row.RowType = DataControlRowType.DataRow) Then
+            If CType(Session("FreeSaleWdrlState"), String) = "View" Then
+                CType(e.Row.FindControl("chkMatch"), CheckBox).Enabled = False
+            Else
+                If (CType(e.Row.FindControl("chkMatch"), CheckBox).Checked = False) Then
+                    e.Row.Attributes.Add("style", "background-color:#FFCC99;")
+                End If
+            End If
+        End If
+    End Sub
+#End Region
+
+#Region "Protected Sub gvPartialMatchInventory_Sorting(sender As Object, e As System.Web.UI.WebControls.GridViewSortEventArgs) Handles gvPartialMatchInventory.Sorting"
+    Protected Sub gvPartialMatchInventory_Sorting(sender As Object, e As System.Web.UI.WebControls.GridViewSortEventArgs) Handles gvPartialMatchInventory.Sorting
+        Dim Dt As New DataTable
+        Dt = MakeDataTable(gvPartialMatchInventory)
+        Session.Add("strsortExpressionFsPartial", e.SortExpression)
+        If IsDBNull(Dt) = False Then
+            Dim dataView As DataView = Dt.DefaultView
+            Session.Add("strsortDirectionFsPartial", objUtils.SwapSortDirection(Session("strsortDirectionFsPartial")))
+            dataView.Sort = Session("strsortExpressionFsPartial") & " " & objUtils.ConvertSortDirectionToSql(Session("strsortDirectionFsPartial"))
+            gvPartialMatchInventory.DataSource = dataView
+            gvPartialMatchInventory.DataBind()
+        End If
+        ModalDisplayWithdrawPopup.Show()
+    End Sub
+#End Region
+
+#Region "Protected Function MakeDataTable(ByVal gvDynamic As GridView) As DataTable"
+    Protected Function MakeDataTable(ByVal gvDynamic As GridView) As DataTable
+        Try
+            Dim dt As New DataTable
+            dt.Columns.Add(New DataColumn("chkMatch", GetType(Boolean)))
+            dt.Columns.Add(New DataColumn("AutoID", GetType(Long)))
+            dt.Columns.Add(New DataColumn("InventoryType", GetType(String)))
+            dt.Columns.Add(New DataColumn("InventoryDate", GetType(Date)))
+            dt.Columns.Add(New DataColumn("PartyCode", GetType(String)))
+            dt.Columns.Add(New DataColumn("PartyName", GetType(String)))
+            dt.Columns.Add(New DataColumn("RoomTypeCode", GetType(String)))
+            dt.Columns.Add(New DataColumn("RoomTypeName", GetType(String)))
+            dt.Columns.Add(New DataColumn("CtryCodes", GetType(String)))
+            dt.Columns.Add(New DataColumn("Countries", GetType(String)))
+            dt.Columns.Add(New DataColumn("AgentCodes", GetType(String)))
+            dt.Columns.Add(New DataColumn("Agents", GetType(String)))
+            dt.Columns.Add(New DataColumn("ReleaseDays", GetType(Integer)))
+            dt.Columns.Add(New DataColumn("RoomsAlloted", GetType(Integer)))
+            dt.Columns.Add(New DataColumn("RoomsAvailable", GetType(Integer)))
+            Dim dr As DataRow
+            For Each gr As GridViewRow In gvDynamic.Rows
+                If gr.RowType = DataControlRowType.DataRow Then
+                    dr = dt.NewRow
+                    dr("chkMatch") = CType(CType(gr.Cells(0).FindControl("chkMatch"), CheckBox).Checked, Boolean)
+                    dr("AutoID") = CType(CType(gr.Cells(0).FindControl("HdAutoID"), HiddenField).Value, Long)
+                    dr("InventoryType") = gr.Cells(1).Text.Trim
+                    dr("InventoryDate") = CType(gr.Cells(2).Text.Trim, Date)
+                    dr("PartyCode") = CType(gr.Cells(3).FindControl("lblPartyCode"), Label).Text.Trim
+                    dr("PartyName") = gr.Cells(4).Text.Trim
+                    dr("RoomTypeCode") = CType(gr.Cells(5).FindControl("lblRoomTypeCode"), Label).Text.Trim
+                    dr("RoomTypeName") = gr.Cells(6).Text.Trim
+                    dr("CtryCodes") = CType(gr.Cells(7).FindControl("lblCtryCodes"), Label).Text.Trim
+                    dr("Countries") = CType(gr.Cells(7).FindControl("lblCountries"), Label).Text.Trim
+                    dr("AgentCodes") = CType(gr.Cells(8).FindControl("lblAgentCodes"), Label).Text.Trim
+                    dr("Agents") = CType(gr.Cells(8).FindControl("lblAgents"), Label).Text.Trim
+                    dr("ReleaseDays") = gr.Cells(9).Text.Trim
+                    dr("RoomsAlloted") = gr.Cells(10).Text.Trim
+                    dr("RoomsAvailable") = gr.Cells(11).Text.Trim
+                    dt.Rows.Add(dr)
+                End If
+            Next
+            MakeDataTable = dt
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            MakeDataTable = Nothing
+        End Try
+    End Function
+#End Region
+
+#Region "Protected Function InsertMakeDataTable(ByVal gvDynamic As GridView, ByVal InventoryMatch As String, ByVal LineNo As Integer) As DataTable"
+    Protected Function InsertMakeDataTable(ByVal gvDynamic As GridView, ByVal InventoryMatch As String, ByVal InventoryID As String, ByVal LineNo As Integer) As DataTable
+        Try
+            Dim dt As New DataTable
+            dt.Columns.Add(New DataColumn("AutoID", GetType(Long)))
+            dt.Columns.Add(New DataColumn("InventoryID", GetType(String)))
+            dt.Columns.Add(New DataColumn("ILineNo", GetType(Integer)))
+            dt.Columns.Add(New DataColumn("InventoryMatch", GetType(String)))
+            dt.Columns.Add(New DataColumn("InventoryDate", GetType(String)))
+            dt.Columns.Add(New DataColumn("InventoryType", GetType(String)))
+            dt.Columns.Add(New DataColumn("PartyCode", GetType(String)))
+            dt.Columns.Add(New DataColumn("RmTypCode", GetType(String)))
+            dt.Columns.Add(New DataColumn("Countries", GetType(String)))
+            dt.Columns.Add(New DataColumn("Agents", GetType(String)))
+            dt.Columns.Add(New DataColumn("ReleaseDays", GetType(Integer)))
+            dt.Columns.Add(New DataColumn("RoomsAlloted", GetType(Integer)))
+            dt.Columns.Add(New DataColumn("RoomsAvailable", GetType(Integer)))
+            Dim dr As DataRow
+            For Each gr As GridViewRow In gvDynamic.Rows
+                If gr.RowType = DataControlRowType.DataRow Then
+                    If (CType(CType(gr.Cells(0).FindControl("chkMatch"), CheckBox).Checked, Boolean) = True) Then
+                        dr = dt.NewRow
+                        dr("AutoID") = Convert.ToInt64(CType(gr.Cells(0).FindControl("HdAutoID"), HiddenField).Value.Trim)
+                        dr("InventoryID") = InventoryID
+                        dr("ILineNo") = LineNo
+                        dr("InventoryMatch") = InventoryMatch
+                        dr("InventoryType") = gr.Cells(1).Text.Trim
+                        dr("InventoryDate") = CType(gr.Cells(2).Text.Trim, Date).ToString("yyyy/MM/dd")
+                        dr("PartyCode") = CType(gr.Cells(3).FindControl("lblPartyCode"), Label).Text.Trim
+                        dr("RmTypCode") = CType(gr.Cells(5).FindControl("lblRoomTypeCode"), Label).Text.Trim
+                        dr("Countries") = CType(gr.Cells(7).FindControl("lblCtryCodes"), Label).Text.Trim
+                        dr("Agents") = CType(gr.Cells(8).FindControl("lblAgentCodes"), Label).Text.Trim
+                        dr("ReleaseDays") = gr.Cells(9).Text.Trim
+                        dr("RoomsAlloted") = gr.Cells(10).Text.Trim
+                        dr("RoomsAvailable") = gr.Cells(11).Text.Trim
+                        dt.Rows.Add(dr)
+                        LineNo = LineNo + 1
+                    End If
+                End If
+            Next
+            InsertMakeDataTable = dt
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("FreeSaleWithdraw.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            InsertMakeDataTable = Nothing
+        End Try
+    End Function
+#End Region
+
+#Region "Protected Sub btnCloseWithdraw_Click(sender As Object, e As System.EventArgs) Handles btnCloseWithdraw.Click"
+    Protected Sub btnCloseWithdraw_Click(sender As Object, e As System.EventArgs) Handles btnCloseWithdraw.Click
+        ModalDisplayWithdrawPopup.Hide()
+    End Sub
+#End Region
+
+#Region "Protected Function SetVisibility(desc As Object, maxLength As Integer) As Boolean"
+    Protected Function SetVisibility(desc As Object, maxLength As Integer) As Boolean
+        Dim description As String = Convert.ToString(desc)
+        If (String.IsNullOrEmpty(description)) Then
+            SetVisibility = False
+        Else
+            Return description.Length > maxLength
+        End If
+    End Function
+#End Region
+
+#Region "Protected Function Limit(desc As Object, maxLength As Integer) As String"
+    Protected Function Limit(desc As Object, maxLength As Integer) As String
+        Dim description As String = Convert.ToString(desc)
+        If (String.IsNullOrEmpty(description)) Then
+            Limit = description
+        Else
+            If (description.Length <= maxLength) Then
+                Limit = description
+            Else
+                Limit = description.Substring(0, maxLength) + "..."
+            End If
+        End If
+    End Function
+#End Region
+
+End Class

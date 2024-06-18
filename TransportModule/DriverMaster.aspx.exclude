@@ -1,0 +1,292 @@
+﻿<%@ Page Title="" Language="VB" MasterPageFile="~/SubPageMaster.master" AutoEventWireup="false" CodeFile="DriverMaster.aspx.vb" Inherits="DriverMaster" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="Main" Runat="Server">
+
+<style  type="text/css" >
+.field_input1 
+{
+	font-family: Arial,Verdana, Geneva, ms sans serif;
+	font-size: 8pt;
+	font-weight: normal;
+	font-style: normal;
+	font-variant: normal;
+	border-width:1px;
+	border-color:#06788B;
+	color:Black;
+	width:265px;
+    }
+
+</style>
+    <script type="text/javascript" language="javascript">
+
+    
+
+
+//    function chkchar() {
+//        var RegX = "[a-zA-Z\-/,\s]+";
+//        var regex = new RegExp(RegX);
+
+
+//        if (!regex.test(document.getElementById("<%=txtName.ClientID%>").value)) {
+//            alert('Please enter a valid data.');
+//            targetbox.select();
+//            return false;
+//        } 
+
+
+    //  }
+//----------------------------------------------------------------------------
+    function getKey(e) {
+        if (window.event)
+            return window.event.keyCode;
+        else if (e)
+            return e.which;
+        else
+            return null;
+    }
+    // Returns true if the last key pressed was a member of the valid character list,   
+    // or a control key.  Useful to restrict input in a text box when used in conjunction   
+    // with the onKeyPressed() event.   
+    //   
+    // <INPUT NAME=INT onKeyPress="return restrictChars(event,'0123456789')">   
+    //   
+    // Above will allow only numeric input into the text box. This function is    
+    // case insensitive so including "A" in the list is equivalent to "a".   
+    function restrictChars(e, validList) {
+        var key, keyChar;
+        key = getKey(e);
+        if (key == null) return true;
+        // get character - remove toLowerCase for case sensitive checking   
+        keyChar = String.fromCharCode(key).toLowerCase();
+        // check valid characters - remove toLowerCase for case sensitive checking   
+        if (validList.toLowerCase().indexOf(keyChar) != -1)
+            return true;
+        // control keys   
+        // null, backspace, tab, carriage return, escape ,shift  
+        if (key == 0 || key == 8 || key == 9 || key == 13 || key == 27 || key == 16)
+            return true;
+        // else return false   
+        return false;
+    }
+    function numericOnly(e) {
+        return restrictChars(e, "0123456789 ");
+    }
+
+    function alphanumericOnly(e) {
+        return restrictChars(e, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    }
+    function checkNumber(evt) {
+        evt = (evt) ? evt : event;
+        var charCode = (evt.charCode) ? evt.charCode : ((evt.keyCode) ? evt.keyCode :
+        ((evt.which) ? evt.which : 0));
+        if (charCode != 47 && (charCode > 45 && charCode < 58)) {
+            //alert("Enter numerals only in this field. "+ charCode);
+            return true;
+        }
+        return false;
+    }
+
+    function checkTelephoneNumber(e) {
+
+        if ((event.keyCode < 45 || event.keyCode > 57)) {
+            return false;
+        }
+    }
+    
+     
+    //------------------------------------------------------
+    function FormValidation(state) {
+        if ((document.getElementById("<%=txtName.ClientID%>").value == "") || (document.getElementById("<%=txtmobile.ClientID%>").value == "") || (document.getElementById("<%=txttel.ClientID%>").value == "") || (document.getElementById("<%=txtaddress.ClientID%>").value == "")) {
+
+            if (document.getElementById("<%=txtName.ClientID%>").value == "") {
+                document.getElementById("<%=txtName.ClientID%>").focus();
+                alert("Name field can not be blank");
+                return false;
+            }
+            else if (document.getElementById("<%=txtmobile.ClientID%>").value == "") {
+                document.getElementById("<%=txtmobile.ClientID%>").focus();
+                alert("Mobile Number field can not be blank");
+                return false;
+            }
+            else if (document.getElementById("<%=txttel.ClientID%>").value == "") {
+                document.getElementById("<%=txttel.ClientID%>").focus();
+                alert("Telephone Number field can not be blank");
+                return false;
+            }
+            else if (document.getElementById("<%=txtaddress.ClientID%>").value == "") {
+                document.getElementById("<%=txtaddress.ClientID%>").focus();
+                alert("Address field can not be blank");
+                return false;
+            }
+        }
+        else {
+            if (state == 'New') { if (confirm('Are you sure you want to save ?') == false) return false; }
+            if (state == 'Edit') { if (confirm('Are you sure you want to update ?') == false) return false; }
+            if (state == 'Delete') { if (confirm('Are you sure you want to delete ?') == false) return false; }
+        }
+
+    }
+
+
+    function fillvehiclename() {
+
+        var vehicle = document.getElementById("<%=ddlvehcode.ClientID%>");
+        var vehiclename = document.getElementById("<%=ddlvehname.ClientID%>");
+
+         vehiclename.value = vehicle.options[vehicle.selectedIndex].text;
+       
+    }
+
+    function fillvehiclecode() {
+
+        var vehicle = document.getElementById("<%=ddlvehcode.ClientID%>");
+        var vehiclename = document.getElementById("<%=ddlvehname.ClientID%>");
+
+        vehicle.value = vehiclename.options[vehiclename.selectedIndex].text;
+
+    }
+
+    function displaysup() {
+        var trfmode = document.getElementById("<%=ddltransfermode.ClientID%>");
+        var lblsup = document.getElementById("<%=lblsupname.ClientID%>");
+        var supname = document.getElementById("<%=ddlsupname.ClientID%>");
+
+        if (trfmode.value == 'From Supplier') {
+            lblsup.style.display = "block"
+            supname.style.display = "block"
+        }
+        else {
+            
+            lblsup.style.display = "none"
+            supname.style.display = "none"
+            supname.value = ''
+        }
+    }
+
+
+</script>
+<asp:UpdatePanel id="UpdatePanel1" runat="server">
+   <contenttemplate>
+
+        <TABLE style="BORDER-RIGHT: gray 2px solid; BORDER-TOP: gray 2px solid; BORDER-LEFT: gray 2px solid; BORDER-BOTTOM: gray 2px solid" class="td_cell">
+       
+        <TR>
+        <TD class="td_cell" align=center colSpan=4><asp:Label id="lblHeading" 
+                runat="server" Text="Add New Driver"  Width="874px" CssClass="field_heading"></asp:Label></TD></TR><TR>
+            <TD style="WIDTH: 114px; height: 24px;" class="td_cell"><SPAN style="COLOR: black">Driver Code</SPAN> <SPAN style="COLOR: red" class="td_cell">*</SPAN></TD>
+            <TD style="COLOR: #000000; width: 177px; height: 24px;">
+            <INPUT  id="txtCode" class="field_input" readonly tabIndex=1 type=text maxLength=20 runat="server" /> </TD>
+            <td style="COLOR: #000000; width: 194px; height: 24px;">
+                </td>
+        </TR>
+        <TR>
+        <TD style="WIDTH: 114px; HEIGHT: 24px" class="td_cell">Driver Name <SPAN style="COLOR: red" class="td_cell">*</SPAN></TD>
+            <TD style="width: 177px">
+            <INPUT id="txtName" class="field_input1"  tabIndex=2 type="text" onkeydown='return restrictChars(event, "ABCDEFGHIJKLMNOPQRSTUVWXYZ ");'  maxLength="100" runat="server" /> </TD>
+            <td style="width: 194px">
+                &nbsp;</td>
+        </TR>
+        <TR>
+            <TD style="WIDTH: 114px; HEIGHT: 24px" class="td_cell">Mobile Number <SPAN style="COLOR: red" class="td_cell">*</SPAN></TD>
+                <TD style="width: 177px">
+                <INPUT style="TEXT-ALIGN: left" id="txtmobile" class="field_input1" onkeypress="return checkTelephoneNumber(event)" tabIndex=3 type=text maxLength=20 runat="server" /> </TD>
+                <td style="width: 194px">
+                    &nbsp;</td>
+        </TR>
+        <TR>
+            <TD style="WIDTH: 114px; HEIGHT: 24px" class="td_cell">Tel. <SPAN style="COLOR: red" class="td_cell">*</SPAN></TD>
+                <TD style="width: 177px">
+                <INPUT style="TEXT-ALIGN: left" id="txttel" class="field_input1" onkeypress="return checkTelephoneNumber(event)" tabIndex=3 type=text maxLength=20 runat="server" /> </TD>
+                <td style="width: 194px">
+                    &nbsp;</td>
+        </TR>
+         <TR>
+            <TD style="WIDTH: 114px; HEIGHT: 24px" class="td_cell">Address <SPAN style="COLOR: red" class="td_cell">*</SPAN></TD>
+                <TD style="width: 177px">
+                    <asp:TextBox ID="txtaddress" runat="server" TextMode="MultiLine" Width="262px"  TabIndex=5
+                        Height="61px"></asp:TextBox>
+                 </TD>
+                <td style="width: 194px">
+                    &nbsp;</td>
+        </TR>
+
+        <tr> 
+         <TD style=" HEIGHT: 8px" class="td_cell">Transfer Mode</TD>
+                        <TD style=" HEIGHT: 8px" align=left>
+                            <SELECT style="WIDTH: 152px" id="ddltransfermode" class="drpdown" tabIndex=4 onchange="displaysup();"
+                                 runat="server">
+                            </SELECT>&nbsp;
+                        </TD>
+                         <TD > <asp:Label ID="lblsupname" style="display:none " runat ="server" Text ="Supplier Name"> </asp:Label> </TD>
+                        <TD style=" HEIGHT: 8px" align=left>
+                           <SELECT style="WIDTH: 300px;display:none" id="ddlsupname" class="drpdown" tabIndex=6 
+                                 runat="server">
+                           <OPTION selected></OPTION></SELECT>
+                        </TD>
+        </tr>
+
+         <TR>
+                        <TD style=" HEIGHT: 8px" class="td_cell">Vehicle Code</TD>
+                        <TD style=" HEIGHT: 8px" align=left>
+                            <SELECT style="WIDTH: 152px" id="ddlvehcode" class="drpdown" tabIndex=4 onchange="fillvehiclename();"
+                                 runat="server">
+                            <OPTION selected></OPTION></SELECT>&nbsp;
+                        </TD>
+                        <TD style=" HEIGHT: 8px" class="td_cell">Vehiclename Name</TD>
+                        <TD style=" HEIGHT: 8px" align=left>
+                           <SELECT style="WIDTH: 300px" id="ddlvehname" class="drpdown" tabIndex=6 onchange="fillvehiclecode();"
+                                 runat="server">
+                           <OPTION selected></OPTION></SELECT>
+                        </TD>
+                    </TR>
+
+        <TR>
+            <TD style="WIDTH: 114px; HEIGHT: 24px" class="td_cell">Notes</SPAN></TD>
+                <TD style="width: 177px">
+                    <asp:TextBox ID="txtnotes" runat="server" TextMode="MultiLine" Width="264px" TabIndex="7"
+                        Height="53px"></asp:TextBox>
+                 </TD>
+                <td style="width: 194px">
+                    &nbsp;</td>
+        </TR>
+     <TR>
+        <TD class="td_cell" style="width: 114px; ">
+            <asp:Label ID="Label1" runat="server" CssClass="td_ce" Text="Active" 
+                ViewStateMode="Enabled" Width="44px"></asp:Label>
+            </TD>
+        <TD style="width: 177px;"> <INPUT id="chkActive" tabIndex=8 type=checkbox CHECKED runat="server" /> </TD>
+       
+        <td style="width: 194px">&nbsp;</td>
+                
+    </TR>
+    <tr><td colspan="3" height="20px"></td></tr>
+    <tr>
+        <td class="td_cell" style="width: 114px; height: 23px;">
+          <%-- <asp:Button ID="btnSave" runat="server"  CssClass="btn" tabIndex="6" Text="Save" /> --%>
+            <asp:Button id="btnSave" runat="server" CssClass="btn" Text="Save" TabIndex="8" />
+        </td>
+        <td style="height: 23px; width: 177px;">
+            <asp:Button ID="btnCancel" runat="server"  CssClass="btn" tabIndex="9" Text="Return to Search" />&nbsp; 
+        </td>
+                
+            
+           
+        <td style="height: 23px; ">
+            <asp:Button ID="btnHelp" runat="server"  
+                CssClass="btn" tabIndex="10" Text="Help" />
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <asp:Label ID="lblwebserviceerror" runat="server" style="display:none" 
+                Text="Webserviceerror"></asp:Label>
+           <%-- <asp:HiddenField ID="currhdn" runat="server" />--%>
+        </td>
+        <td style="width: 194px">
+            &nbsp;</td>
+    </tr>
+    </TABLE>
+   </contenttemplate>
+</asp:UpdatePanel>
+</asp:Content>
+

@@ -1,0 +1,238 @@
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Collections.ArrayList
+Imports System.Collections.Generic
+
+Partial Class VisaOnArrival
+    Inherits System.Web.UI.Page
+
+#Region "Global Declaration"
+    Dim objUtils As New clsUtils
+    Dim strSqlQry As String
+    Dim mySqlCmd As SqlCommand
+    Dim mySqlReader As SqlDataReader
+    Dim mySqlConn As SqlConnection
+    Dim sqlTrans As SqlTransaction
+#End Region
+
+#Region "Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load"
+    Protected Sub Page_Load(sender As Object, e As System.EventArgs) Handles Me.Load
+        If Page.IsPostBack = False Then
+            Try
+                If CType(Session("GlobalUserName"), String) = "" Then
+                    Response.Redirect("~/Login.aspx", False)
+                    Exit Sub
+                End If
+                Session("VisaOnArrivalState") = Request.QueryString("State")
+                Session("VisaonArrivalCtryCode") = Request.QueryString("CtryCode")
+                If Session("VisaOnArrivalState") = "New" Then
+                    lblHeading.Text = "New Visa On Arrival Country"
+                    Page.Title = Page.Title + " " + "New Visa On Arrival Country"
+                    btnSave.Text = "Save"
+                    btnSave.Attributes.Add("onclick", "return FormValidation('New')")
+                ElseIf Session("VisaOnArrivalState") = "Edit" Then
+                    lblHeading.Text = "Edit Visa on Arrival Country"
+                    Page.Title = Page.Title + " " + "Edit Visa on Arrival Country"
+                    btnSave.Text = "Update"
+                    ShowRecord(CType(Session("VisaOnArrivalCtryCode"), String))
+                    btnSave.Attributes.Add("onclick", "return FormValidation('Edit')")
+                ElseIf Session("VisaOnArrivalState") = "View" Then
+                    SetFocus(btnCancel)
+                    lblHeading.Text = "View Visa on Arrival Country"
+                    Page.Title = Page.Title + " " + "View Visa on Arrival Country"
+                    btnSave.Visible = False
+                    btnCancel.Text = "Return to Search"
+                    DisableControl()
+                    ShowRecord(CType(Session("VisaOnArrivalCtryCode"), String))
+                ElseIf Session("VisaOnArrivalState") = "Delete" Then
+                    SetFocus(btnSave)
+                    lblHeading.Text = "Delete Visa on Arrival Country"
+                    Page.Title = Page.Title + " " + "Delete Visa on Arrival Country"
+                    btnSave.Text = "Delete"
+                    DisableControl()
+                    ShowRecord(CType(Session("VisaOnArrivalCtryCode"), String))
+                    btnSave.Attributes.Add("onclick", "return FormValidation('Delete')")
+                End If
+                btnCancel.Attributes.Add("onclick", "javascript:if(confirm('Are you sure you want to cancel?')==false)return false;")
+
+            Catch ex As Exception
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+                objUtils.WritErrorLog("VisaOnArrival.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+            End Try
+        End If
+    End Sub
+#End Region
+
+#Region "Web Service Methods"
+    <System.Web.Script.Services.ScriptMethod()> _
+     <System.Web.Services.WebMethod()> _
+    Public Shared Function GetCountriesList(ByVal prefixText As String) As List(Of String)
+        Dim bstrSqlQry As String = ""
+        Dim myDS As New DataSet
+        Dim CtryName As New List(Of String)
+        Try
+            bstrSqlQry = "select C.CtryCode,C.CtryName,c.plgrpcode,p.plgrpname as plgrpName from ctrymast c inner join plgrpmast p on c.plgrpcode= p.plgrpcode and c.active=1 and c.ctryName like  '" & Trim(prefixText) & "%' left outer join VisaOnArrivalCountries V on v.CtryCode =c.ctrycode where V.CtryCode is null order by ctryName"
+            Dim SqlConn As New SqlConnection
+            Dim myDataAdapter As New SqlDataAdapter
+            SqlConn = clsDBConnect.dbConnectionnew("strDBConnection")
+            myDataAdapter = New SqlDataAdapter(bstrSqlQry, SqlConn)
+            myDataAdapter.Fill(myDS)
+            If myDS.Tables(0).Rows.Count > 0 Then
+                For i As Integer = 0 To myDS.Tables(0).Rows.Count - 1
+                    CtryName.Add(AjaxControlToolkit.AutoCompleteExtender.CreateAutoCompleteItem(myDS.Tables(0).Rows(i)("ctryName").ToString(), myDS.Tables(0).Rows(i)("Ctrycode").ToString() + "|" + myDS.Tables(0).Rows(i)("plgrpcode").ToString() + "|" + myDS.Tables(0).Rows(i)("plgrpName").ToString()))
+                Next
+            End If
+            Return CtryName
+        Catch ex As Exception
+            Return CtryName
+        End Try
+
+    End Function
+#End Region
+
+
+
+#Region " Private Sub DisableControl()"
+    Private Sub DisableControl()
+        If Session("VisaOnArrivalState") = "View" Or Session("VisaOnArrivalState") = "Delete" Then
+            txtCtryCode.Disabled = True
+            txtCtryName.Enabled = False
+            txtRegion.Disabled = True
+            chkActive.Disabled = True
+        ElseIf Session("VisaOnArrivalState") = "Edit" Then
+            txtCtryCode.Disabled = True
+        End If
+    End Sub
+#End Region
+    Protected Sub btnhelp_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "window.open('../Help.aspx?hi=Visaonarrival','_blank','status=1,scrollbars=1,top=135,left=760,width=250,height=500');", True)
+    End Sub
+
+#Region "Private Sub ShowRecord(ByVal CtryCode As String)"
+    Private Sub ShowRecord(ByVal CtryCode As String)
+        Try
+            mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+            mySqlCmd = New SqlCommand("select V.CtryCode,C.CtryName,c.plgrpcode,p.plgrpname as plgrpName,V.Active from VisaOnArrivalCountries V inner join ctrymast c on V.CtryCode=C.CtryCode inner join plgrpmast p on c.plgrpcode= p.plgrpcode and V.Ctrycode='" & CtryCode & "'", mySqlConn)
+            mySqlReader = mySqlCmd.ExecuteReader(CommandBehavior.CloseConnection)
+            If mySqlReader.HasRows Then
+                If mySqlReader.Read() Then
+                    If IsDBNull(mySqlReader("CtryCode")) = False Then
+                        txtCtryCode.Value = CType(mySqlReader("CtryCode"), String)
+                    Else
+                        txtCtryCode.Value = ""
+                    End If
+                    If IsDBNull(mySqlReader("CtryName")) = False Then
+                        txtCtryName.Text = CType(mySqlReader("CtryName"), String)
+                    Else
+                        txtCtryName.Text = ""
+                    End If
+                    If IsDBNull(mySqlReader("plgrpcode")) = False Then
+                        txtRegionCode.Value = CType(mySqlReader("plgrpcode"), String)
+                    Else
+                        txtRegionCode.Value = ""
+                    End If
+                    If IsDBNull(mySqlReader("plgrpName")) = False Then
+                        txtRegion.Value = CType(mySqlReader("plgrpName"), String)
+                    Else
+                        txtRegion.Value = ""
+                    End If
+                    If IsDBNull(mySqlReader("active")) = False Then
+                        If CType(mySqlReader("active"), String) = "1" Then
+                            chkActive.Checked = True
+                        ElseIf CType(mySqlReader("active"), String) = "0" Then
+                            chkActive.Checked = False
+                        End If
+                    End If
+                End If
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnArrival.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        Finally
+            clsDBConnect.dbConnectionClose(mySqlConn)           'connection close
+            clsDBConnect.dbCommandClose(mySqlCmd)               'sql command disposed
+            clsDBConnect.dbReaderClose(mySqlReader)             ' sql reader disposed    
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnSave_Click(sender As Object, e As System.EventArgs) Handles btnSave.Click"
+    Protected Sub btnSave_Click(sender As Object, e As System.EventArgs) Handles btnSave.Click
+        Try
+            If Page.IsValid = True Then
+                Dim msgStr = ""
+                If Session("VisaOnArrivalState") = "New" Or Session("VisaOnArrivalState") = "Edit" Then
+                    mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open
+                    mySqlCmd = New SqlCommand("select * from ctrymast where ctrycode='" & txtCtryCode.Value.Trim & "' and ctryName ='" & txtCtryName.Text.Trim & "' and plgrpCode='" & txtRegionCode.Value.Trim & "'", mySqlConn)
+                    mySqlReader = mySqlCmd.ExecuteReader()
+                    If (mySqlReader.HasRows = False) Then
+                        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('Select Country from autocomplete');", True)
+                        txtCtryCode.Value = ""
+                        txtCtryName.Text = ""
+                        txtRegionCode.Value = ""
+                        txtRegion.Value = ""
+                        txtCtryName.Focus()
+                        Exit Sub
+                    End If
+                    mySqlReader.Close()
+                    If Session("VisaOnArrivalState") = "New" Then
+                        If checkForDuplicate() = False Then
+                            Exit Sub
+                        End If
+                        mySqlCmd = New SqlCommand("sp_add_VisaOnArrival", mySqlConn)
+                        msgStr = "The Country added successfully"
+                    ElseIf Session("VisaOnArrivalState") = "Edit" Then
+                        mySqlCmd = New SqlCommand("sp_mod_VisaOnArrival", mySqlConn)
+                        msgStr = "The Country updated successfully"
+                    End If
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@ctryCode", SqlDbType.VarChar, 20)).Value = txtCtryCode.Value.Trim
+                    If chkActive.Checked = True Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@active", SqlDbType.Int)).Value = 1
+                    ElseIf chkActive.Checked = False Then
+                        mySqlCmd.Parameters.Add(New SqlParameter("@active", SqlDbType.Int)).Value = 0
+                    End If
+                    mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                    mySqlCmd.ExecuteNonQuery()
+                ElseIf Session("VisaOnArrivalState") = "Delete" Then
+                    mySqlConn = clsDBConnect.dbConnectionnew(Session("dbconnectionName"))           'connection open                    
+                    mySqlCmd = New SqlCommand("sp_del_VisaOnArrival", mySqlConn)
+                    mySqlCmd.CommandType = CommandType.StoredProcedure
+                    mySqlCmd.Parameters.Add(New SqlParameter("@ctryCode", SqlDbType.VarChar, 20)).Value = txtCtryCode.Value.Trim
+                    mySqlCmd.Parameters.Add(New SqlParameter("@userlogged", SqlDbType.VarChar, 10)).Value = CType(Session("GlobalUserName"), String)
+                    mySqlCmd.ExecuteNonQuery()
+                    msgStr = "The Country deleted successfully"
+                End If
+                clsDBConnect.dbCommandClose(mySqlCmd)               'sql command disposed
+                clsDBConnect.dbConnectionClose(mySqlConn)           'connection close
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" + msgStr + "')", True)
+                Dim strscript As String = ""
+                strscript = "window.opener.__doPostBack('VisaOnArrivalWindowPostBack', '');window.opener.focus();window.close();"
+                ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", strscript, True)
+            End If
+        Catch ex As Exception
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('" & "Error Description " + ex.Message.Replace("'", " ") & "' );", True)
+            objUtils.WritErrorLog("VisaOnArrival.aspx", Server.MapPath("ErrorLog.txt"), ex.Message.ToString, Session("GlobalUserName"))
+        End Try
+    End Sub
+#End Region
+
+#Region "Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click"
+    Protected Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click
+        ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "popup", "window.close();", True)
+    End Sub
+#End Region
+
+#Region "Public Function checkForDuplicate() As Boolean"
+    Public Function checkForDuplicate() As Boolean
+        If objUtils.isDuplicatenew(Session("dbconnectionName"), "VisaOnArrivalCountries", "CtryCode", txtCtryCode.Value.Trim) Then
+            ScriptManager.RegisterClientScriptBlock(Page, GetType(Page), "", "alert('This Country is already present.');", True)
+            SetFocus(txtCtryName)
+            checkForDuplicate = False
+            Exit Function
+        End If
+        checkForDuplicate = True
+    End Function
+#End Region
+
+End Class
